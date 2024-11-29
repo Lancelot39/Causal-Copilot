@@ -18,33 +18,177 @@ from statsmodels.stats.stattools import jarque_bera
 from statsmodels.tsa.stattools import adfuller
 from scipy import stats
 import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import acf, pacf
+import json
+from openai import OpenAI
+
+# new package
+from fancyimpute import IterativeImputer
 
 
-def data_preprocess (df: pd.DataFrame, ratio: float = 0.5, ts: bool = False):
+# Correlation checking #################################################################################################
+def correlation_check(df: pd.DataFrame, keep_features = []):
+    correlation_matrix = df.corr()
+
+    drop_feature = []
+    for i in range(len(correlation_matrix.columns)):
+        for j in range(i + 1, len(correlation_matrix.columns)):
+            corr_value = correlation_matrix.iloc[i, j]
+            if abs(corr_value) > 0.9:
+                var1 = df.columns[i]
+                var2 = df.columns[j]
+
+                if var1 not in keep_features:
+                    drop_feature.append(var1)
+                elif var2 not in keep_features:
+                    drop_feature.append(var2)
+                else:
+                    continue
+
+    df_drop = df.drop(columns=drop_feature)
+
+    return df_drop, drop_feature
+
+# df_drop, drop_feature = correlation_check(df)
+# print(drop_feature)
+
+
+# Missingness Checking #################################################################################################
+def missing_ratio_table(
+        df: pd.DataFrame, save_path):
+    missing_vals = [np.nan]
+    missing_mask = df.isin(missing_vals)
+
+    ratio_record = {}
+    for column in missing_mask:
+        ratio_record[column] = missing_mask[column].mean()
+
+    ratio_record_df = pd.DataFrame(list(ratio_record.items()), columns=['Feature', 'Missingness Ratio'])
+
+    plt.figure(figsize=(4, 2))
+    plt.axis('off')
+    table = plt.table(cellText=ratio_record_df.values, colLabels=ratio_record_df.columns, loc='center', cellLoc='center')
+
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.auto_set_column_width(col=list(range(len(ratio_record_df.columns))))
+
+    plt.savefig("missing_ratios_table.png", bbox_inches='tight', dpi=300)
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    print(f"Saving residuals plot to {os.path.join(save_path, 'missing_ratios_table.jpg')}")
+    plt.savefig(os.path.join(save_path, 'missing_ratios_table.jpg'))
+
+    if sum(ratio_record.values()) == 0:
+        miss_ind = False
+    else:
+        miss_ind = True
+
+    return ratio_record, miss_ind
+
+# record = missing_ratio_table(df)
+# print(record)
+
+def drop_feature(df: pd.DataFrame, keep_features = []):
+    missing_vals = [np.nan]
+    missing_mask = df.isin(missing_vals)
+
+    ratio_record = {}
+    for column in missing_mask:
+        ratio_record[column] = missing_mask[column].mean()
+
+    # Drop features whose ratio is greater than 0.5
+    ratio_greater_05 = [k for k, v in ratio_record.items() if v >= 0.5]
+    ratio_greater_05_keep = [element for element in ratio_greater_05 if element not in keep_features] # keep important features
+    df_dropped = df.drop(columns=ratio_greater_05_keep)
+
+    return df_dropped
+
+# df_drop, ratio_between_05_03 = drop_feature(df)
+# print(ratio_between_05_03)
+
+
+def user_llm_drop_feature(df: pd.DataFrame, user_drop, args, keep_features = []):
+    if user_drop:
+        df_dropped = df.drop(columns=user_drop)
+        llm_drop = []
+    else:
+        missing_vals = [np.nan]
+        missing_mask = df.isin(missing_vals)
+
+        ratio_record = {}
+        for column in missing_mask:
+            ratio_record[column] = missing_mask[column].mean()
+
+        # LLM determine dropped features
+        ratio_between_05_03 = [k for k, v in ratio_record.items() if 0.5 > v >= 0.3] # 0.5 > ratio >= 0.3
+        ratio_less_05 = [k for k, v in ratio_record.items() if v < 0.5]  # ratio < 0.5
+
+        client = OpenAI(organization=args.organization, project=args.project, api_key=args.apikey)
+        prompt = (f'Given the list of features of a dataset: {ratio_less_05} \n\n,'
+                  f'which features listed below do you think may be potential confounders: \n\n {ratio_between_05_03}?'
+                  'Your response should be given in a list format, and the name of features should be exactly the same as the feature names I gave.'
+                  'You only need to give me the list of features, no other justifications are needed. If there are no features you think should be potential confounder,'
+                  'just give me a empty list.')
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        features_llm = response.choices[0].message.content
+        features_llm = features_llm.replace('```json', '').replace('```', '').strip()
+
+        llm_drop = [element for element in ratio_between_05_03 if element not in features_llm]
+        llm_drop_keep_important = [element for element in llm_drop if element not in keep_features]  # keep important features
+        df_dropped = df.drop(columns=llm_drop_keep_important)
+
+        return df_dropped, llm_drop_keep_important
+
+
+
+# TIME SERIES PROCESSING ###############################################################################################
+
+def series_lag_est(time_series, nlags = 50):
+
+    autocorr, confint = acf(time_series, nlags=nlags, fft=True, alpha=0.05)
+    lag_significant = []
+
+    for lag in range(1, len(autocorr)):
+        if autocorr[lag] > confint[lag][1] or autocorr[lag] < confint[lag][0]:
+            lag_significant = lag
+
+    if len(lag_significant) != 0:
+        est_lag = max(lag_significant)
+    else:
+        est_lag = np.argmax(autocorr[1:]) + 1
+
+    return est_lag
+
+
+def time_series_lag_est(df: pd.DataFrame, nlags = 50):
+    est_lags = {}
+
+    for i in range(df.shape[1]):
+        est_lags[df.columns[i]] = series_lag_est(df.iloc[:, i], nlags=nlags)
+
+    return est_lags
+
+# lags = time_series_lag_est(ts_imputed)
+# print(lags)
+
+########################################################################################################################
+
+def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
     '''
     :param df: Dataset in Panda DataFrame format.
     :param ratio: threshold to remove column.
     :param ts: indicator of time-series data.
     :return: cleaned data, indicator of missingness in cleaned data, overall data type, data type of each feature.
     '''
-
-    # Data clean
-    missing_vals = [np.nan]
-    missing_mask = df.isin(missing_vals)
-
-    remove_index = []
-    for column in missing_mask:
-       if missing_mask[column].mean() > ratio:
-           remove_index.extend(column)
-
-    clean_df = df.drop(remove_index, axis=1)
-    missing_mask_clean = missing_mask.drop(remove_index, axis=1)
-
-    # Judge if missingness exists in the cleaned data
-    if missing_mask_clean.sum().sum() > 0:
-        miss_res = {"Missingness": True}
-    else:
-        miss_res = {"Missingness": False}
 
     # Data Type Classification
     column_type = {}
@@ -83,7 +227,7 @@ def data_preprocess (df: pd.DataFrame, ratio: float = 0.5, ts: bool = False):
         clean_df[column] = pd.Categorical(clean_df[column])
         clean_df[column] = clean_df[column].cat.codes.replace(-1, np.nan) # Keep NaN while converting    
 
-    return clean_df, miss_res, column_type, overall_type
+    return column_type, overall_type
 
 # clean_data, miss_res, each_type, dataset_type = data_preprocess(df = df, ratio = 0.5, ts = False)
 # print(clean_data)
@@ -112,7 +256,10 @@ def imputation (df: pd.DataFrame, column_type: dict, ts: bool = False):
             df[column] = imputer_cat.fit_transform(df[[column]]).ravel()
 
     if ts:
-        df = df.ffill()
+        imputer = IterativeImputer(max_iter=10, random_state=0)
+        imputed_data = imputer.fit_transform(df)
+        df = pd.DataFrame(imputed_data, columns=df.columns)
+        # df = df.ffill()
 
     # Z-score normalization
     scaler = StandardScaler()
@@ -356,13 +503,16 @@ def stationary_check(df: pd.DataFrame, max_test: int = 1000, alpha: float = 0.1)
     return check_result
 
 
+
+
+
 def stat_info_collection(global_state):
     '''
     :param data: given tabular data in pandas dataFrame format.
     :param global_state: GlobalState object to update and use.
     :return: updated GlobalState object.
     '''
-    data = global_state.user_data.raw_data
+    data = global_state.user_data.processed_data
     n, m = data.shape
 
     # already exacted in the user query function
@@ -382,17 +532,16 @@ def stat_info_collection(global_state):
         col_domain_index = None
 
     # Data pre-processing
-    clean_data, miss_res, each_type, dataset_type = data_preprocess(df = data, ratio=global_state.statistics.ratio, ts=False)
+    each_type, dataset_type = data_preprocess(clean_df = data, ts=global_state.statistics.time_series)
 
     # Update global state
-    global_state.statistics.missingness = miss_res['Missingness']
     global_state.statistics.data_type = dataset_type["Data Type"]
 
     # Imputation
     if global_state.statistics.missingness:
-        imputed_data = imputation(df=clean_data, column_type=each_type, ts=False)
+        imputed_data = imputation(df=data, column_type=each_type, ts=global_state.statistics.time_series)
     else:
-        imputed_data = clean_data
+        imputed_data = data
 
     # Check assumption for continuous data
     if global_state.statistics.data_type == "Continuous":
@@ -415,11 +564,14 @@ def stat_info_collection(global_state):
         global_state.statistics.gaussian_error = False
 
     # Assumption checking for time-series data
-    # if args.ts:
-    #     global_state.statistics.linearity = False
-    #     global_state.statistics.gaussian_error = False
-    #     stationary_res = stationary_check(df=imputed_data, max_test=args.num_test, alpha=args.alpha)
-    #     global_state.statistics.stationary = stationary_res["Stationary"]
+    if global_state.statistics.time_series:
+        global_state.statistics.linearity = False
+        global_state.statistics.gaussian_error = False
+
+        stationary_res = stationary_check(df=imputed_data, max_test=global_state.statistics.num_test, alpha=global_state.statistics.alpha)
+        global_state.statistics.stationary = stationary_res["Stationary"]
+
+        global_state.statistics.time_lag =time_series_lag_est(imputed_data, nlags = 50)
 
     # merge the domain index column back to the data if it exists
     if col_domain_index is not None:

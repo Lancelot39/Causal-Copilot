@@ -10,14 +10,14 @@ from queue import Queue
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from Gradio.demo_config import get_demo_config
 from global_setting.Initialize_state import global_state_initialization
-from preprocess.stat_info_functions import stat_info_collection, convert_stat_info_to_text
+from preprocess.stat_info_functions import *
 from preprocess.dataset import knowledge_info
 from preprocess.eda_generation import EDA
 from algorithm.filter import Filter
 from algorithm.program import Programming
 from algorithm.rerank import Reranker
 from postprocess.judge import Judge
-from postprocess.visualization import Visualization
+from postprocess.visualization import Visualization, convert_to_edges
 from postprocess.report_generation import Report_generation
 
 # Global variables
@@ -25,9 +25,12 @@ UPLOAD_FOLDER = "./demo_data"
 chat_history = []
 target_path = None
 output_dir = None
+global_state = None
+args = type('Args', (), {})()
 REQUIRED_INFO = {
     'data_uploaded': False,
     'initial_query': False,
+    'current_stage': 'initial_process'
 }
 MAX_CONCURRENT_REQUESTS = 5
 MAX_QUEUE_SIZE = 10
@@ -103,8 +106,8 @@ def handle_file_upload(file, chatbot, file_upload_btn, download_btn):
         return chatbot, file_upload_btn, download_btn
 
 
-def process_initial_query(message, chat_history, args):
-    global REQUIRED_INFO
+def process_initial_query(message, chat_history, download_btn):
+    global REQUIRED_INFO, args
     # TODO: check if the initial query is valid or satisfies the requirements
     print('initial query:', message)
     if 'YES' in message:
@@ -124,50 +127,247 @@ def process_initial_query(message, chat_history, args):
                              which would help us generate appropriate report for you.
                              """))
         #yield chat_history, download_btn
-    return args, chat_history, download_btn
+    return chat_history, download_btn    
 
+def parse_reupload_query(message, chat_history, download_btn):
+    if message == 'continue':
+        chat_history.append((message, "📈 Continue the analysis..."))
+        REQUIRED_INFO["current_stage"] = 'reupload_dataset_done'
+        return chat_history, download_btn
+    else:
+        REQUIRED_INFO['data_uploaded'] = False
+        REQUIRED_INFO['current_stage'] == 'initial_process'
+        #chat_history.append((message, None))
+        process_message(message, chat_history, download_btn)
+        #return chat_history, download_btn
+
+def parse_var_selection_query(message, chat_history, download_btn):
+    var_list = [var.strip() for var in message.split(',')]
+    if var_list == []:
+        chat_history.append((message, "Your variable selection query cannot be parsed, please follow the templete below and retry. \n"
+                                        "Templete: PKA, Jnk, PIP2, PIP3, Mek"))
+        return var_list, chat_history, download_btn
+    else:
+        missing_vars = [var for var in var_list if var not in global_state.user_data.raw_data.columns]
+        if missing_vars != []:
+            chat_history.append((message, "❌ Variables " + ", ".join(missing_vars) + " are not in the dataset, please check it and retry."))
+            return var_list, chat_history, download_btn
+        elif len(var_list) > 20:
+            chat_history.append((message, "❌ Number of chosen Variables should be within 20, please check it and retry."))
+            return var_list, chat_history, download_btn
+        else:
+            chat_history.append((message, "✅ Successfully parsed your provided variables. These variables you care about will be shown in the following graphs."))
+            REQUIRED_INFO["current_stage"] = "stat_analysis"
+            return var_list, chat_history, download_btn
+
+def parse_user_preprocess(message, chat_history, download_btn):
+    global global_state
+    global args
+
+    data = global_state.user_data.raw_data
+    n, m = data.shape
+
+    if global_state.statistics.heterogeneous and global_state.statistics.domain_index is not None:
+        # Drop the domain index column from the data
+        domain_index = global_state.statistics.domain_index
+        col_domain_index = data[domain_index]
+        data = data.drop(columns=[domain_index])
+    else:
+        col_domain_index = None
+
+    # Step 1: Sample size checking:
+    if n / m >= 5:
+        # continue analysis
+        pass
+    elif 1 <= n / m < 5:
+        chat_history.append((message,"⚠️ The dataset provided do not have enough sample size and may result in unreliable analysis. Please provide more samples."))
+            # If user does not provide additional samples, continue analysis
+    elif n / m < 1:
+        chat_history.append((message,"⚠️ The sample size of dataset provided is less than its feature size. We are not able to conduct further analysis. Please provide more samples."))
+        # Reject analysis request and wait for more samples.
+
+    # Step 2: Provide missingness ratio table
+    _, global_state.statistics.missingness = missing_ratio_table(df=data,save_path=global_state.user_data.output_graph_dir)
+
+    chat_history.append(("The following table records the missingness ratio for each feature:", None))
+    yield chat_history, download_btn
+    chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/missing_ratios_table.jpg',)))
+    yield chat_history, download_btn
+
+    # Ask for information about dropped features.
+    chat_history.append(("For features whose missingness ratio between 0.3 and 0.5, which features would you like to drop?", None))
+    yield chat_history, download_btn
+
+    # Update features dropped by user in the global state: global_state.user_data.user_drop_features
+
+    # determine dropping of features based users' input and LLM: if user provided input will only drop features based on the user input;
+    # if this user did not provide input, will drop features based on LLM.
+    processed_data, llm_dropped_features = user_llm_drop_feature(df=data, user_drop=global_state.user_data.user_drop_features,
+                                                                 args=args, keep_features=global_state.user_data.selected_variables)
+
+    # drop features that are greater than 0.5 missing
+    processed_data = drop_feature(df=processed_data, keep_features=global_state.user_data.selected_variables)
+
+    if not global_state.user_data.user_drop_features:
+        # Inform user of dropped features based on LLM
+        chat_history.append((f"We will drop features whose missingness ratio is greater than 0.5 and {llm_dropped_features} due to relatively large missingness ratio.",None))
+        yield chat_history, download_btn
+
+    # Step 3: correlation checking
+    processed_data, drop_feature_high_correlation = correlation_check(df=processed_data, keep_features=global_state.user_data.selected_variables)
+
+    if drop_feature_high_correlation:
+        chat_history.append((f"We will drop {drop_feature_high_correlation} due to the fact that they are highly correlated with other features.",None))
+
+    # Finish user query based pre-processing
+    if col_domain_index is not None:
+        processed_data['domain_index'] = col_domain_index
+
+    # Update global stat
+    global_state.user_data.processed_data = processed_data
+
+
+
+
+def parse_user_postprocess(message, chat_history, download_btn):
+    global global_state
+    import re 
+    edges_dict = {
+        "add_edges": [],
+        "forbid_edges": [],
+        "orient_edges": []
+    }
+    print('message:', message)
+    # Define regex patterns for each type of edge
+    add_pattern = r"Add Edges:\s*([^;]+);"
+    forbid_pattern = r"Forbid Edges:\s*([^;]+);"
+    orient_pattern = r"Orient Edges:\s*([^;]+);"
+    # Function to convert edge strings to tuples
+    def parse_edges(edge_string):
+        return [tuple(edge.strip().split('->')) for edge in edge_string.split(';') if edge.strip()]
+    try:
+        if message == '' or not ('Add Edges' in message or 'Forbid Edges' in message or 'Orient Edges' in message):
+             REQUIRED_INFO['current_stage'] = 'retry_algo'
+             chat_history.append((None, "💬 No valid query is provided, will go to the next step."))
+             return edges_dict, chat_history, download_btn
+        else:
+             # Extract Add Edges
+            add_matches = re.findall(add_pattern, message)
+            if add_matches:
+                edges_dict["add_edges"] = parse_edges(add_matches[0])
+            # Extract Forbid Edges
+            forbid_matches = re.findall(forbid_pattern, message)
+            if forbid_matches:
+                edges_dict["forbid_edges"] = parse_edges(forbid_matches[0])
+            # Extract Orient Edges
+            orient_matches = re.findall(orient_pattern, message)
+            if orient_matches:
+                edges_dict["orient_edges"] = parse_edges(orient_matches[0])
+            # Check whether all these variables exist
+            variables = [item for sublist in edges_dict.values() for pair in sublist for item in pair]
+            missing_vars = [var for var in variables if var not in global_state.user_data.raw_data.columns]
+            if missing_vars != []:
+                chat_history.append((None, "❌ Variables " + ", ".join(missing_vars) + " are not in the dataset, please check it and retry."))
+                return edges_dict, chat_history, download_btn
+            REQUIRED_INFO["current_stage"] = 'postprocess_parse_done'
+            return edges_dict, chat_history, download_btn
+    except Exception as e:
+        chat_history.append((None, "❌ Your query cannot be parsed, please follow the templete and retry"))
+        print(str(e))
+        import traceback
+        traceback.print_exc()
+        return edges_dict, chat_history, download_btn
+
+def parse_algo_query(message):
+    if message == '':
+        chat_history.append((None, "💬 No algorithm is specified, will go to the next step..."))
+        REQUIRED_INFO["current_stage"] = 'report_generation'        
+    elif message not in ['PC', 'FCI', 'CDNOD', 'GES', 'DirectLiNGAM', 'ICALiNGAM', 'NOTEARS']:
+        chat_history.append((None, "❌ The specified algorithm is not correct, please choose from the following: \n"
+                                    "PC, FCI, CDNOD, GES, DirectLiNGAM, ICALiNGAM, NOTEARS"))
+    else:  
+        chat_history.append((None, f"✅ Selected algorithm: {global_state.algorithm.selected_algorithm}"))
+        REQUIRED_INFO["current_stage"] == 'report_generation'
+    return chat_history, download_btn 
 
 def process_message(message, chat_history, download_btn):
-    global target_path, REQUIRED_INFO
+    global target_path, REQUIRED_INFO, global_state, args
     REQUIRED_INFO['processing'] = True
-    # Add user message
-    # chat_history.append((message, None))
-    # yield chat_history, download_btn
-    
-    print('check data upload')
-    if not REQUIRED_INFO['data_uploaded']:
-        chat_history.append((message, "Please upload your dataset first before proceeding."))
-        yield chat_history, download_btn
-    else:
-        # Initialize config
-        config = get_demo_config()
-        config.data_file = target_path
-        config.initial_query = message
 
-        args = type('Args', (), {})()
-        for key, value in config.__dict__.items():
-            setattr(args, key, value)
-        print('check initial query')
-        args, chat_history, download_btn = process_initial_query(message, chat_history, args)
-        yield chat_history, download_btn
-        print('finish initial query checking')
     try:
-        # Initialize global state
-        if REQUIRED_INFO['data_uploaded'] and REQUIRED_INFO['initial_query']:
-            print('strart analysis')
-            # Add user message
-            # chat_history.append((message, None))
-            # yield chat_history, download_btn
-            # chat_history.append(("🔄 Initializing analysis pipeline...", None))
-            global_state = global_state_initialization(args)
+        if REQUIRED_INFO['current_stage'] == 'initial_process':    
+            print('check data upload')
+            if not REQUIRED_INFO['data_uploaded']:
+                chat_history.append((message, "Please upload your dataset first before proceeding."))
+                yield chat_history, download_btn
+            else:
+                # Initialize config
+                config = get_demo_config()
+                config.data_file = target_path
+                for key, value in config.__dict__.items():
+                    setattr(args, key, value)
+                print('check initial query')
+                config.initial_query = message
+                chat_history, download_btn = process_initial_query(message, chat_history, download_btn)
+                yield chat_history, download_btn
+                print('finish initial query checking')
+    
+            # Initialize global state
+            if REQUIRED_INFO['data_uploaded'] and REQUIRED_INFO['initial_query']:
+                print('strart analysis')
+                global_state = global_state_initialization(args)
 
-            # Load data
-            # chat_history.append((None, "📊 Loading and preprocessing data..."))
-            global_state.user_data.raw_data = pd.read_csv(target_path)
-            global_state.user_data.processed_data = global_state.user_data.raw_data
-            # chat_history.append((None, "✅ Data loaded successfully"))
+                # Load data
+                global_state.user_data.raw_data = pd.read_csv(target_path)
+                global_state.user_data.processed_data = global_state.user_data.raw_data
+                yield chat_history, download_btn
+                # Check sample size
+                n_row, n_col = global_state.user_data.raw_data.shape
+                ## Few sample case: give warning
+                if n_row/n_col < 5:
+                    chat_history.append((None, "📍 Your sample size is too small and it will affect the reliability of the following analysis. \n"
+                                         "Please upload a larger dataset if you mind that. Otherwise please enter 'continue'"))
+                    yield chat_history, download_btn
+                    REQUIRED_INFO["current_stage"] = 'reupload_dataset'
+                    #return chat_history, download_btn
+                else:
+                    REQUIRED_INFO["current_stage"] = 'reupload_dataset_done'
+
+        if REQUIRED_INFO["current_stage"] == 'reupload_dataset':
+            #chat_history, download_btn = parse_reupload_query(message, chat_history, download_btn)
+            if message == 'continue':
+                chat_history.append((message, "📈 Continue the analysis..."))
+                yield chat_history, download_btn
+                REQUIRED_INFO["current_stage"] = 'reupload_dataset_done'
+            else:
+                #REQUIRED_INFO['data_uploaded'] = False
+                print('recurrent message processing')
+                REQUIRED_INFO['current_stage'] = 'initial_process'
+                #chat_history.append((message, None))
+                process_message(message, chat_history, download_btn)
+                #return chat_history, download_btn
+            #yield chat_history, download_btn
+            
+        if REQUIRED_INFO["current_stage"] == 'reupload_dataset_done':
+            ## High Dimensional Case: let user choose variables
+            if n_col > 20:
+                chat_history.append((None, "💡 There are many variables in your dataset, please follow the template below to choose variables you care about for visualization: \n"
+                                        "Please seperate each variables with a semicolon and restrict the number within 20; \n"
+                                        "Templete: PKA, Jnk, PIP2, PIP3, Mek"))
+                yield chat_history, download_btn
+                REQUIRED_INFO["current_stage"] = 'variable_selection'
+                return chat_history, download_btn
+            else: 
+                REQUIRED_INFO["current_stage"] = 'stat_analysis'
+
+        if REQUIRED_INFO["current_stage"] == 'variable_selection':
+            var_list, chat_history, download_btn = parse_var_selection_query(message, chat_history, download_btn)
             yield chat_history, download_btn
+            # Update the selected variables
+            global_state.user_data.selected_variables = var_list
 
+        if REQUIRED_INFO["current_stage"] == 'stat_analysis':
+            # Statistical Analysis
             chat_history.append(
                 (f"📈 Run statistical analysis on Dataset {target_path.split('/')[-1].replace('.csv', '')}...", None))
             yield chat_history, download_btn
@@ -277,7 +477,7 @@ def process_message(message, chat_history, download_btn):
                 chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/initial_graph.jpg',)))
                 yield chat_history, download_btn
                 my_report = Report_generation(global_state, args)
-                global_state.results.raw_edges = my_visual_initial.convert_to_edges(global_state.results.raw_result)
+                global_state.results.raw_edges = convert_to_edges(global_state.algorithm.selected_algorithm, global_state.user_data.raw_data.columns, global_state.results.raw_result)
                 global_state.logging.graph_conversion['initial_graph_analysis'] = my_report.graph_effect_prompts()
                 print('graph analysis', global_state.logging.graph_conversion['initial_graph_analysis'])
                 chat_history.append((None, global_state.logging.graph_conversion['initial_graph_analysis']))
@@ -294,7 +494,7 @@ def process_message(message, chat_history, download_btn):
                 judge = Judge(global_state, args)
                 global_state = judge.forward(global_state)
             my_visual_revise = Visualization(global_state)
-            global_state.results.revised_edges = my_visual_revise.convert_to_edges(global_state.results.revised_graph)
+            global_state.results.revised_edges = convert_to_edges(global_state.algorithm.selected_algorithm, global_state.user_data.raw_data.columns, global_state.results.revised_graph)
             if args.data_mode=='real':
                 # Plot Revised Graph
                 if global_state.results.revised_graph is not None:
@@ -315,45 +515,78 @@ def process_message(message, chat_history, download_btn):
 
             chat_history.append((None, "✅ Causal discovery analysis completed"))
             yield chat_history, download_btn
-
-            # Report Generation
-            chat_history.append(("📝 Generate comprehensive report and it may take a few minutes, stay tuned...", None))
+        
+            #########
+            REQUIRED_INFO['current_stage'] = 'user_postprocess'
+            chat_history.append((None, "If you are not satisfied with the causal graph, please tell us which edges you want to forbid or add, and we will revise the graph according to your instruction. \n"
+                                        "Please follow the templete below, otherwise your input cannot be parsed. \n"
+                                        "Add Edges: A1->A2; A3->A4; ... \n"
+                                        "Forbid Edges: F1->F2; F3->F4; ... \n"
+                                        "Orient Edges: O1->O2; O3->O4; ... \n"))
             yield chat_history, download_btn
-            report_gen = Report_generation(global_state, args)
-            report = report_gen.generation(debug=False)
-            report_gen.save_report(report)
-            report_path = os.path.join(output_dir, 'output_report', 'report.pdf')
-            while not os.path.isfile(report_path):
-                chat_history.append((None,
-                                    "❌ An error occurred during the Report Generation, we are trying again and please wait for a few minutes."))
-                yield chat_history, download_btn
-                report_gen = Report_generation(global_state, args)
-                report = report_gen.generation(debug=False)
-                report_gen.save_report(report)
-
-            # Final steps
-            chat_history.append((None, "🎉 Analysis complete!"))
-            chat_history.append((None, "📥 You can now download your detailed report using the download button below."))
-
-            REQUIRED_INFO['processing'] = False
-            REQUIRED_INFO['data_uploaded'] = False
-            REQUIRED_INFO['initial_query'] = False
-
-            download_btn = gr.DownloadButton(
-                "📥 Download Exclusive Report",
-                size="sm",
-                elem_classes=["icon-button"],
-                scale=1,
-                value=os.path.join(output_dir, 'output_report', 'report.pdf'),
-                interactive=True
-            )
-            yield chat_history, download_btn
-
-            chat_history.append((None, ""))
             return chat_history, download_btn
-        else:
+            #########
+        if REQUIRED_INFO['current_stage'] == 'user_postprocess':
+            chat_history.append((message, "📝 Start to process your Graph Revision Query..."))
             yield chat_history, download_btn
+            user_revise_dict, chat_history, download_btn = parse_user_postprocess(message, chat_history, download_btn)
+            yield chat_history, download_btn
+            if REQUIRED_INFO["current_stage"] == 'postprocess_parse_done':
+                judge = Judge(global_state, args)
+                global_state = judge.user_postprocess(user_revise_dict)
+                my_visual_revise = Visualization(global_state)
+                if global_state.results.revised_graph is not None:
+                    pos = my_visual_revise.get_pos(global_state.results.raw_result)
+                    my_visual_revise.plot_pdag(global_state.results.revised_graph, 'revised_graph.pdf', pos)
+                    my_visual_revise.plot_pdag(global_state.results.revised_graph, 'revised_graph.jpg', pos)
+                    chat_history.append((None, f"This is the revised graph according to your instruction."))
+                    yield chat_history, download_btn
+                    chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/revised_graph.jpg',)))
+                    yield chat_history, download_btn
+                REQUIRED_INFO["current_stage"] = 'retry_algo'
+            chat_history.append((None, "Do you want to retry other algorithms? If so, please choose one from the following: \n"
+                                           "PC, FCI, CDNOD, GES, DirectLiNGAM, ICALiNGAM, NOTEARS"))
+            yield chat_history, download_btn
+            return chat_history, download_btn 
 
+        if REQUIRED_INFO["current_stage"] == 'retry_algo': # empty query or postprocess query parsed successfully
+            algo = parse_algo_query(message)
+            chat_history, download_btn = parse_algo_query(message)
+            yield chat_history, download_btn
+                    
+            # Report Generation
+            if REQUIRED_INFO["current_stage"] == 'report_generation': # empty query or postprocess query parsed successfully
+                chat_history.append(("📝 Generate comprehensive report and it may take a few minutes, stay tuned...", None))
+                yield chat_history, download_btn
+                report_path = call_report_generation(output_dir)
+                while not os.path.isfile(report_path):
+                    chat_history.append((None, "❌ An error occurred during the Report Generation, we are trying again and please wait for a few minutes."))
+                    yield chat_history, download_btn
+                    report_path = call_report_generation(output_dir)
+
+                # Final steps
+                chat_history.append((None, "🎉 Analysis complete!"))
+                chat_history.append((None, "📥 You can now download your detailed report using the download button below."))
+                # Re-initialize Status
+                REQUIRED_INFO['processing'] = False
+                REQUIRED_INFO['data_uploaded'] = False
+                REQUIRED_INFO['initial_query'] = False
+                REQUIRED_INFO["current_stage"] = 'initial_process'
+
+                download_btn = gr.DownloadButton(
+                    "📥 Download Exclusive Report",
+                    size="sm",
+                    elem_classes=["icon-button"],
+                    scale=1,
+                    value=os.path.join(output_dir, 'output_report', 'report.pdf'),
+                    interactive=True
+                )
+                yield chat_history, download_btn
+                return chat_history, download_btn
+            else: # postprocess query cannot be parsed
+                yield chat_history, download_btn
+                return chat_history, download_btn
+    
     except Exception as e:
         chat_history.append((None, f"❌ An error occurred during analysis: {str(e)}, please try again"))
         print(str(e))
@@ -361,7 +594,13 @@ def process_message(message, chat_history, download_btn):
         traceback.print_exc()
         yield chat_history, download_btn
         return chat_history, download_btn
-
+    
+def call_report_generation(output_dir):
+    report_gen = Report_generation(global_state, args)
+    report = report_gen.generation(debug=False)
+    report_gen.save_report(report)
+    report_path = os.path.join(output_dir, 'output_report', 'report.pdf')
+    return report_path
 
 def clear_chat():
     global target_path, REQUIRED_INFO, output_dir, chat_history
