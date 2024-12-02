@@ -165,15 +165,14 @@ def parse_user_preprocess(message, chat_history, download_btn):
     global args
 
     data = global_state.user_data.raw_data
-    n, m = data.shape
 
     if global_state.statistics.heterogeneous and global_state.statistics.domain_index is not None:
         # Drop the domain index column from the data
         domain_index = global_state.statistics.domain_index
         col_domain_index = data[domain_index]
         data = data.drop(columns=[domain_index])
-    else:
-        col_domain_index = None
+
+    n, m = data.shape
 
     # Step 1: Sample size checking:
     if n / m >= 5:
@@ -187,7 +186,7 @@ def parse_user_preprocess(message, chat_history, download_btn):
         # Reject analysis request and wait for more samples.
 
     # Step 2: Provide missingness ratio table
-    _, global_state.statistics.missingness = missing_ratio_table(df=data,save_path=global_state.user_data.output_graph_dir)
+    global_state = missing_ratio_table(global_state) # Update missingness indicator in global state and generate missingness ratio table
 
     chat_history.append(("The following table records the missingness ratio for each feature:", None))
     yield chat_history, download_btn
@@ -202,30 +201,18 @@ def parse_user_preprocess(message, chat_history, download_btn):
 
     # determine dropping of features based users' input and LLM: if user provided input will only drop features based on the user input;
     # if this user did not provide input, will drop features based on LLM.
-    processed_data, llm_dropped_features = user_llm_drop_feature(df=data, user_drop=global_state.user_data.user_drop_features,
-                                                                 args=args, keep_features=global_state.user_data.selected_variables)
-
-    # drop features that are greater than 0.5 missing
-    processed_data = drop_feature(df=processed_data, keep_features=global_state.user_data.selected_variables)
+    global_state = user_llm_select_feature(global_state = global_state, args=args)
 
     if not global_state.user_data.user_drop_features:
         # Inform user of dropped features based on LLM
-        chat_history.append((f"We will drop features whose missingness ratio is greater than 0.5 and {llm_dropped_features} due to relatively large missingness ratio.",None))
+        chat_history.append((f"We will drop features whose missingness ratio is greater than 0.5 and {global_state.user_data.llm_drop_features} due to relatively large missingness ratio.",None))
         yield chat_history, download_btn
 
     # Step 3: correlation checking
-    processed_data, drop_feature_high_correlation = correlation_check(df=processed_data, keep_features=global_state.user_data.selected_variables)
+    global_state = correlation_check(global_state)
 
-    if drop_feature_high_correlation:
-        chat_history.append((f"We will drop {drop_feature_high_correlation} due to the fact that they are highly correlated with other features.",None))
-
-    # Finish user query based pre-processing
-    if col_domain_index is not None:
-        processed_data['domain_index'] = col_domain_index
-
-    # Update global stat
-    global_state.user_data.processed_data = processed_data
-
+    if global_state.user_data.high_corr_drop_features:
+        chat_history.append((f"We will drop {global_state.user_data.high_corr_drop_features} due to the fact that they are highly correlated with other features.",None))
 
 
 

@@ -16,11 +16,15 @@ class UserData:
     knowledge_docs: Optional[str] = None
     output_report_dir: Optional[str] = None
     output_graph_dir: Optional[str] = None
-    selected_variables: Optional[object] = None
+    selected_features: Optional[object] = None
+    important_features: Optional[object] = None
     user_drop_features: Optional[object] = None
+    llm_drop_features: Optional[object] = None
+    high_corr_drop_features: Optional[object] = None
 
 @dataclass
 class Statistics:
+    miss_ratio: List[Dict] = field(default_factory=list)
     linearity: Optional[bool] = None
     gaussian_error: Optional[bool] = None
     missingness: Optional[bool] = None
