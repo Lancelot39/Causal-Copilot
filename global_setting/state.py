@@ -23,6 +23,13 @@ class UserData:
     user_drop_features: Optional[object] = None
     llm_drop_features: Optional[object] = None
     high_corr_drop_features: Optional[object] = None
+    selected_features: Optional[object] = None
+    important_features: Optional[object] = None
+    visual_selected_features: Optional[object] = None
+    system_drop_features: Optional[object] = None
+    user_drop_features: Optional[object] = None
+    llm_drop_features: Optional[object] = None
+    high_corr_drop_features: Optional[object] = None
 
 @dataclass
 class Statistics:
@@ -31,8 +38,6 @@ class Statistics:
     missingness: Optional[bool] = None
     sample_size: Optional[int] = None
     feature_number: Optional[int] = None
-    time_series: Optional[bool] = False
-    time_lag: List[Dict] = field(default_factory=list)
     time_series: Optional[bool] = False
     time_lag: List[Dict] = field(default_factory=list)
     boot_num: int = 100
@@ -75,12 +80,10 @@ class Results:
     revised_metrics: Optional[Dict] = None
     bootstrap_probability: Optional[np.ndarray] = None
     bootstrap_check_dict: Optional[Dict] = None
-    bootstrap_check_dict: Optional[Dict] = None
     llm_errors: List[Dict] = field(default_factory=list)
     bootstrap_errors: List[Dict] = field(default_factory=list)
     eda_result: Optional[Dict] = None
     prior_knowledge: Optional[object] = None
-    refutation_analysis: Optional[object] = None
     refutation_analysis: Optional[object] = None
 
 @dataclass

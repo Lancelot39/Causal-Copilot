@@ -187,6 +187,175 @@ def time_series_lag_est(df: pd.DataFrame, nlags = 50):
 ########################################################################################################################
 
 def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
+from statsmodels.tsa.stattools import acf, pacf
+import json
+from openai import OpenAI
+
+# new package
+from fancyimpute import IterativeImputer
+
+
+# Correlation checking #################################################################################################
+def correlation_check(global_state):
+    df = global_state.user_data.raw_data[global_state.user_data.selected_features]
+    m = df.shape[1]
+
+    correlation_matrix = df.corr()
+    drop_feature = []
+
+    for i in range(m):
+        for j in range(i + 1, m):
+            corr_value = correlation_matrix.iloc[i, j]
+            if abs(corr_value) > 0.9:
+                var1 = df.columns[i]
+                var2 = df.columns[j]
+
+                if var1 not in global_state.user_data.important_features:
+                    drop_feature.append(var1)
+                elif var2 not in global_state.user_data.important_features:
+                    drop_feature.append(var2)
+                else:
+                    continue
+
+    # Update global state
+    global_state.user_data.high_corr_drop_features = drop_feature
+    global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if
+                                                element not in drop_feature]
+
+    global_state.user_data.processed_data = global_state.user_data.raw_data[global_state.user_data.selected_features]
+
+    return global_state
+
+
+# Missingness Checking #################################################################################################
+def missing_ratio_table(global_state):
+
+    data = global_state.user_data.raw_data
+
+    if global_state.statistics.heterogeneous and global_state.statistics.domain_index is not None:
+        # Drop the domain index column from the data
+        domain_index = global_state.statistics.domain_index
+        col_domain_index = data[domain_index]
+        data = data.drop(columns=[domain_index])
+
+    # Step 0: Initialize selected feature
+    global_state.user_data.selected_features = list(data.columns)
+
+    missing_vals = [np.nan]
+    missing_mask = data.isin(missing_vals)
+
+    ratio_record = {}
+    for column in missing_mask:
+        ratio_record[column] = missing_mask[column].mean()
+
+    global_state.statistics.miss_ratio = ratio_record
+
+    ratio_record_df = pd.DataFrame(list(ratio_record.items()), columns=['Feature', 'Missingness Ratio'])
+
+    plt.figure(figsize=(4, 2))
+    plt.axis('off')
+    table = plt.table(cellText=ratio_record_df.values, colLabels=ratio_record_df.columns, loc='center', cellLoc='center')
+
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.auto_set_column_width(col=list(range(len(ratio_record_df.columns))))
+
+    plt.savefig("missing_ratios_table.png", bbox_inches='tight', dpi=300)
+
+    save_path = global_state.user_data.output_graph_dir
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    print(f"Saving missingness ratio table to {os.path.join(save_path, 'missing_ratios_table.jpg')}")
+    plt.savefig(os.path.join(save_path, 'missing_ratios_table.jpg'))
+
+    if sum(ratio_record.values()) == 0:
+        global_state.statistics.missingness = False
+    else:
+        global_state.statistics.missingness = True
+
+    return global_state
+
+
+def user_llm_select_feature(global_state, args):
+    # Step 1: Drop features whose ratio is greater than 0.5
+    ratio_greater_05 = [k for k, v in global_state.statistics.miss_ratio.items() if v >= 0.5]
+    ratio_greater_05_drop = [element for element in ratio_greater_05 if element not in global_state.user_data.important_features] # keep important features
+
+    # Update global state
+    global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if element not in ratio_greater_05_drop]
+
+    # Step 2: Determine selected features for missingness ratio 0.3~0.5
+    user_drop = global_state.user_data.user_drop_features
+    if user_drop:
+        global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if element not in user_drop]
+        # df_dropped = df.drop(columns=user_drop)
+        # llm_drop = []
+    else:
+        # LLM determine dropped features
+        ratio_between_05_03 = [k for k, v in global_state.statistics.miss_ratio.items() if 0.5 > v >= 0.3]
+
+        client = OpenAI(organization=args.organization, project=args.project, api_key=args.apikey)
+        prompt = (f'Given the list of features of a dataset: {global_state.user_data.selected_features} \n\n,'
+                  f'which features listed below do you think may be potential confounders: \n\n {ratio_between_05_03}?'
+                  'Your response should be given in a list format, and the name of features should be exactly the same as the feature names I gave.'
+                  'You only need to give me the list of features, no other justifications are needed. If there are no features you think should be potential confounder,'
+                  'just give me an empty list.')
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        llm_select_feature = response.choices[0].message.content
+        llm_select_feature = llm_select_feature.replace('```json', '').replace('```', '').strip()
+
+        llm_drop_feature = [element for element in ratio_between_05_03 if element not in llm_select_feature]
+        llm_drop_keep_important = [element for element in llm_drop_feature if element not in global_state.user_data.important_features]  # keep important features
+
+        global_state.user_data.llm_drop_features = llm_drop_keep_important
+        global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if
+                                                     element not in llm_drop_keep_important]
+
+        return global_state
+
+
+
+# TIME SERIES PROCESSING ###############################################################################################
+
+def series_lag_est(time_series, nlags = 50):
+
+    autocorr, confint = acf(time_series, nlags=nlags, fft=True, alpha=0.05)
+    lag_significant = []
+
+    for lag in range(1, len(autocorr)):
+        if autocorr[lag] > confint[lag][1] or autocorr[lag] < confint[lag][0]:
+            lag_significant = lag
+
+    if len(lag_significant) != 0:
+        est_lag = max(lag_significant)
+    else:
+        est_lag = np.argmax(autocorr[1:]) + 1
+
+    return est_lag
+
+
+def time_series_lag_est(df: pd.DataFrame, nlags = 50):
+    est_lags = {}
+
+    for i in range(df.shape[1]):
+        est_lags[df.columns[i]] = series_lag_est(df.iloc[:, i], nlags=nlags)
+
+    return est_lags
+
+# lags = time_series_lag_est(ts_imputed)
+# print(lags)
+
+########################################################################################################################
+
+def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
     '''
     :param df: Dataset in Panda DataFrame format.
     :param ratio: threshold to remove column.
@@ -236,7 +405,6 @@ def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
         clean_df[column] = clean_df[column].cat.codes.replace(-1, np.nan) # Keep NaN while converting    
 
     return column_type, overall_type
-    return column_type, overall_type
 
 # clean_data, miss_res, each_type, dataset_type = data_preprocess(df = df, ratio = 0.5, ts = False)
 # print(clean_data)
@@ -265,10 +433,6 @@ def imputation (df: pd.DataFrame, column_type: dict, ts: bool = False):
             df[column] = imputer_cat.fit_transform(df[[column]]).ravel()
 
     if ts:
-        imputer = IterativeImputer(max_iter=10, random_state=0)
-        imputed_data = imputer.fit_transform(df)
-        df = pd.DataFrame(imputed_data, columns=df.columns)
-        # df = df.ffill()
         imputer = IterativeImputer(max_iter=10, random_state=0)
         imputed_data = imputer.fit_transform(df)
         df = pd.DataFrame(imputed_data, columns=df.columns)
@@ -519,9 +683,6 @@ def stationary_check(df: pd.DataFrame, max_test: int = 1000, alpha: float = 0.1)
 
 
 
-
-
-
 def stat_info_collection(global_state):
     '''
     :param data: given tabular data in pandas dataFrame format.
@@ -531,7 +692,6 @@ def stat_info_collection(global_state):
     if global_state.statistics.heterogeneous and global_state.statistics.domain_index is not None:
         # Drop the domain index column from the data
         domain_index = global_state.statistics.domain_index
-        col_domain_index = global_state.user_data.raw_data[domain_index]
         col_domain_index = global_state.user_data.raw_data[domain_index]
     else:
         col_domain_index = None
@@ -543,15 +703,7 @@ def stat_info_collection(global_state):
     global_state.statistics.sample_size = n
     global_state.statistics.feature_number = m
 
-    data = global_state.user_data.raw_data[global_state.user_data.selected_features]
-    n, m = data.shape
-
-    # Update global state
-    global_state.statistics.sample_size = n
-    global_state.statistics.feature_number = m
-
     # Data pre-processing
-    each_type, dataset_type = data_preprocess(clean_df = data, ts=global_state.statistics.time_series)
     each_type, dataset_type = data_preprocess(clean_df = data, ts=global_state.statistics.time_series)
 
     # Update global state
@@ -560,9 +712,7 @@ def stat_info_collection(global_state):
     # Imputation
     if global_state.statistics.missingness:
         imputed_data = imputation(df=data, column_type=each_type, ts=global_state.statistics.time_series)
-        imputed_data = imputation(df=data, column_type=each_type, ts=global_state.statistics.time_series)
     else:
-        imputed_data = data
         imputed_data = data
 
     # Check assumption for continuous data
@@ -592,8 +742,8 @@ def stat_info_collection(global_state):
 
         stationary_res = stationary_check(df=imputed_data, max_test=global_state.statistics.num_test, alpha=global_state.statistics.alpha)
         global_state.statistics.stationary = stationary_res["Stationary"]
-        if global_state.statistics.time_lag is None:
-            global_state.statistics.time_lag =time_series_lag_est(imputed_data, nlags = 50)
+
+        global_state.statistics.time_lag =time_series_lag_est(imputed_data, nlags = 50)
 
     # merge the domain index column back to the data if it exists
     if col_domain_index is not None:
@@ -633,20 +783,6 @@ def convert_stat_info_to_text(statistics):
         
     return text
 
-def sparsity_check(df: pd.DataFrame):
-    missing_vals = [np.nan]
-    missing_mask = df.isin(missing_vals)
-
-    ratio_record = {}
-    for column in missing_mask:
-        ratio_record[column] = missing_mask[column].mean()
-
-    # LLM determine dropped features
-    sparsity_dict = {'high': [k for k, v in ratio_record.items() if v >= 0.5], # ratio > 0.5
-                    'moderate': [k for k, v in ratio_record.items() if 0.5 > v >= 0.3], # 0.5 > ratio >= 0.3
-                    'low': [k for k, v in ratio_record.items() if 0 < v < 0.3] # ratio < 0.3
-                    }
-    return sparsity_dict
 def sparsity_check(df: pd.DataFrame):
     missing_vals = [np.nan]
     missing_mask = df.isin(missing_vals)
