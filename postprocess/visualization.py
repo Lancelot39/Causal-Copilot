@@ -19,7 +19,7 @@ class Visualization(object):
         :param threshold: threshold for the bootstrap probability to accept an edge.
         """
         self.global_state = global_state
-        self.data = global_state.user_data.raw_data
+        self.data = global_state.user_data.processed_data
         self.bootstrap_prob = global_state.results.bootstrap_probability
         self.save_dir = global_state.user_data.output_graph_dir
         self.threshold = threshold

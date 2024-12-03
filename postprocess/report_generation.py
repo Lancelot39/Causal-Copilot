@@ -7,7 +7,6 @@ from plumbum import local
 import networkx as nx
 from postprocess.visualization import Visualization, convert_to_edges
 from postprocess.judge_functions import edges_to_relationship
-#from postprocess.judge_functions import graph_effect_prompts
 import PyPDF2
 import ast
 
@@ -73,7 +72,7 @@ class Report_generation(object):
         self.statistics_desc = global_state.statistics.description
         self.knowledge_docs = global_state.user_data.knowledge_docs[0]
         # Data info
-        self.data = global_state.user_data.raw_data
+        self.data = global_state.user_data.processed_data
         self.statistics = global_state.statistics
         # EDA info
         self.eda_result = global_state.results.eda
@@ -465,11 +464,12 @@ Background about this dataset: {self.knowledge_docs}
             
             Firstly, we use the Bootstrap technique to get how much confidence we have on each edge in the initial graph.
             If the confidence probability of a certain edge is greater than 95% and it is not in the initial graph, we force it.
-            Otherwise, if the confidence probability is smaller than 5% and it exists in the initial graph, we change it to the edge type with the highest probability.
+            Otherwise, if the confidence probability is smaller than 5% and it exists in the initial graph, we forbid it.
+            For those moderate confidence edges, we utilize LLM to double check their existence and direction according to its knowledge repository.
             
-            After that, We utilize LLM to help us prune edges and determine the direction of undirected edges according to its knowledge repository.
-            In this step LLM can use background knowledge to add some edges that are neglected by Statistical Methods.
+            In this step LLM can use background knowledge to add some edges that are neglected by Statistical Methods, delete and redirect some unreasonable relationships.
             Voting techniques are used to enhance the robustness of results given by LLM, and the results given by LLM should not change results given by Bootstrap.
+            Finally, we use Kernel-based Independence Test to remove redundant edges added by LLM hallucination.
 
             By integrating insights from both of Bootsratp and LLM to refine the causal graph, we can achieve improvements in graph's accuracy and robustness.
             """
@@ -492,10 +492,10 @@ Background about this dataset: {self.knowledge_docs}
         The following text describes the causal relationship among variables:
         {relation_text}
         You are an expert in the causal discovery field and are familiar with background knowledge of these variables: {variables.tolist()}
-        1. Please write one paragraph to describe the causal relationship, do not include any lists, subtitles, etc.
+        1. Please write one paragraph to describe the causal relationship, list your analysis as bullet points clearly.
         2. If variable names have meanings, please integrate background knowledge of these variables in the causal relationship analysis.
         Please use variable names {variables[0]}, {variables[1]}, ... in your description.
-        4. Do not include any Greek Letters, Please change any Greek Letter into Math Mode, for example, you should change γ into $\gamma$
+        3. Do not include any Greek Letters, Please change any Greek Letter into Math Mode, for example, you should change γ into $\gamma$
         
         For example:
         The result graph shows the causal relationship among variables clearly. The {variables[1]} causes the {variables[0]}, ...
@@ -512,24 +512,30 @@ Background about this dataset: {self.knowledge_docs}
         #print('graph effect: ',response_doc)
         return response_doc
 
-    def llm_direction_prompts(self):
-        import ast 
-        reason_json = self.global_state.results.llm_directions
-        if len(reason_json) == 0:
-            return None
-        prompts = '\\begin{itemize}\n'
-        for key in reason_json:
-            tuple = ast.literal_eval(key)
-            reason = reason_json[key]
-            pair = f'{tuple[0]} $\\rightarrow$ {tuple[1]}'
-            
-            block = f"""
-            \item \\textbf{pair}: {reason}
+    def list_conversion(self, text):
+        # Split the text into lines
+        lines = text.strip().split('\n')
+        latex_lines = []
+        
+        # Process each line
+        for line in lines:
+            line = line.strip()
+            if line.startswith('-') or line.startswith('*') or line.startswith('+'):
+                # Convert bullet points to LaTeX itemize
+                if len(latex_lines) > 1:  # Not the first list item
+                    latex_lines.append(r"  \item " + line[2:].strip())
+                else:  # Starting a new itemize list
+                    latex_lines.append(r"\begin{itemize}")
+                    latex_lines.append(r"  \item " + line[2:].strip())
+            else:
+                # If it's a regular line, add it as is
+                latex_lines.append(line)
+        # Close any open itemize
+        if len(latex_lines) > 1:
+            latex_lines.append(r"\end{itemize}")
+        
+        return "\n".join(latex_lines)
 
-            """
-            prompts += block
-    
-        return prompts + '\end{itemize}'
     
     def graph_revise_prompts(self):
         repsonse = f"""
@@ -571,7 +577,7 @@ Background about this dataset: {self.knowledge_docs}
         llm_direction_reason = direct_record  
         if llm_direction_reason!={} and llm_direction_reason is not None:
             repsonse += f"""
-                The following are directions determined by the LLM:
+                The following are directions confirmed by the LLM:
                 \\begin{{itemize}}
                 """
             for item in llm_direction_reason.values():
@@ -593,13 +599,14 @@ Background about this dataset: {self.knowledge_docs}
         return repsonse
     
     def confidence_graph_prompts(self):
+        ### generate graph layout ###
         name_map = {'certain_edges': 'Directed Edge', #(->)
                     'uncertain_edges': 'Undirected Edge', #(-)
                     'bi_edges': 'Bi-Directed Edge', #(<->)
                     'half_edges': 'Non-Ancestor Edge', #(o->)
                     'non_edges': 'No D-Seperation Edge', #(o-o)
                     'non_existence':'No Edge'}
-        graph_prompt = """
+        graph_text = """
         \\begin{figure}[H]
             \centering
 
@@ -610,7 +617,7 @@ Background about this dataset: {self.knowledge_docs}
         for key in bootstrap_dict.keys():
             graph_path = f'{self.visual_dir}/{key}_confidence_heatmap.jpg'
             caption = f'{name_map[key]}'
-            graph_prompt += f"""
+            graph_text += f"""
             \\begin{{subfigure}}{{{length}\\textwidth}}
                     \centering
                     \includegraphics[width=\linewidth]{graph_path}
@@ -618,10 +625,12 @@ Background about this dataset: {self.knowledge_docs}
                     \caption{caption}
                 \end{{subfigure}}"""
         
-        graph_prompt += """
+        graph_text += """
         \caption{Confidence Heatmap of Different Edges}
-        \end{figure}        
+        \end{figure}    
+
         """
+        ### Generate text illustration
         text_map = {'certain_edges': 'directed edge ($->$)', #(->)
                     'uncertain_edges': 'undirected edge ($-$)', #(-)
                     'bi_edges': 'edge with hidden confounders ($<->$)', #(<->)
@@ -636,10 +645,23 @@ Background about this dataset: {self.knowledge_docs}
             k_zero= k_zero.replace("_", "-")
             graph_text += f"The heatmap of {k_zero} is not shown because probabilities of all edges are 0. "
     
-        graph_prompt += graph_text
-        graph_prompt += """Based on the confidence probability heatmap and background knowledge, we can analyze the reliability of our graph."""
-        
-        return graph_prompt
+        graph_text += """Based on the confidence probability heatmap, we have edges with high, moderate, and low edges.
+        \\begin{{itemize}}"""
+        high_prob_pairs = self.global_state.results.bootstrap_check_dict['high_prob_edges']['exist']+self.global_state.results.bootstrap_check_dict['high_prob_edges']['non-exist']
+        middle_prob_pairs = self.global_state.results.bootstrap_check_dict['middle_prob_edges']['exist']+self.global_state.results.bootstrap_check_dict['middle_prob_edges']['non-exist']
+        middle_prob_pairs = list(set(tuple(sorted((i, j))) for (i, j) in middle_prob_pairs))
+        low_prob_pairs = self.global_state.results.bootstrap_check_dict['low_prob_edges']['exist']
+        if high_prob_pairs != []:
+            graph_prompt += "\n \item \\textbf{{High Confidence Edges}}: "
+            graph_prompt += ', '.join(f'{self.data.columns[idx_j]} $\\rightarrow$ {self.data.columns[idx_i]}' for idx_i, idx_j in high_prob_pairs)
+        if middle_prob_pairs != []:
+            graph_prompt += "\n \item \\textbf{{Middle Confidence Edges}}: "
+            graph_prompt += ', '.join(f'{self.data.columns[idx_j]} - {self.data.columns[idx_i]}' for idx_i, idx_j in middle_prob_pairs)
+        if low_prob_pairs != []:
+            graph_prompt += "\n \item \\textbf{{Low Confidence Edges}}: "
+            graph_prompt += ', '.join(f'{self.data.columns[idx_j]} $\\rightarrow$ {self.data.columns[idx_i]}' for idx_i, idx_j in low_prob_pairs)
+        graph_prompt += "\n \end{{itemize}}"
+        return graph_text
         
 
     def confidence_analysis_prompts(self):
@@ -680,6 +702,17 @@ Background about this dataset: {self.knowledge_docs}
         #print('reliability analysis:',response_doc)
         return response_doc
 
+    def refutation_analysis_prompts(self):
+        text = f"""
+                \\begin{{figure}}[H]
+                    \centering
+                    \includegraphics[height=0.3\\textheight]{{{self.global_state.user_data.output_graph_dir}/refutation_graph.jpg}}
+                    \caption{{Refutation Graph}}
+                \end{{figure}} \n
+                """
+        text += self.global_state.results.refutation_analysis
+        return text 
+    
     def abstract_prompt(self):
         response = self.client.chat.completions.create(
                 model="gpt-4o-mini",
@@ -839,7 +872,7 @@ Background about this dataset: {self.knowledge_docs}
             self.discover_process = self.procedure_prompt()
             self.preprocess_plot = self.preprocess_plot_prompt()
             # Graph effect info
-            self.graph_prompt = self.global_state.logging.graph_conversion['initial_graph_analysis']
+            self.graph_prompt = self.list_conversion(self.global_state.logging.graph_conversion['initial_graph_analysis'])
             # Graph Revise info
             if self.data_mode == 'real':
                 self.revise_process = self.graph_revise_prompts()
@@ -848,6 +881,7 @@ Background about this dataset: {self.knowledge_docs}
             # Graph Reliability info
             self.reliability_prompt = self.confidence_analysis_prompts()
             self.confidence_graph_prompt = self.confidence_graph_prompts()
+            self.refutation_analysis = self.refutation_analysis_prompts()
             self.abstract = self.abstract_prompt()
             
 
@@ -876,7 +910,8 @@ Background about this dataset: {self.knowledge_docs}
                 "[PREPROCESS_GRAPH]": self.preprocess_plot or "",
                 "[REVISE_PROCESS]": self.revise_process.replace("&", r"\&") or "",
                 "[RELIABILITY_ANALYSIS]": self.reliability_prompt.replace("&", r"\&") or "",
-                "[CONFIDENCE_GRAPH]": self.confidence_graph_prompt or ""
+                "[CONFIDENCE_GRAPH]": self.confidence_graph_prompt or "",
+                "[REFUTATION_GRAPH]": self.resutation_analysis or ""
             }
             replacement2 = {
                 "[TITLE]": self.title or "",
@@ -940,9 +975,9 @@ Background about this dataset: {self.knowledge_docs}
                      You are a helpful debugging assistant, help me to fix bugs in the latex report I will give you. 
                      1. Please fix the LaTeX errors guided by the output of `chktek`:
                         {check_output}.
-                     2. Make the minimal fix required and do not remove or change any packages.
-                     3. If some text is wrong you can delete the sentence
-                     4. Only include your latex content in the response which can be rendered to pdf directly. Don't include other things like '''latex '''
+                    ** YOU SHOULD **
+                     1. Make the minimal fix required and do not change any other contents!
+                     2. Only include your latex content in the response which can be rendered to pdf directly. Don't include other things like '''latex '''
                      """},
                     {"role": "user", "content": tex_content}
                 ]

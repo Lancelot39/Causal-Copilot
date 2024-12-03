@@ -10,8 +10,7 @@ class EDA(object):
         :param global_state: a dict containing global variables and information
         """
         self.global_state = global_state
-        self.data = global_state.user_data.raw_data
-        self.processed_data = global_state.user_data.processed_data
+        self.data = global_state.user_data.processed_data
         self.save_dir = global_state.user_data.output_graph_dir
         # limit the number of features contained
         if self.data.shape[1] > 10:

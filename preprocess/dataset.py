@@ -90,7 +90,7 @@ def knowledge_info(args, global_state):
     from openai import OpenAI
     client = OpenAI(organization=args.organization, project=args.project, api_key=args.apikey)
 
-    data = global_state.user_data.raw_data
+    data = global_state.user_data.processed_data
     table_name = args.data_file
     table_columns = '\t'.join(data.columns._data)
     prompt = ("I will conduct causal discovery on the Tabular Dataset %s containing the following Columns: \n\n"

@@ -37,7 +37,7 @@ class Judge(object):
         self.global_state = global_state
         self.args = args
 
-    def quality_judge(self, data, full_graph, algorithm, hyperparameters, knowledge_docs, boot_num):
+    def quality_judge(self, data, full_graph, algorithm, hyperparameters, knowledge_docs, boot_num, prompt_type, voting_num):
         '''
         :param data: Given Tabular Data in Pandas DataFrame format
         :param full_graph: An adjacent matrix in Numpy Ndarray format -
@@ -51,7 +51,7 @@ class Judge(object):
                  revised causal graph based on errors.
         '''
 
-        from postprocess.judge_functions import bootstrap, llm_evaluation, bootstrap_recommend, llm_evaluation_new
+        from postprocess.judge_functions import bootstrap, llm_evaluation, bootstrap_recommend, llm_evaluation_new, kci_pruning
 
         # Statistics Perspective: Bootstrapping to get probability of edges using the selected algorithm.
         edge_recom, boot_probability = bootstrap(data=data, full_graph=full_graph, algorithm=algorithm, hyperparameters=hyperparameters,
@@ -110,19 +110,23 @@ class Judge(object):
         #         else:
         #             revised_graph[i, j] = revised_graph[j, i] = 0
         ########################
+
+        ############ Edge Pruning with LLM ############
         from postprocess.visualization import convert_to_edges
-        revised_edges_dict = convert_to_edges(self.global_state.algorithm.selected_algorithm, self.global_state.user_data.raw_data.columns, revised_graph)
+        revised_edges_dict = convert_to_edges(self.global_state.algorithm.selected_algorithm, self.global_state.user_data.processed_data.columns, revised_graph)
         direct_dict, forbid_dict = llm_evaluation_new(data, self.args, revised_edges_dict, 
                                                       self.global_state.results.bootstrap_probability, bootstrap_check_dict, 
-                                                      ['base'], 1)
-        ############ Edge Pruning with LLM ############
-        print('LLM Pruning Decisioning')
-        #direct_dict, forbid_dict = llm_evaluation(data, self.args, self.global_state.results.raw_edges, self.global_state.results.bootstrap_probability)
+                                                      prompt_type, voting_num)
         llm_pruning_record={
             'direct_record': direct_dict,
             'forbid_record': forbid_dict
         }
-        print(llm_pruning_record)
+        ##########
+        with open('postprocess/test_result/Auto_mpg/results.txt', 'a') as file:
+            # Write each result on a new line
+            file.write(f"{llm_pruning_record}\n")
+        ##########
+        
         ####construct prior knowledge and revise graph according to LLM#########
         for direct_pair in direct_dict:
             j, i = direct_pair[0], direct_pair[1]
@@ -141,10 +145,18 @@ class Judge(object):
                 revised_graph[i, j] = revised_graph[j, i] = 0
         ########################
 
-        return {}, bootstrap_pruning_record, boot_probability, llm_pruning_record, revised_graph, bk
+        ############ Edge Pruning with KCI ############
+        kci_forbid_dict = kci_pruning(self.global_state.user_data.processed_data, revised_graph)
+        print('kci_forbid_dict', kci_forbid_dict)
+        for idx_j, idx_i in kci_forbid_dict.keys():
+            revised_graph[idx_i, idx_j] = revised_graph[idx_j, idx_i] = 0
+        direct_dict_filtered = {key: value for key, value in direct_dict.items() if key not in kci_forbid_dict}
+        print('direct_dict_filtered', direct_dict_filtered)
+
+        return {}, bootstrap_check_dict, boot_probability, llm_pruning_record, revised_graph, bk
 
 
-    def forward(self, global_state):
+    def forward(self, global_state, prompt_type, voting_num):
         
         if self.global_state.algorithm.selected_algorithm in ['DirectLiNGAM', 'ICALiNGAM', 'NOTEARS']:
             adj_matrix = global_state.results.converted_graph
@@ -162,7 +174,7 @@ class Judge(object):
 
         
         (conversation,
-         global_state.results.bootstrap_errors, # bootstrap_pruning_record
+         global_state.results.bootstrap_check_dict, 
          global_state.results.bootstrap_probability,
          global_state.results.llm_errors, # llm_pruning_record
          global_state.results.revised_graph,
@@ -173,7 +185,9 @@ class Judge(object):
         algorithm=global_state.algorithm.selected_algorithm,
         hyperparameters=global_state.algorithm.algorithm_arguments,
         knowledge_docs=global_state.user_data.knowledge_docs,
-        boot_num=global_state.statistics.boot_num
+        boot_num=global_state.statistics.boot_num,
+        prompt_type=prompt_type, 
+        voting_num=voting_num
         )
         global_state.logging.knowledge_conversation.append(conversation)
         return global_state
@@ -183,7 +197,7 @@ class Judge(object):
         from postprocess.visualization import convert_to_edges
         bk = BackgroundKnowledge()
         revised_graph = self.global_state.results.revised_graph.copy()
-        variables = self.global_state.user_data.raw_data.columns
+        variables = self.global_state.user_data.processed_data.columns
         # Add and Orientation
         for add_pair in user_revise_dict['add_edges']+user_revise_dict['orient_edges']:
             bk.add_required_by_pattern(add_pair[0], add_pair[1])
@@ -202,6 +216,28 @@ class Judge(object):
         self.global_state.results.revised_edges = convert_to_edges(self.global_state.algorithm.selected_algorithm, 
                                                                    variables, revised_graph)
         return self.global_state
+
+    def graph_refutation(self, global_state):
+        import networkx as nx
+        data = global_state.user_data.processed_data
+        revised_graph = global_state.results.revised_graph
+        savepath = global_state.user_data.output_graph_dir
+        revised_G = nx.from_numpy_array((revised_graph.T == 1).astype(int), create_using=nx.DiGraph)
+        node_map = {i: data.columns[i] for i in range(data.shape[1])}
+        revised_G = nx.relabel_nodes(revised_G, node_map)
+        from dowhy.gcm.falsify import falsify_graph
+        # Run evaluation and plot the result using `plot=True`
+        result = falsify_graph(revised_G, data,  n_permutations=10, plot_histogram=True, suggestions=False,
+                            plot_kwargs={'savepath':f'{savepath}/refutation_graph.jpg',
+                                            'display': False})
+        import re
+        matches = re.findall(r'\|([^|]*)\|', str(result))[1:]
+        # Clean up the matches to remove extra whitespace
+        cleaned_matches = [match.strip() for match in matches]
+        # Concatenate all matches with a space
+        result = ' '.join(cleaned_matches)
+
+        return result  
 
     def evaluation(self, global_state, revise=False):
         '''
