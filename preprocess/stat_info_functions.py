@@ -29,7 +29,6 @@ from fancyimpute import IterativeImputer
 # Correlation checking #################################################################################################
 def correlation_check(global_state):
     df = global_state.user_data.raw_data[global_state.user_data.selected_features]
-    df = df.select_dtypes(include=['number'])
     m = df.shape[1]
 
     correlation_matrix = df.corr()
@@ -240,6 +239,7 @@ def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
         clean_df[column] = clean_df[column].cat.codes.replace(-1, np.nan) # Keep NaN while converting    
 
     return column_type, overall_type
+    return column_type, overall_type
 
 # clean_data, miss_res, each_type, dataset_type = data_preprocess(df = df, ratio = 0.5, ts = False)
 # print(clean_data)
@@ -268,6 +268,10 @@ def imputation (df: pd.DataFrame, column_type: dict, ts: bool = False):
             df[column] = imputer_cat.fit_transform(df[[column]]).ravel()
 
     if ts:
+        imputer = IterativeImputer(max_iter=10, random_state=0)
+        imputed_data = imputer.fit_transform(df)
+        df = pd.DataFrame(imputed_data, columns=df.columns)
+        # df = df.ffill()
         imputer = IterativeImputer(max_iter=10, random_state=0)
         imputed_data = imputer.fit_transform(df)
         df = pd.DataFrame(imputed_data, columns=df.columns)
@@ -518,6 +522,9 @@ def stationary_check(df: pd.DataFrame, max_test: int = 1000, alpha: float = 0.1)
 
 
 
+
+
+
 def stat_info_collection(global_state):
     '''
     :param data: given tabular data in pandas dataFrame format.
@@ -527,6 +534,7 @@ def stat_info_collection(global_state):
     if global_state.statistics.heterogeneous and global_state.statistics.domain_index is not None:
         # Drop the domain index column from the data
         domain_index = global_state.statistics.domain_index
+        col_domain_index = global_state.user_data.raw_data[domain_index]
         col_domain_index = global_state.user_data.raw_data[domain_index]
     else:
         col_domain_index = None
@@ -538,7 +546,15 @@ def stat_info_collection(global_state):
     global_state.statistics.sample_size = n
     global_state.statistics.feature_number = m
 
+    data = global_state.user_data.raw_data[global_state.user_data.selected_features]
+    n, m = data.shape
+
+    # Update global state
+    global_state.statistics.sample_size = n
+    global_state.statistics.feature_number = m
+
     # Data pre-processing
+    each_type, dataset_type = data_preprocess(clean_df = data, ts=global_state.statistics.time_series)
     each_type, dataset_type = data_preprocess(clean_df = data, ts=global_state.statistics.time_series)
 
     # Update global state
@@ -547,7 +563,9 @@ def stat_info_collection(global_state):
     # Imputation
     if global_state.statistics.missingness:
         imputed_data = imputation(df=data, column_type=each_type, ts=global_state.statistics.time_series)
+        imputed_data = imputation(df=data, column_type=each_type, ts=global_state.statistics.time_series)
     else:
+        imputed_data = data
         imputed_data = data
 
     # Check assumption for continuous data
@@ -577,8 +595,8 @@ def stat_info_collection(global_state):
 
         stationary_res = stationary_check(df=imputed_data, max_test=global_state.statistics.num_test, alpha=global_state.statistics.alpha)
         global_state.statistics.stationary = stationary_res["Stationary"]
-        if global_state.statistics.time_lag is None:
-            global_state.statistics.time_lag =time_series_lag_est(imputed_data, nlags = 50)
+
+        global_state.statistics.time_lag =time_series_lag_est(imputed_data, nlags = 50)
 
     # merge the domain index column back to the data if it exists
     if col_domain_index is not None:
@@ -618,6 +636,20 @@ def convert_stat_info_to_text(statistics):
         
     return text
 
+def sparsity_check(df: pd.DataFrame):
+    missing_vals = [np.nan]
+    missing_mask = df.isin(missing_vals)
+
+    ratio_record = {}
+    for column in missing_mask:
+        ratio_record[column] = missing_mask[column].mean()
+
+    # LLM determine dropped features
+    sparsity_dict = {'high': [k for k, v in ratio_record.items() if v >= 0.5], # ratio > 0.5
+                    'moderate': [k for k, v in ratio_record.items() if 0.5 > v >= 0.3], # 0.5 > ratio >= 0.3
+                    'low': [k for k, v in ratio_record.items() if 0 < v < 0.3] # ratio < 0.3
+                    }
+    return sparsity_dict
 def sparsity_check(df: pd.DataFrame):
     missing_vals = [np.nan]
     missing_mask = df.isin(missing_vals)
