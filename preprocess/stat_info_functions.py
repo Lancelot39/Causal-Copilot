@@ -21,43 +21,10 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import acf, pacf
 import json
 from openai import OpenAI
+# from Gradio.demo import global_state
 
 # new package
-from fancyimpute import IterativeImputer
-
-from Gradio.demo import global_state
-
-
-# Correlation checking #################################################################################################
-def correlation_check(global_state):
-    df = global_state.user_data.raw_data[global_state.user_data.selected_features]
-    m = df.shape[1]
-
-    correlation_matrix = df.corr()
-    drop_feature = []
-
-    for i in range(m):
-        for j in range(i + 1, m):
-            corr_value = correlation_matrix.iloc[i, j]
-            if abs(corr_value) > 0.9:
-                var1 = df.columns[i]
-                var2 = df.columns[j]
-
-                if var1 not in global_state.user_data.important_features:
-                    drop_feature.append(var1)
-                elif var2 not in global_state.user_data.important_features:
-                    drop_feature.append(var2)
-                else:
-                    continue
-
-    # Update global state
-    global_state.user_data.high_corr_drop_features = drop_feature
-    global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if
-                                                element not in drop_feature]
-
-    global_state.user_data.processed_data = global_state.user_data.raw_data[global_state.user_data.selected_features]
-
-    return global_state
+from scipy.interpolate import UnivariateSpline
 
 
 # Missingness Checking #################################################################################################
@@ -155,8 +122,53 @@ def user_llm_select_feature(global_state, args):
         return global_state
 
 
+# Correlation checking #################################################################################################
+def correlation_check(global_state):
+    df = global_state.user_data.raw_data[global_state.user_data.selected_features]
+    m = df.shape[1]
+
+    correlation_matrix = df.corr()
+    drop_feature = []
+
+    for i in range(m):
+        for j in range(i + 1, m):
+            corr_value = correlation_matrix.iloc[i, j]
+            if abs(corr_value) > 0.9:
+                var1 = df.columns[i]
+                var2 = df.columns[j]
+
+                if var1 not in global_state.user_data.important_features:
+                    drop_feature.append(var1)
+                elif var2 not in global_state.user_data.important_features:
+                    drop_feature.append(var2)
+                else:
+                    continue
+
+    # Update global state
+    global_state.user_data.high_corr_drop_features = drop_feature
+    global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if
+                                                element not in drop_feature]
+
+    global_state.user_data.processed_data = global_state.user_data.raw_data[global_state.user_data.selected_features]
+
+    return global_state
 
 # TIME SERIES PROCESSING ###############################################################################################
+def spline_imputation(df: pd.DataFrame):
+    for col in df.columns:
+        x_non_missing = np.array(df.index[df[col].notna()].astype(np.int64) // 10 ** 9)  # convert to time stamp
+        y_non_missing = df[col].dropna().values
+
+        spline = UnivariateSpline(x_non_missing, y_non_missing, s=0)
+
+        x_missing = np.array(df.index[df[col].isna()].astype(np.int64) // 10 ** 9)
+        df.loc[df[col].isna(), col] = spline(x_missing)
+
+    return df
+
+# imput = spline_imputation(data)
+# print(imput)
+
 
 def series_lag_est(time_series, nlags = 50):
 
@@ -262,10 +274,10 @@ def imputation (df: pd.DataFrame, column_type: dict, ts: bool = False):
             df[column] = imputer_cat.fit_transform(df[[column]]).ravel()
 
     if ts:
-        imputer = IterativeImputer(max_iter=10, random_state=0)
-        imputed_data = imputer.fit_transform(df)
-        df = pd.DataFrame(imputed_data, columns=df.columns)
-        # df = df.ffill()
+        # imputer = IterativeImputer(max_iter=10, random_state=0)
+        # imputed_data = imputer.fit_transform(df)
+        # df = pd.DataFrame(imputed_data, columns=df.columns)
+        df = spline_imputation(df)
 
     # Z-score normalization
     scaler = StandardScaler()

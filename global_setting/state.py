@@ -16,11 +16,11 @@ class UserData:
     knowledge_docs: Optional[str] = None
     output_report_dir: Optional[str] = None
     output_graph_dir: Optional[str] = None
-    selected_features: Optional[object] = None
-    important_features: Optional[object] = None
-    user_drop_features: Optional[object] = None
-    llm_drop_features: Optional[object] = None
-    high_corr_drop_features: Optional[object] = None
+    selected_features: Optional[object] = None #  selected features after preprocessing
+    important_features: Optional[object] = None #  features that users are interested in
+    user_drop_features: Optional[object] = None #  features that users would like to drop based on sparsity table
+    llm_drop_features: Optional[object] = None # features that LLM recommended to drop
+    high_corr_drop_features: Optional[object] = None # features dropped due to high correlation
 
 @dataclass
 class Statistics:
@@ -38,8 +38,8 @@ class Statistics:
     heterogeneous: Optional[bool] = None
     domain_index: Optional[str] = None
     description: Optional[str] = None
-    time_series: Optional[bool] = False
-    time_lag: List[Dict] = field(default_factory=list)
+    time_series: Optional[bool] = False # indicator of time-series data
+    time_lag: List[Dict] = field(default_factory=list) # estimated time lags for each feature
     nlags: int = 50
 
 @dataclass
