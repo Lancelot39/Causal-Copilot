@@ -30,8 +30,6 @@ class Statistics:
     missingness: Optional[bool] = None
     sample_size: Optional[int] = None
     feature_number: Optional[int] = None
-    time_series: Optional[bool] = False
-    time_lag: List[Dict] = field(default_factory=list)
     boot_num: int = 20
     alpha: float = 0.1
     num_test: int = 100
@@ -40,6 +38,9 @@ class Statistics:
     heterogeneous: Optional[bool] = None
     domain_index: Optional[str] = None
     description: Optional[str] = None
+    time_series: Optional[bool] = False
+    time_lag: List[Dict] = field(default_factory=list)
+    nlags: int = 50
 
 @dataclass
 class Logging:

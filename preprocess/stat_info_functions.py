@@ -572,7 +572,7 @@ def stat_info_collection(global_state):
         stationary_res = stationary_check(df=imputed_data, max_test=global_state.statistics.num_test, alpha=global_state.statistics.alpha)
         global_state.statistics.stationary = stationary_res["Stationary"]
 
-        global_state.statistics.time_lag =time_series_lag_est(imputed_data, nlags = 50)
+        global_state.statistics.time_lag =time_series_lag_est(imputed_data, nlags = global_state.statistics.nlags)
 
     # merge the domain index column back to the data if it exists
     if col_domain_index is not None:
