@@ -19,7 +19,8 @@ class Visualization(object):
         :param threshold: threshold for the bootstrap probability to accept an edge.
         """
         self.global_state = global_state
-        self.data = global_state.user_data.processed_data
+        self.data = global_state.user_data.processed_data[global_state.user_data.visual_selected_features]
+        self.data_idx = [global_state.user_data.processed_data.columns.get_loc(var) for var in global_state.user_data.visual_selected_features]
         self.bootstrap_prob = global_state.results.bootstrap_probability
         self.save_dir = global_state.user_data.output_graph_dir
         self.threshold = threshold
@@ -112,9 +113,9 @@ class Visualization(object):
             # Create a heatmap
             plt.figure(figsize=(8, 6))
             #plt.rcParams['font.family'] = 'Times New Roman'
-            sns.heatmap(prob_mat, annot=True, cmap='Reds', fmt=".2f", square=True, cbar_kws={"shrink": .8},
-                        xticklabels=self.data.columns,
-                        yticklabels=self.data.columns)            
+            sns.heatmap(prob_mat[self.data_idx, :][:, self.data_idx], annot=True, cmap='Reds', fmt=".2f", square=True, cbar_kws={"shrink": .8},
+                        xticklabels=self.global_state.user_data.visual_selected_features,
+                        yticklabels=self.global_state.user_data.visual_selected_features)            
             plt.title(f'Confidence Heatmap for {name}', fontsize=14, fontweight='bold')
             plt.tight_layout()
             # Save the plot
