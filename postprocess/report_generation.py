@@ -652,15 +652,15 @@ Background about this dataset: {self.knowledge_docs}
         middle_prob_pairs = list(set(tuple(sorted((i, j))) for (i, j) in middle_prob_pairs))
         low_prob_pairs = self.global_state.results.bootstrap_check_dict['low_prob_edges']['exist']
         if high_prob_pairs != []:
-            graph_prompt += "\n \item \\textbf{{High Confidence Edges}}: "
-            graph_prompt += ', '.join(f'{self.data.columns[idx_j]} $\\rightarrow$ {self.data.columns[idx_i]}' for idx_i, idx_j in high_prob_pairs)
+            graph_text += "\n \item \\textbf{{High Confidence Edges}}: "
+            graph_text += ', '.join(f'{self.data.columns[idx_j]} $\\rightarrow$ {self.data.columns[idx_i]}' for idx_i, idx_j in high_prob_pairs)
         if middle_prob_pairs != []:
-            graph_prompt += "\n \item \\textbf{{Middle Confidence Edges}}: "
-            graph_prompt += ', '.join(f'{self.data.columns[idx_j]} - {self.data.columns[idx_i]}' for idx_i, idx_j in middle_prob_pairs)
+            graph_text += "\n \item \\textbf{{Middle Confidence Edges}}: "
+            graph_text += ', '.join(f'{self.data.columns[idx_j]} - {self.data.columns[idx_i]}' for idx_i, idx_j in middle_prob_pairs)
         if low_prob_pairs != []:
-            graph_prompt += "\n \item \\textbf{{Low Confidence Edges}}: "
-            graph_prompt += ', '.join(f'{self.data.columns[idx_j]} $\\rightarrow$ {self.data.columns[idx_i]}' for idx_i, idx_j in low_prob_pairs)
-        graph_prompt += "\n \end{{itemize}}"
+            graph_text += "\n \item \\textbf{{Low Confidence Edges}}: "
+            graph_text += ', '.join(f'{self.data.columns[idx_j]} $\\rightarrow$ {self.data.columns[idx_i]}' for idx_i, idx_j in low_prob_pairs)
+        graph_text += "\n \end{{itemize}}"
         return graph_text
         
 
