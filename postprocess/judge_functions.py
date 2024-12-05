@@ -643,6 +643,77 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
             Edges of node {main_node}:
             {directed_exist_texts_mainnode} and {undirected_exist_texts_mainnode}
             """
+            # Add adjacency matrix context
+        if 'adj_matrix' in prompt_type:
+            adj_matrix = edges_dict_to_adj_matrix(edges_dict, data.columns)
+            prompt_pruning += f"""
+            This is the adjacency matrix representation of the current causal graph:
+
+            **Adjacency Matrix**:
+            Variables: {data.columns.tolist()}
+            Matrix:
+            {adj_matrix.tolist()}
+
+            **Definitions of Causal Structures**:
+            - **Chain Structure (A → B → C)**:
+            - Variable A causes B, and B causes C.
+            - **Fork Structure (A ← B → C)**:
+            - Variable B causes both A and C.
+            - **Collider Structure (A → B ← C)**:
+            - Variables A and C both cause B.
+
+            **Your Task**:
+            1. Analyze the adjacency matrix and identify causal structures such as chains, forks, and colliders.
+            2. Reevaluate the relationships involving {main_node} in the context of these structures.
+            """
+        if 'new_relationship_prompt' in prompt_type:
+            prompt_pruning += f"""
+            We are conducting a causal discovery analysis on the following variables: {data.columns.tolist()}.
+            Our statistical algorithm has identified a potential causal relationship between the following variables:
+            {relation_text}
+
+            **Important Considerations**:
+            
+            1. **Correlation vs. Causation**:
+                - Remember that statistical correlation does not imply causation. A detected association between variables may not indicate a causal link.
+                - Base your reasoning on domain knowledge and logical inference rather than statistical correlations.
+            2. **Direction of Causation**:
+                - The direction of causation is crucial. Ensure that the proposed causal direction is logical and consistent with established domain knowledge.
+                - Avoid assuming causation without proper justification.
+            
+            **Your Task**:
+             1. **Assess the Causal Relationship**:
+                - Evaluate the potential causal relationship between **{main_node}** and the related variables.
+                - Select the most appropriate option from the following:
+                    - **A**: **{main_node}** is a cause of the related variable.
+                    - **B**: The related variable is a cause of **{main_node}**.
+                    - **C**: There is no causal relationship.
+            2. **Justify Your Choice**:
+                - Provide a concise explanation (1-2 sentences) supporting your selection (A, B, or C).
+                - Your explanation should be based on domain-specific reasoning and established knowledge.
+                - Do **not** rely on statistical correlation or data patterns in your justification.
+            **Response Format**:
+
+            Please present your answer in the following format:
+            - **A**: "Option A: Increased sunlight exposure (**{main_node}**) leads to higher levels of vitamin D production (related variable) in the body."
+            - **B**: "Option B: Higher levels of stress hormones (related variable) can cause elevated blood pressure (**{main_node}**) because stress affects cardiovascular function."
+            - **C**: "Option C: There is no direct causal relationship between **{main_node}** and the related variable; they are influenced independently by other factors."
+
+            **Guidelines to Avoid Common Pitfalls**:
+
+            - **Do Not**:
+                - Conflate correlation with causation.
+                - Use statistical terms such as "correlates with" or "is associated with" in your explanation.
+                - Base your reasoning on data patterns or algorithm outputs.
+            
+            - **Avoid**:
+                - Circular reasoning (e.g., "A causes B because B causes A").
+                - Vague explanations lacking domain-specific details.
+            **Ensure that your response adheres strictly to the format and guidelines provided.**
+
+            """
+
+
             # Relationships for related node
             # Extract tuples containing main node
             tuples_with_mainnode = [t for t in edges_dict['uncertain_edges']+edges_dict['certain_edges'] if main_node in t]
@@ -823,4 +894,4 @@ def edges_to_relationship(data, edges_dict, boot_edges_prob=None):
     
     return filtered_result_dict, relation_text
 
-
+    

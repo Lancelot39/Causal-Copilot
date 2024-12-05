@@ -109,15 +109,19 @@ def sample_size_check(n_row, n_col, chat_history, download_btn):
     global REQUIRED_INFO
     ## Few sample case: give warning
     if 1<= n_row/n_col < 5:
-        chat_history.append((None, "⚠️ The dataset provided do not have enough sample size and may result in unreliable analysis. \n"
+        chat_history.append((None, "Sample Size Check Summary: \n"\
+                             "⚠️ The dataset provided do not have enough sample size and may result in unreliable analysis. \n"
                                 "Please upload a larger dataset if you mind that. Otherwise please enter 'continue'"))
         REQUIRED_INFO["current_stage"] = 'reupload_dataset'
     ## Not enough sample case: must reupload
     elif n_row/n_col < 1:
-        chat_history.append((None, "⚠️ The sample size of dataset provided is less than its feature size. We are not able to conduct further analysis. Please provide more samples. \n"))
+        chat_history.append((None, "Sample Size Check Summary: \n"\
+                             "⚠️ The sample size of dataset provided is less than its feature size. We are not able to conduct further analysis. Please provide more samples. \n"))
         REQUIRED_INFO["current_stage"] = 'reupload_dataset'
     ## Enough sample case
     else:
+        chat_history.append((None, "Sample Size Check Summary: \n"\
+                             "✅ The sample size is enough for the following analysis. \n"))
         REQUIRED_INFO["current_stage"] = 'sparsity_check'
     return chat_history, download_btn
 
@@ -157,13 +161,13 @@ def parse_reupload_query(message, chat_history, download_btn):
         #return chat_history, download_btn
 
 def parse_var_selection_query(message, chat_history, download_btn):
-    var_list = [var.strip() for var in message.split(';')]
+    var_list = [var.strip() for var in message.split(';') if var!='']
     if var_list == []:
         chat_history.append((message, "Your variable selection query cannot be parsed, please follow the templete below and retry. \n"
                                         "Templete: PKA, Jnk, PIP2, PIP3, Mek"))
         return var_list, chat_history, download_btn
     else:
-        missing_vars = [var for var in var_list if var not in global_state.user_data.raw_data.columns]
+        missing_vars = [var for var in var_list if var not in global_state.user_data.raw_data.columns and var!='']
         if missing_vars != []:
             chat_history.append((message, "❌ Variables " + ", ".join(missing_vars) + " are not in the dataset, please check it and retry."))
             return var_list, chat_history, download_btn
@@ -203,6 +207,25 @@ def parse_sparsity_query(message, chat_history, download_btn):
                 REQUIRED_INFO["current_stage"] = "reupload_dataset_done"
     return chat_history, download_btn
 
+def parse_ts_query(message, chat_history, download_btn):
+    global global_state, REQUIRED_INFO
+    if message == 'NO':
+        global_state.statistics.time_series = False
+        REQUIRED_INFO["current_stage"] = 'ts_check_done'
+    elif message == 'continue':
+        REQUIRED_INFO["current_stage"] = 'ts_check_done'
+        global_state.statistics.time_series = True
+    else:
+        try:
+            time_lag = int(message)
+            global_state.statistics.time_lag = time_lag
+            chat_history.append((None, f"✅ We successfully set your time lag to be {time_lag}."))
+            REQUIRED_INFO["current_stage"] = 'ts_check_done'
+            global_state.statistics.time_series = True
+        except: 
+            chat_history.append((None, f"❌ We cannot parse your query, please follow the template and retry."))
+    return chat_history, download_btn
+
 def parse_user_postprocess(message, chat_history, download_btn):
     global global_state
     import re 
@@ -213,9 +236,9 @@ def parse_user_postprocess(message, chat_history, download_btn):
     }
     print('message:', message)
     # Define regex patterns for each type of edge
-    add_pattern = r"Add Edges:\s*([^;]+);"
-    forbid_pattern = r"Forbid Edges:\s*([^;]+);"
-    orient_pattern = r"Orient Edges:\s*([^;]+);"
+    add_pattern = r"Add Edges:\s*([^\s]+)\s*->\s*([^\s]+)"
+    forbid_pattern = r"Forbid Edges:\s*([^\s]+)\s*->\s*([^\s]+)"
+    orient_pattern = r"Orient Edges:\s*([^\s]+)\s*->\s*([^\s]+)"
     # Function to convert edge strings to tuples
     def parse_edges(edge_string):
         return [tuple(edge.strip().split('->')) for edge in edge_string.split(';') if edge.strip()]
@@ -226,17 +249,11 @@ def parse_user_postprocess(message, chat_history, download_btn):
              return edges_dict, chat_history, download_btn
         else:
              # Extract Add Edges
-            add_matches = re.findall(add_pattern, message)
-            if add_matches:
-                edges_dict["add_edges"] = parse_edges(add_matches[0])
+            edges_dict["add_edges"] = re.findall(add_pattern, message)
             # Extract Forbid Edges
-            forbid_matches = re.findall(forbid_pattern, message)
-            if forbid_matches:
-                edges_dict["forbid_edges"] = parse_edges(forbid_matches[0])
+            edges_dict["forbid_edges"] = re.findall(forbid_pattern, message)
             # Extract Orient Edges
-            orient_matches = re.findall(orient_pattern, message)
-            if orient_matches:
-                edges_dict["orient_edges"] = parse_edges(orient_matches[0])
+            edges_dict["orient_edges"] = re.findall(orient_pattern, message)
             # Check whether all these variables exist
             variables = [item for sublist in edges_dict.values() for pair in sublist for item in pair]
             missing_vars = [var for var in variables if var not in global_state.user_data.raw_data.columns]
@@ -253,22 +270,26 @@ def parse_user_postprocess(message, chat_history, download_btn):
         return edges_dict, chat_history, download_btn
 
 def parse_algo_query(message, chat_history, download_btn):
+    global REQUIRED_INFO, global_state
     if message == '':
         chat_history.append((None, "💬 No algorithm is specified, will go to the next step..."))
-        REQUIRED_INFO["current_stage"] = 'report_generation'        
+        REQUIRED_INFO["current_stage"] = 'report_generation'      
     elif message not in ['PC', 'FCI', 'CDNOD', 'GES', 'DirectLiNGAM', 'ICALiNGAM', 'NOTEARS']:
         chat_history.append((message, "❌ The specified algorithm is not correct, please choose from the following: \n"
-                                    "PC, FCI, CDNOD, GES, DirectLiNGAM, ICALiNGAM, NOTEARS"))
+                                    "PC, FCI, CDNOD, GES, DirectLiNGAM, ICALiNGAM, NOTEARS"))       
     else:  
         global_state.algorithm.selected_algorithm = message
         chat_history.append((message, f"✅ We will rerun the Causal Discovery Procedure with the Selected algorithm: {global_state.algorithm.selected_algorithm}"))
-        REQUIRED_INFO["current_stage"] == 'algo_selection'
+        chat_history.append((message, f"Please press 'enter' in the chatbox to start the running..."))
+        REQUIRED_INFO["current_stage"] = 'algo_selection'
+        process_message(message, chat_history, download_btn)
     return chat_history, download_btn 
+    
 
 def process_message(message, chat_history, download_btn):
     global target_path, REQUIRED_INFO, global_state, args
     REQUIRED_INFO['processing'] = True
-    # initial_process -> check sample size -> check sparsity and drop -> check dimension and drop ->
+    # initial_process -> check sample size -> check sparsity and drop -> check correlation and drop -> check dimension and drop ->
     # stat analysis and algorithm -> user edit edges -> report generation
     try:
         if REQUIRED_INFO['current_stage'] == 'initial_process':    
@@ -298,6 +319,7 @@ def process_message(message, chat_history, download_btn):
                 global_state.user_data.processed_data = global_state.user_data.raw_data
                 yield chat_history, download_btn
                 # TODO: choose important features
+                ### important feature selection query#####
                 global_state.user_data.important_features = []
                 # Preprocessing - Step 1: Sample size checking
                 n_row, n_col = global_state.user_data.raw_data.shape
@@ -323,9 +345,9 @@ def process_message(message, chat_history, download_btn):
 
             sparsity_dict = sparsity_check(df=global_state.user_data.processed_data)
             chat_history.append((None, "Sparsity Level Summary: \n"\
-                                 f"1️⃣ High sparsity Level variables: {', '.join(sparsity_dict['high']) if sparsity_dict['high']!=[] else 'None'} \n"\
+                                 f"1️⃣ High sparsity Level variables (>0.5): {', '.join(sparsity_dict['high']) if sparsity_dict['high']!=[] else 'None'} \n"\
                                  f"2️⃣ Moderate sparsity Level variables: {', '.join(sparsity_dict['moderate']) if sparsity_dict['moderate']!=[] else 'None'} \n"\
-                                 f"3️⃣ Low sparsity Level variables: {', '.join(sparsity_dict['low']) if sparsity_dict['low']!=[] else 'None'}"))
+                                 f"3️⃣ Low sparsity Level variables (<0.3): {', '.join(sparsity_dict['low']) if sparsity_dict['low']!=[] else 'None'}"))
             if sparsity_dict['moderate'] != []:
                 REQUIRED_INFO["current_stage"] = 'sparsity_drop'
                 chat_history.append((None, f"📍 The missing ratios of the following variables are greater than 0.3 and smaller than 0.5, please decide which variables you want to drop. \n"
@@ -359,13 +381,32 @@ def process_message(message, chat_history, download_btn):
                 chat_history.append((None, "Correlation Check Summary: \n"\
                                      f"We will drop {', '.join(global_state.user_data.high_corr_drop_features)} due to the fact that they are highly correlated with other features."))
                 yield chat_history, download_btn
+                REQUIRED_INFO["current_stage"] = 'knowledge_generation'
 
+        if REQUIRED_INFO["current_stage"] == 'knowledge_generation':
+            REQUIRED_INFO["current_stage"] = 'visual_dimension_check'
+            # Knowledge generation
+            if args.data_mode == 'real':
+                chat_history.append(("🌍 Generate background knowledge based on the dataset you provided...", None))
+                yield chat_history, download_btn
+                global_state = knowledge_info(args, global_state)
+
+                knowledge_clean = str(global_state.user_data.knowledge_docs).replace("[", "").replace("]", "").replace('"',
+                                                                                                                    "").replace(
+                    "\\n\\n", "\n\n").replace("\\n", "\n").replace("'", "")
+                chat_history.append((None, knowledge_clean))
+                yield chat_history, download_btn
+            elif args.data_mode == 'simulated':
+                global_state = knowledge_info(args, global_state)
+
+        if REQUIRED_INFO["current_stage"] == 'visual_dimension_check':
             ## Preprocess Step 4: Choose Visualization Variables
-            # High Dimensional Case: let user choose variables
-            if len(global_state.user_data.processed_data.columns) > 20:
-                if len(global_state.user_data.selected_features) > 20 or len(global_state.user_data.selected_features)==0:
-                    chat_history.append((None, "💡 There are many variables in your dataset, please follow the template below to choose variables you care about for visualization: \n"
-                                            "1. Please seperate each variables with a semicolon and restrict the number within 20; \n"
+            # High Dimensional Case: let user choose variables   highlight chosen variables
+            if len(global_state.user_data.processed_data.columns) > 10:
+                if len(global_state.user_data.important_features) > 10 or len(global_state.user_data.important_features)==0:
+                    chat_history.append((None, "Dimension Checking Summary:\n"\
+                                         "💡 There are many variables in your dataset, please follow the template below to choose variables you care about for visualization: \n"
+                                            "1. Please seperate each variables with a semicolon and restrict the number within 10; \n"
                                             "2. Please choose among the following variables: \n"
                                             f"{';'.join(global_state.user_data.processed_data.columns)} \n"
                                             "3. Templete: PKA; Jnk; PIP2; PIP3; Mek"))
@@ -373,8 +414,15 @@ def process_message(message, chat_history, download_btn):
                     REQUIRED_INFO["current_stage"] = 'variable_selection'
                     return chat_history, download_btn
                 else: # Only visualize variables user care about
-                    global_state.user_data.visual_selected_features = global_state.user_data.selected_features
+                    chat_history.append((None, "Dimension Checking Summary:\n"\
+                                         "💡 Because of the high dimensionality, We will only visualize variables you care about."))
+                    yield chat_history, download_btn
+                    global_state.user_data.visual_selected_features = global_state.user_data.important_features
             else: 
+                global_state.user_data.visual_selected_features = global_state.user_data.selected_features
+                chat_history.append((None, "Dimension Checking Summary:\n"\
+                                     "💡 The dimension of your dataset is not too large, We will visualize all variables in the dataset."))
+                yield chat_history, download_btn
                 REQUIRED_INFO["current_stage"] = 'stat_analysis'
 
         if REQUIRED_INFO["current_stage"] == 'variable_selection':
@@ -385,7 +433,20 @@ def process_message(message, chat_history, download_btn):
 
         
         if REQUIRED_INFO["current_stage"] == 'stat_analysis':
-            # Statistical Analysis
+            # Statistical Analysis: Time Series
+            chat_history.append((None, "Please indicate whether your dataset is Time-Series and set your time lag: \n"\
+                                           "1️⃣ Input 'NO' if it is not a Time-Series dataset;\n"\
+                                           "2️⃣ Input your time lag if you want to set it by yourself;\n"\
+                                           "3️⃣ Input 'continue' if you want the time lag to be set automatically;\n"))
+            REQUIRED_INFO["current_stage"] = 'ts_check'
+            yield chat_history, download_btn
+            return chat_history, download_btn
+        
+        if REQUIRED_INFO["current_stage"] == 'ts_check':
+            chat_history, download_btn = parse_ts_query(message, chat_history, download_btn)
+            yield chat_history, download_btn
+
+        if REQUIRED_INFO["current_stage"] == 'ts_check_done':
             chat_history.append(
                 (f"📈 Run statistical analysis on Dataset {target_path.split('/')[-1].replace('.csv', '')}...", None))
             yield chat_history, download_btn
@@ -410,23 +471,7 @@ def process_message(message, chat_history, download_btn):
 
             chat_history.append((None, global_state.statistics.description))
             yield chat_history, download_btn
-            REQUIRED_INFO["current_stage"] = 'knowledge_generation'
-
-        if REQUIRED_INFO["current_stage"] == 'knowledge_generation':
             REQUIRED_INFO["current_stage"] = 'eda_generation'
-            # Knowledge generation
-            if args.data_mode == 'real':
-                chat_history.append(("🌍 Generate background knowledge based on the dataset you provided...", None))
-                yield chat_history, download_btn
-                global_state = knowledge_info(args, global_state)
-
-                knowledge_clean = str(global_state.user_data.knowledge_docs).replace("[", "").replace("]", "").replace('"',
-                                                                                                                    "").replace(
-                    "\\n\\n", "\n\n").replace("\\n", "\n").replace("'", "")
-                chat_history.append((None, knowledge_clean))
-                yield chat_history, download_btn
-            elif args.data_mode == 'simulated':
-                global_state = knowledge_info(args, global_state)
             
         if REQUIRED_INFO["current_stage"] == 'eda_generation':
             # EDA Generation
@@ -440,6 +485,7 @@ def process_message(message, chat_history, download_btn):
             REQUIRED_INFO["current_stage"] = 'algo_selection'
 
         if REQUIRED_INFO["current_stage"] == 'algo_selection':    
+            print('algo selection')
         # Algorithm Selection
             if global_state.algorithm.selected_algorithm is None:
                 chat_history.append(("🤖 Select optimal causal discovery algorithm and its hyperparameter...", None))
@@ -568,6 +614,7 @@ def process_message(message, chat_history, download_btn):
             chat_history.append((message, "📝 Start to process your Graph Revision Query..."))
             yield chat_history, download_btn
             user_revise_dict, chat_history, download_btn = parse_user_postprocess(message, chat_history, download_btn)
+            print('user_revise_dict', user_revise_dict)
             yield chat_history, download_btn
             if REQUIRED_INFO["current_stage"] == 'postprocess_parse_done':
                 judge = Judge(global_state, args)
@@ -588,8 +635,8 @@ def process_message(message, chat_history, download_btn):
             return chat_history, download_btn 
 
         if REQUIRED_INFO["current_stage"] == 'retry_algo': # empty query or postprocess query parsed successfully
-            chat_history, download_btn = parse_algo_query(message, chat_history, download_btn)
-            yield chat_history, download_btn
+            parse_algo_query(message, chat_history, download_btn)
+            
                     
         # Report Generation
         if REQUIRED_INFO["current_stage"] == 'report_generation': # empty query or postprocess query parsed successfully
