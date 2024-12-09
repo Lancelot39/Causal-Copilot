@@ -174,6 +174,8 @@ def parse_user_preprocess(message, chat_history, download_btn):
 
     n, m = data.shape
 
+    # Step 0: check type of missingness, ask user to provide
+
     # Step 1: Sample size checking:
     if n / m >= 5:
         # continue analysis
@@ -190,23 +192,30 @@ def parse_user_preprocess(message, chat_history, download_btn):
 
     chat_history.append(("The following table records the missingness ratio for each feature:", None))
     yield chat_history, download_btn
-    chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/missing_ratios_table.jpg',)))
-    yield chat_history, download_btn
+    # chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/missing_ratios_table.jpg',)))
+    # yield chat_history, download_btn
 
-    # Ask for information about dropped features.
+    ####################################################################################################################
+    # Step 0: Ask user about dropped features
     chat_history.append(("For features whose missingness ratio between 0.3 and 0.5, which features would you like to drop?", None))
     yield chat_history, download_btn
 
-    # Update features dropped by user in the global state: global_state.user_data.user_drop_features
+    # Step 1: If user does not give preferred features, give warning and encourage user to drop features:
+    chat_history.append(
+        ("If you don't give preferred features that would like to drop, we would let LLM determine dropped features, which may not be reliable.", None))
+    yield chat_history, download_btn
 
-    # determine dropping of features based users' input and LLM: if user provided input will only drop features based on the user input;
-    # if this user did not provide input, will drop features based on LLM.
-    global_state = user_llm_select_feature(global_state = global_state, args=args)
-
+    # Step 2: If user give feature names, update features dropped by user in the global state: global_state.user_data.user_drop_features.
+    #         If user doesn't answer this question, use LLM to determine dropped features:
+    global_state = llm_select_dropped_features(global_state=global_state, args=args)
+    global_state = drop_greater_miss_between_30_50_feature(global_state) # drop features by user or LLM
     if not global_state.user_data.user_drop_features:
         # Inform user of dropped features based on LLM
         chat_history.append((f"We will drop features whose missingness ratio is greater than 0.5 and {global_state.user_data.llm_drop_features} due to relatively large missingness ratio.",None))
         yield chat_history, download_btn
+    #         If user would not like to drop features,  and give NO answer, skip the update of global state.
+    ####################################################################################################################
+
 
     # Step 3: correlation checking
     global_state = correlation_check(global_state)
