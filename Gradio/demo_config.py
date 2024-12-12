@@ -13,7 +13,7 @@ class DemoConfig:
     # OpenAI Settings
     organization: str = "org-5NION61XDUXh0ib0JZpcppqS"
     project: str = "proj_Ry1rvoznXAMj8R2bujIIkhQN"
-    apikey: str = None
+    #apikey: str = 
     
     # Analysis Settings
     simulation_mode: str = "offline"

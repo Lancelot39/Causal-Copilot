@@ -17,8 +17,13 @@ from algorithm.filter import Filter
 from algorithm.program import Programming
 from algorithm.rerank import Reranker
 from postprocess.judge import Judge
+<<<<<<< Updated upstream
 from postprocess.visualization import Visualization, convert_to_edges
 from postprocess.report_generation import Report_generation
+=======
+from postprocess.visualization import Visualization
+#from postprocess.report_generation import Report_generation
+>>>>>>> Stashed changes
 
 # Global variables
 UPLOAD_FOLDER = "./demo_data"
@@ -287,6 +292,7 @@ def parse_algo_query(message, chat_history, download_btn):
     
 
 def process_message(message, chat_history, download_btn):
+<<<<<<< Updated upstream
     global target_path, REQUIRED_INFO, global_state, args
     REQUIRED_INFO['processing'] = True
     # initial_process -> check sample size -> check sparsity and drop -> check correlation and drop -> check dimension and drop ->
@@ -313,6 +319,48 @@ def process_message(message, chat_history, download_btn):
             if REQUIRED_INFO['data_uploaded'] and REQUIRED_INFO['initial_query']:
                 print('strart analysis')
                 global_state = global_state_initialization(args)
+=======
+    global interactive_mode
+    #switch between interactive mode using 'Interactive Mode' and 'Quit Interactive Mode'
+    global target_path, REQUIRED_INFO
+    REQUIRED_INFO['processing'] = True
+    # Add user message
+    # chat_history.append((message, None))
+    # yield chat_history, download_btn
+    
+    print('check data upload')
+    if message == 'Interactive Mode':
+        interactive_mode = True
+        print('Interactive Mode is set, please input a data set!')
+        return chat_history, download_btn
+    else:
+        interactive_mode = False
+    if not REQUIRED_INFO['data_uploaded']:
+        chat_history.append((message, "Please upload your dataset first before proceeding."))
+        yield chat_history, download_btn
+    else:
+        # Initialize config
+        config = get_demo_config()
+        config.data_file = target_path
+        config.initial_query = message
+
+        args = type('Args', (), {})()
+        for key, value in config.__dict__.items():
+            setattr(args, key, value)
+        print('check initial query')
+        args, chat_history, download_btn = process_initial_query(message, chat_history, args)
+        yield chat_history, download_btn
+        print('finish initial query checking')
+    try:
+        # Initialize global state
+        if REQUIRED_INFO['data_uploaded'] and REQUIRED_INFO['initial_query']:
+            print('start analysis')
+            # Add user message
+            # chat_history.append((message, None))
+            # yield chat_history, download_btn
+            # chat_history.append(("🔄 Initializing analysis pipeline...", None))
+            global_state = global_state_initialization(args)
+>>>>>>> Stashed changes
 
                 # Load data
                 global_state.user_data.raw_data = pd.read_csv(target_path)
@@ -462,7 +510,10 @@ def process_message(message, chat_history, download_btn):
                     chat_history.append(("✍️ Generate residuals plots ...", None))
                     yield chat_history, download_btn
                     chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/residuals_plot.jpg',)))
-                    yield chat_history, download_btn
+                    yield chat_history, dowbload_btn
+
+                #add interaction after preprocessing
+                        
                 if user_gaussian is None:
                     chat_history.append(("✍️ Generate Q-Q plots ...", None))
                     yield chat_history, download_btn
@@ -470,10 +521,56 @@ def process_message(message, chat_history, download_btn):
                     yield chat_history, download_btn
 
             chat_history.append((None, global_state.statistics.description))
+<<<<<<< Updated upstream
             yield chat_history, download_btn
             REQUIRED_INFO["current_stage"] = 'eda_generation'
             
         if REQUIRED_INFO["current_stage"] == 'eda_generation':
+=======
+            yield chat_history, dowbload_btn
+            if interactive_mode:
+                #print --> here we just finished the processing (ask for feedback)
+                print('Here we just finished precessing the data! If you do not have any questions press enter to continue! Type Quit to exit Interactive Mode')
+                return chat_history, download_btn
+                if message == 'Quit':
+                interactive_mode = False
+                yield chat_history, download_btn
+            elif message:
+                chat_history.append((message, None))
+                yield chat_history, download_btn
+                # if the user has questions, update it to global state --> use gpt4 
+                # push onto github (create new branch)
+            else: 
+                yield chat_history, download_btn
+                #incorporate gpt to do extra analysis
+            # Knowledge generation
+            if args.data_mode == 'real':
+                chat_history.append(("🌍 Generate background knowledge based on the dataset you provided...", None))
+                yield chat_history, download_btn
+                global_state = knowledge_info(args, global_state)
+
+                knowledge_clean = str(global_state.user_data.knowledge_docs).replace("[", "").replace("]", "").replace('"',
+                                                                                                                    "").replace(
+                    "\\n\\n", "\n\n").replace("\\n", "\n").replace("'", "")
+                chat_history.append((None, knowledge_clean))
+                yield chat_history, download_btn
+            elif args.data_mode == 'simulated':
+                global_state = knowledge_info(args, global_state)
+            if interactive_mode:
+                print('Here is the background knowledge! If you have some more information, please enter it here! Press enter to continue! Type Quit to exit Interactive Mode')
+                return chat_history, download_btn
+                if message == 'Quit':
+                    interactive_mode = False
+                    yield chat_history, download_btn
+                elif message:
+                    chat_history.append((message, None))
+                    knowledge_info += message
+                    yield chat_history, download_btn
+                    #add message to knowledge_info
+                else: 
+                    yield chat_history, download_btn
+
+>>>>>>> Stashed changes
             # EDA Generation
             chat_history.append(("🔍 Run exploratory data analysis...", None))
             yield chat_history, download_btn
@@ -513,7 +610,20 @@ def process_message(message, chat_history, download_btn):
                 reranker = Reranker(args)
                 global_state = reranker.forward(global_state)
                 chat_history.append((None, f"✅ Selected algorithm: {global_state.algorithm.selected_algorithm}"))
-
+            if interactive_mode:
+                print('If you want to change the causal algorithm used, please enter it here! Press enter to continue! Type Quit to exit Interactive Mode')
+                return chat_history, downlooad_btn
+                if message == 'Quit':
+                    interactive_mode = False
+                    yield chat_history, download_btn
+                elif message:
+                    chat_history.append((message, None))
+                    selected_algorithm = message
+                    # if the user wants to use a different algorithm, then change the selected algorithm
+                    yield chat_history, download_btn
+                else: 
+                    yield chat_history, download_btn
+                    #incorporate gpt to do extra analysis
             hyperparameter_text = ""
             for param, details in global_state.algorithm.algorithm_arguments_json['hyperparameters'].items():
                 value = details['value']
@@ -527,8 +637,13 @@ def process_message(message, chat_history, download_btn):
             yield chat_history, download_btn
             REQUIRED_INFO["current_stage"] = 'algo_running'
 
+<<<<<<< Updated upstream
         # Causal Discovery
         if REQUIRED_INFO["current_stage"] == 'algo_running':   
+=======
+
+            # Causal Discovery
+>>>>>>> Stashed changes
             chat_history.append(("🔄 Run causal discovery algorithm...", None))
             yield chat_history, download_btn
             programmer = Programming(args)
@@ -550,8 +665,13 @@ def process_message(message, chat_history, download_btn):
                 my_visual_initial.plot_pdag(global_state.results.raw_result, 'initial_graph.pdf', pos)
                 chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/initial_graph.jpg',)))
                 yield chat_history, download_btn
+<<<<<<< Updated upstream
                 my_report = Report_generation(global_state, args)
                 global_state.results.raw_edges = convert_to_edges(global_state.algorithm.selected_algorithm, global_state.user_data.processed_data.columns, global_state.results.raw_result)
+=======
+                #my_report = Report_generation(global_state, args)
+                global_state.results.raw_edges = my_visual_initial.convert_to_edges(global_state.results.raw_result)
+>>>>>>> Stashed changes
                 global_state.logging.graph_conversion['initial_graph_analysis'] = my_report.graph_effect_prompts()
                 analysis_clean = global_state.logging.graph_conversion['initial_graph_analysis'].replace('"',"").replace("\\n\\n", "\n\n").replace("\\n", "\n").replace("'", "")
                 print(analysis_clean)
@@ -642,11 +762,24 @@ def process_message(message, chat_history, download_btn):
         if REQUIRED_INFO["current_stage"] == 'report_generation': # empty query or postprocess query parsed successfully
             chat_history.append(("📝 Generate comprehensive report and it may take a few minutes, stay tuned...", None))
             yield chat_history, download_btn
+<<<<<<< Updated upstream
             report_path = call_report_generation(output_dir)
+=======
+            #report_gen = Report_generation(global_state, args)
+            report = report_gen.generation(debug=False)
+            report_gen.save_report(report)
+            report_path = os.path.join(output_dir, 'output_report', 'report.pdf')
+>>>>>>> Stashed changes
             while not os.path.isfile(report_path):
                 chat_history.append((None, "❌ An error occurred during the Report Generation, we are trying again and please wait for a few minutes."))
                 yield chat_history, download_btn
+<<<<<<< Updated upstream
                 report_path = call_report_generation(output_dir)
+=======
+                #(global_state, args)
+                report = report_gen.generation(debug=False)
+                report_gen.save_report(report)
+>>>>>>> Stashed changes
 
             # Final steps
             chat_history.append((None, "🎉 Analysis complete!"))
@@ -704,7 +837,8 @@ def clear_chat():
                    "2️⃣ Ensure that the features are in numerical format or appropriately encoded if categorical. \n"
                    "3️⃣ For initial query, your dataset has meaningful feature names, please indicate it using 'YES' or 'NO'. \n"
                    "4️⃣ Please mention heterogeneity and its indicator's column name in your initial query if there is any. \n"
-                   "💡 Example initial query: 'YES. Use PC algorithm to analyze causal relationships between variables. The dataset has heterogeneity with domain column named 'country'.' \n")],
+                   "💡 Example initial query: 'YES. Use PC algorithm to analyze causal relationships between variables. The dataset has heterogeneity with domain column named 'country'.' \n"
+                   "To change between to interactive mode please enter 'Interactive Mode' and press enter to continue. \n")],
 
 
 def load_demo_dataset(dataset_name, chatbot, demo_btn, download_btn):
@@ -839,7 +973,8 @@ with gr.Blocks(js=js, theme=gr.themes.Soft(), css="""
                    "2️⃣ Ensure that the features are in numerical format or appropriately encoded if categorical. \n"
                    "3️⃣ For initial query, your dataset has meaningful feature names, please indicate it using 'YES' or 'NO'. \n"
                    "4️⃣ Please mention heterogeneity and its indicator's column name in your initial query if there is any. \n"
-                   "💡 Example initial query: 'YES. Use PC algorithm to analyze causal relationships between variables. The dataset has heterogeneity with domain column named 'country'.' \n")],
+                   "💡 Example initial query: 'YES. Use PC algorithm to analyze causal relationships between variables. The dataset has heterogeneity with domain column named 'country'.' \n"
+                   "To change between to interactive mode please enter 'Interactive Mode' and press enter to continue. \n")],
         height=700,
         show_label=False,
         show_share_button=False,

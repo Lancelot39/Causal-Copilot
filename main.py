@@ -8,8 +8,8 @@ from algorithm.rerank import Reranker
 from postprocess.judge import Judge
 from postprocess.visualization import Visualization, convert_to_edges
 from preprocess.eda_generation import EDA
-from postprocess.report_generation import Report_generation
-from global_setting.Initialize_state import global_state_initialization, load_data
+#from postprocess.report_generation import Report_generation
+#from global_setting.Initialize_state import global_state_initialization, load_data
 
 import json
 import argparse
@@ -45,6 +45,7 @@ def parse_args():
     )
 
     # OpenAI Settings
+    
     parser.add_argument(
         '--organization',
         type=str,
@@ -110,6 +111,7 @@ def parse_args():
 
     args = parser.parse_args()
     return args
+    
 
 def load_real_world_data(file_path):
     #Baseline code
@@ -143,8 +145,14 @@ def process_user_query(query, data):
     print("User query processed.")
     return data
 
+<<<<<<< Updated upstream
 def main(args, prompt_type, voting_num):
     global_state = global_state_initialization(args)
+=======
+"""
+def main(args):
+    #global_state = global_state_initialization(args)
+>>>>>>> Stashed changes
     global_state = load_data(global_state, args)
 
     if args.data_mode == 'real':
@@ -201,8 +209,13 @@ def main(args, prompt_type, voting_num):
         _ = my_visual_initial.plot_pdag(global_state.user_data.ground_truth, 'true_graph.pdf', pos=pos_est)
     # Plot Initial Graph
     _ = my_visual_initial.plot_pdag(global_state.results.raw_result, 'initial_graph.pdf', pos=pos_est)
+<<<<<<< Updated upstream
     my_report = Report_generation(global_state, args)
     global_state.results.raw_edges = convert_to_edges(global_state.algorithm.selected_algorithm, global_state.user_data.processed_data.columns, global_state.results.raw_result)
+=======
+    #my_report = Report_generation(global_state, args)
+    global_state.results.raw_edges = my_visual_initial.convert_to_edges(global_state.results.raw_result)
+>>>>>>> Stashed changes
     global_state.logging.graph_conversion['initial_graph_analysis'] = my_report.graph_effect_prompts()
 
     judge = Judge(global_state, args)
@@ -268,14 +281,14 @@ def main(args, prompt_type, voting_num):
     #############Report Generation###################
     import os 
     try_num = 1
-    my_report = Report_generation(global_state, args)
+    #my_report = Report_generation(global_state, args)
     report = my_report.generation()
     my_report.save_report(report)
     report_path = os.path.join(global_state.user_data.output_report_dir, 'report.pdf')
     while not os.path.isfile(report_path) and try_num<=3:
         try_num = +1
         print('Error occur during the Report Generation, try again')
-        report_gen = Report_generation(global_state, args)
+        #report_gen = Report_generation(global_state, args)
         report = report_gen.generation(debug=False)
         report_gen.save_report(report)
         if not os.path.isfile(report_path) and try_num==3:
@@ -289,9 +302,15 @@ def main(args, prompt_type, voting_num):
 
 if __name__ == '__main__':
     args = parse_args()
+<<<<<<< Updated upstream
     prompt_folders = ['base', 'markov_blanket', 'all_relation', 'cot_base', 'cot_markov_blanket', 'cot_all_relation']
     voting_folders = [3, 10, 20]
     for prompt in prompt_folders:
         for voting_num in voting_folders:
             main(args, prompt, voting_num)
             
+=======
+    main(args)
+
+    """
+>>>>>>> Stashed changes

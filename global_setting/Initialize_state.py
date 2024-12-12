@@ -111,10 +111,10 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
     global_state.user_data.initial_query = user_query
 
     # Extract information from user queries
-    from openai import OpenAI
+    #from openai import OpenAI
     import json
 
-    client = OpenAI(organization=args.organization, project=args.project, api_key=args.apikey)
+    """client = OpenAI(organization=args.organization, project=args.project, api_key=args.apikey)
     prompt = (f"Based on the query that I provided: {user_query} \n\n; "
               "extract the following information and summarize them in a json format, and output this json object."
               "Within the output, the key, the corresponding value options and their meanings are: \n\n "
@@ -150,7 +150,7 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt}
         ]
-    )
+    )"""
 
     # The output from GPT is str
     info_extracted = response.choices[0].message.content
@@ -166,6 +166,7 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
         global_state.user_data.output_report_dir = f'output/{args.data_file.split("/")[-1]}/{date_time}/output_report'
         global_state.user_data.output_graph_dir = f'output/{args.data_file.split("/")[-1]}/{date_time}/output_graph'
 
+    """
     # Assign extracted information from user queries to global_stat
     global_state.statistics.linearity = info_extracted["linearity"]
     global_state.statistics.gaussian_error = info_extracted["gaussian_error"]
@@ -179,6 +180,7 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
         global_state.statistics.alpha = info_extracted["alpha"]
 
     return global_state
+    """
 
 
 
