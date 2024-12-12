@@ -523,26 +523,38 @@ def process_message(message, chat_history, download_btn):
             chat_history.append((None, global_state.statistics.description))
 <<<<<<< Updated upstream
             yield chat_history, download_btn
-            REQUIRED_INFO["current_stage"] = 'eda_generation'
-            
-        if REQUIRED_INFO["current_stage"] == 'eda_generation':
-=======
-            yield chat_history, dowbload_btn
+                    
+=======     # comment0: user feedback should be processed before entering the eda_generation block
             if interactive_mode:
                 #print --> here we just finished the processing (ask for feedback)
+                # comment1: use chat_history.append(...) and yield chat_history, download_btn to show print contents in demo
                 print('Here we just finished precessing the data! If you do not have any questions press enter to continue! Type Quit to exit Interactive Mode')
+                # comment2: return here is correct, but you also need to update the REQUIRED_INFO["current_stage"] before exiting the function
+                REQUIRED_INFO["current_stage"] = 'check_user_feedback'
                 return chat_history, download_btn
+                # message == 'Quit' should be checked before the return
                 if message == 'Quit':
                 interactive_mode = False
-                yield chat_history, download_btn
-            elif message:
-                chat_history.append((message, None))
-                yield chat_history, download_btn
-                # if the user has questions, update it to global state --> use gpt4 
-                # push onto github (create new branch)
+                yield chat_history, download_btn # don't need this line
+            # comment3: if don't need user feedback, directly update REQUIRED_INFO["current_stage"] and enter eda_generation block
             else: 
-                yield chat_history, download_btn
-                #incorporate gpt to do extra analysis
+                REQUIRED_INFO["current_stage"] = 'eda_generation'
+            # these few lines are not needed
+            # elif message:
+            #     chat_history.append((message, None))
+            #     yield chat_history, download_btn
+            #     # if the user has questions, update it to global state --> use gpt4 
+            
+            
+            # incorporate gpt to do extra analysis
+            # comment4: add this block to process the user feedback
+            if REQUIRED_INFO["current_stage"] == 'check_user_feedback':
+                # now the message you have is the user feedback, use GPT to parse it and update global_state accordingly
+                # Remember to update REQUIRED_INFO["current_stage"] = 'eda_generation' if the parse and update are successful
+                # Do not update REQUIRED_INFO["current_stage"] if the user feedback is not correct, and let them input again
+        
+                
+        if REQUIRED_INFO["current_stage"] == 'eda_generation':
             # Knowledge generation
             if args.data_mode == 'real':
                 chat_history.append(("🌍 Generate background knowledge based on the dataset you provided...", None))
