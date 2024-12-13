@@ -289,42 +289,49 @@ def parse_algo_query(message, chat_history, download_btn):
 def process_message(message, chat_history, download_btn):
     global target_path, REQUIRED_INFO, global_state, args
     REQUIRED_INFO['processing'] = True
-    # initial_process -> check sample size -> check sparsity and drop -> check correlation and drop -> check dimension and drop ->
-    # stat analysis and algorithm -> user edit edges -> report generation
-    try:
-        if REQUIRED_INFO['current_stage'] == 'initial_process':    
-            print('check data upload')
-            if not REQUIRED_INFO['data_uploaded']:
-                chat_history.append((message, "Please upload your dataset first before proceeding."))
-                yield chat_history, download_btn
-            else:
-                # Initialize config
-                config = get_demo_config()
-                config.data_file = target_path
-                for key, value in config.__dict__.items():
-                    setattr(args, key, value)
-                print('check initial query')
-                config.initial_query = message
-                chat_history, download_btn = process_initial_query(message, chat_history, download_btn)
-                yield chat_history, download_btn
-                print('finish initial query checking')
+    # Add user message
+    # chat_history.append((message, None))
+    # yield chat_history, download_btn
     
-            # Initialize global state
-            if REQUIRED_INFO['data_uploaded'] and REQUIRED_INFO['initial_query']:
-                print('strart analysis')
-                global_state = global_state_initialization(args)
+    print('check data upload')
+    if not REQUIRED_INFO['data_uploaded']:
+        chat_history.append((message, "Please upload your dataset first before proceeding."))
+        yield chat_history, download_btn
+    else:
+        # Initialize config
+        config = get_demo_config()
+        config.data_file = target_path
+        config.initial_query = message
 
-                # Load data
-                global_state.user_data.raw_data = pd.read_csv(target_path)
-                global_state.user_data.processed_data = global_state.user_data.raw_data
-                yield chat_history, download_btn
-                # TODO: choose important features
-                ### important feature selection query#####
-                global_state.user_data.important_features = []
-                # Preprocessing - Step 1: Sample size checking
-                n_row, n_col = global_state.user_data.raw_data.shape
-                chat_history, download_btn = sample_size_check(n_row, n_col, chat_history, download_btn)
-                yield chat_history, download_btn
+        args = type('Args', (), {})()
+        for key, value in config.__dict__.items():
+            setattr(args, key, value)
+        print('check initial query')
+        args, chat_history, download_btn = process_initial_query(message, chat_history, args)
+        yield chat_history, download_btn
+        print('finish initial query checking')
+    try:
+        # Initialize global state
+        if REQUIRED_INFO['data_uploaded'] and REQUIRED_INFO['initial_query']:
+            print('start analysis')
+            # Add user message
+            chat_history.append((message, None))
+            yield chat_history, download_btn
+            chat_history.append(("🔄 Initializing analysis pipeline...", None))
+            global_state = global_state_initialization(args)
+
+            # Load data
+            # chat_history.append((None, "📊 Loading and preprocessing data..."))
+            global_state.user_data.raw_data = pd.read_csv(target_path)
+            global_state.user_data.processed_data = global_state.user_data.raw_data
+            if(global_state.user_data.dropped_variables is not None):
+                dropped_variables = global_state.user_data.dropped_variables
+                global_state.user_data.processed_data = global_state.user_data.processed_data.drop(dropped_variables, axis = 1)
+
+            print(global_state.user_data.processed_data)
+            
+            # chat_history.append((None, "✅ Data loaded successfully"))
+            yield chat_history, download_btn
 
         if REQUIRED_INFO["current_stage"] == 'reupload_dataset':
             if message == 'continue':

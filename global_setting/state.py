@@ -16,6 +16,11 @@ class UserData:
     knowledge_docs: Optional[str] = None
     output_report_dir: Optional[str] = None
     output_graph_dir: Optional[str] = None
+    selected_variables: Optional[list[str]] = None
+    dropped_variables: Optional[list[str]] = None
+    lazy_mode: Optional[bool] = None
+    cat_as_num: Optional[list[str]] = None
+    important_features: Optional[list] = None
     selected_features: Optional[object] = None
     important_features: Optional[object] = None
     visual_selected_features: Optional[object] = None

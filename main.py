@@ -45,26 +45,26 @@ def parse_args():
     )
 
     # OpenAI Settings
-    parser.add_argument(
-        '--organization',
-        type=str,
-        default="org-5NION61XDUXh0ib0JZpcppqS",
-        help='Organization ID'
-    )
+    # parser.add_argument(
+    #     '--organization',
+    #     type=str,
+    #     default="org-5NION61XDUXh0ib0JZpcppqS",
+    #     help='Organization ID'
+    # )
 
-    parser.add_argument(
-        '--project',
-        type=str,
-        default="proj_Ry1rvoznXAMj8R2bujIIkhQN",
-        help='Project ID'
-    )
+    # parser.add_argument(
+    #     '--project',
+    #     type=str,
+    #     default="proj_Ry1rvoznXAMj8R2bujIIkhQN",
+    #     help='Project ID'
+    # )
 
-    parser.add_argument(
-        '--apikey',
-        type=str,
-        default="",
-        help='API Key'
-    )
+    # parser.add_argument(
+    #     '--apikey',
+    #     type=str,
+    #     default="",
+    #     help='API Key'
+    # )
 
     parser.add_argument(
         '--simulation_mode',
@@ -125,7 +125,7 @@ def load_real_world_data(file_path):
     print("Real-world data loaded successfully.")
     return data
 
-def process_user_query(query, data):
+def process_user_query(global_state, query, data):
     #Baseline code
     query_dict = {}
     for part in query.split(';'):
@@ -139,9 +139,39 @@ def process_user_query(query, data):
     if 'selected_algorithm' in query_dict:
         selected_algorithm = query_dict['selected_algorithm']
         print(f"Algorithm selected: {selected_algorithm}")
+    
+    focused_variables, dropped_variables = [], []
+    if "focused_variable" in query_dict:
+        focuses = query_dict['focused_variable']
+        focused_variables = [variable.strip() for variable in focuses.split(",")]
+        global_state.user_data.selected_variables = focused_variables
+        print(f"Variables to be focused: {focused_variables}")
+
+    if "dropped_variable" in query_dict:
+        drops = query_dict['dropped_variable']
+        dropped_variables = [variable.strip() for variable in drops.split(",")]
+        print(f"Variables to be dropped: {dropped_variables}")
+    
+    if "lazy_mode" in query_dict:
+        lazy = query_dict['lazy_mode']
+        affirmative_list = ['yes', 'y', 'true', 'ok', 'okay', 'on']
+        if lazy == 1 or (isinstance(lazy, str) and lazy.lower() in affirmative_list):
+            islazy = True
+        else:
+            islazy = False 
+        global_state.user_data.lazy_mode = islazy
+        print(f'Lazy mode: {"On" if islazy else "Off"}')
+    
+    if "cat_as_num" in query_dict:
+        cols = [col.strip() for col in query_dict['cat_as_num'].split(",")]
+        global_state.user_data.cat_as_num = cols
+        
+    # Drop the column as user intended 
+    if len(dropped_variables) > 0: 
+        data = data.drop(dropped_variables, axis = 1)
 
     print("User query processed.")
-    return data
+    return data 
 
 def main(args, prompt_type, voting_num):
     global_state = global_state_initialization(args)
@@ -149,11 +179,15 @@ def main(args, prompt_type, voting_num):
 
     if args.data_mode == 'real':
         global_state.user_data.raw_data = load_real_world_data(args.data_file)
-    
-    global_state.user_data.processed_data = process_user_query(args.initial_query, global_state.user_data.raw_data)
+
+    global_state.user_data.processed_data = process_user_query(global_state, args.initial_query, global_state.user_data.raw_data)
+
+    print(global_state.user_data.processed_data)
+    if not global_state.user_data.lazy_mode:
+        print('Aight lets add something interactive here')
 
     # Show the exacted global state
-    print(global_state)
+    print(global_state) 
 
     # background info collection
     #print("Original Data: ", global_state.user_data.raw_data)
@@ -178,13 +212,13 @@ def main(args, prompt_type, voting_num):
     print("Statistics Info: ", global_state.statistics.description)
     print("Knowledge Info: ", global_state.user_data.knowledge_docs)
 
-    #############EDA###################
-    my_eda = EDA(global_state)
+    # #############EDA###################
+    my_eda = EDA(global_state) 
     my_eda.generate_eda()
     
     # Algorithm selection and deliberation
     filter = Filter(args)
-    global_state = filter.forward(global_state)
+    rese = filter.forward(global_state)
 
     reranker = Reranker(args)
     global_state = reranker.forward(global_state)
@@ -193,6 +227,8 @@ def main(args, prompt_type, voting_num):
     global_state = programmer.forward(global_state)
 
     #############Visualization for Initial Graph###################
+    import sys
+    sys.exit(0)
     my_visual_initial = Visualization(global_state)
     # Get the position of the nodes
     pos_est = my_visual_initial.get_pos(global_state.results.raw_result)

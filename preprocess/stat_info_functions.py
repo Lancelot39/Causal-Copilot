@@ -203,7 +203,14 @@ def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
         dtype = clean_df[column].dtype
 
         if pd.api.types.is_numeric_dtype(dtype) and dtype != 'bool':
-            column_type[column] = 'Continuous'
+            # check if it's a boolean column with 0s and 1s and if it's a column with numerically encoded labels 
+            if clean_df[column].isin([0, 1]).all(): 
+                column_type[column] = 'Category'
+            elif global_state.user_data.cat_as_num is not None:
+                if column in global_state.user_data.cat_as_num:
+                    column_type[column] = 'Category'
+            else:
+                column_type[column] = 'Continuous'
         else:
             column_type[column] = 'Category'
         # elif isinstance(dtype, pd.CategoricalDtype) or pd.api.types.is_object_dtype(dtype) or dtype == 'bool' or dtype == 'int64':
@@ -582,7 +589,6 @@ def stat_info_collection(global_state):
     # stat_info_json = json.dumps(vars(global_state.statistics), indent=4)
 
     return global_state
-
 
 
 def convert_stat_info_to_text(statistics):
