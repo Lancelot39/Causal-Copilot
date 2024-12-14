@@ -23,7 +23,7 @@ class UserData:
     user_drop_features: Optional[object] = None
     llm_drop_features: Optional[object] = None
     high_corr_drop_features: Optional[object] = None
-
+    
 @dataclass
 class Statistics:
     linearity: Optional[bool] = None
