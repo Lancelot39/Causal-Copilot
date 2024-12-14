@@ -227,8 +227,6 @@ def main(args, prompt_type, voting_num):
     global_state = programmer.forward(global_state)
 
     #############Visualization for Initial Graph###################
-    import sys
-    sys.exit(0)
     my_visual_initial = Visualization(global_state)
     # Get the position of the nodes
     pos_est = my_visual_initial.get_pos(global_state.results.raw_result)
