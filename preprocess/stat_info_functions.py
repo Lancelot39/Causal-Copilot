@@ -28,7 +28,7 @@ from fancyimpute import IterativeImputer
 
 # Correlation checking #################################################################################################
 def correlation_check(global_state):
-    df = global_state.user_data.raw_data[global_state.user_data.selected_features]
+    df = global_state.user_data.raw_data[global_state.user_data.selected_features].select_dtypes(include=['number'])
     m = df.shape[1]
 
     correlation_matrix = df.corr()
