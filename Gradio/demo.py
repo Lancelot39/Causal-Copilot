@@ -318,6 +318,11 @@ def process_message(message, chat_history, download_btn):
 
                 # Load data
                 global_state.user_data.raw_data = pd.read_csv(target_path)
+                if global_state.user_data.user_drop_features is not None:
+                    drop_features = global_state.user_data.user_drop_features
+                    global_state.user_data.raw_data = global_state.user_data.raw_data.drop(drop_features, axis = 1)
+                    print("successfully dropped user intended features: changes directly applied to raw data")
+
                 global_state.user_data.processed_data = global_state.user_data.raw_data
                 yield chat_history, download_btn
                 # TODO: choose important features
@@ -536,9 +541,7 @@ def process_message(message, chat_history, download_btn):
             yield chat_history, download_btn
             REQUIRED_INFO["current_stage"] = 'algo_running'
             REQUIRED_INFO["current_stage"] = 'algo_running'
-
-        # Causal Discovery
-        if REQUIRED_INFO["current_stage"] == 'algo_running':   
+  
         # Causal Discovery
         if REQUIRED_INFO["current_stage"] == 'algo_running':   
             chat_history.append(("🔄 Run causal discovery algorithm...", None))
@@ -737,9 +740,6 @@ def process_message(message, chat_history, download_btn):
                 value=os.path.join(output_dir, 'output_report', 'report.pdf'),
                 interactive=True
             )
-            yield chat_history, download_btn
-            return chat_history, download_btn
-        else: # postprocess query cannot be parsed
             yield chat_history, download_btn
             return chat_history, download_btn
     

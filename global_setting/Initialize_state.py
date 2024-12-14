@@ -181,9 +181,11 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
     global_state.algorithm.selected_algorithm = info_extracted["selected_algorithm"]
 
     print(f"the following are dropped variables: {info_extracted['dropped_variables']}")
+    global_state.user_data.user_drop_features = info_extracted["dropped_variables"]
+
     print(f"the following are selected_variables: {info_extracted['selected_variables']}")
-    global_state.user_data.selected_variables = info_extracted["selected_variables"]
-    global_state.user_data.dropped_variables = info_extracted["dropped_variables"]
+    global_state.user_data.selected_features = info_extracted["selected_variables"]
+    
 
     if info_extracted["waiting_minutes"] is not None:
         global_state.algorithm.waiting_minutes = info_extracted["waiting_minutes"]

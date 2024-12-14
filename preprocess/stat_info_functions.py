@@ -206,9 +206,6 @@ def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
             # check if it's a boolean column with 0s and 1s and if it's a column with numerically encoded labels 
             if clean_df[column].isin([0, 1]).all(): 
                 column_type[column] = 'Category'
-            elif global_state.user_data.cat_as_num is not None:
-                if column in global_state.user_data.cat_as_num:
-                    column_type[column] = 'Category'
             else:
                 column_type[column] = 'Continuous'
         else:

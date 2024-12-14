@@ -12,7 +12,7 @@ class EDA(object):
         self.global_state = global_state
         self.data = global_state.user_data.processed_data[global_state.user_data.visual_selected_features]
         self.save_dir = global_state.user_data.output_graph_dir
-        self.focus_cols = global_state.user_data.selected_variables 
+        self.focus_cols = global_state.user_data.selected_features 
         # limit the number of features contained
         if self.data.shape[1] > 10:
             df = self.data.copy()
@@ -166,7 +166,7 @@ class EDA(object):
             return
         
         df = self.data.copy()
-        df = df.loc[:, self.focus_cols]
+
         # maybe address Number-Stored-As-String problem later
 
         # if column only has 0, 1 --> boolean values, classify it as categorical

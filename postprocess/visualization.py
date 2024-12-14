@@ -24,12 +24,6 @@ class Visualization(object):
         self.bootstrap_prob = global_state.results.bootstrap_probability
         self.save_dir = global_state.user_data.output_graph_dir
         self.threshold = threshold
-        self.focus_cols = global_state.user_data.selected_variables
-
-    # TODO (Chris, 2024-11-26): understand how graphs are made here, and revise them by 
-    # 1. adding additional graph for focused? 
-    # 2. revising current existing by giving more weight to the focused variables (but how?)
-
 
     def get_pos(self, g):
         if self.global_state.algorithm.selected_algorithm == 'FCI':
