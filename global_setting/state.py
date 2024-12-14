@@ -23,13 +23,6 @@ class UserData:
     user_drop_features: Optional[object] = None
     llm_drop_features: Optional[object] = None
     high_corr_drop_features: Optional[object] = None
-    selected_features: Optional[object] = None
-    important_features: Optional[object] = None
-    visual_selected_features: Optional[object] = None
-    system_drop_features: Optional[object] = None
-    user_drop_features: Optional[object] = None
-    llm_drop_features: Optional[object] = None
-    high_corr_drop_features: Optional[object] = None
 
 @dataclass
 class Statistics:
