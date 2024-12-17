@@ -111,7 +111,7 @@ def parse_args():
 
     args = parser.parse_args()
     return args
-    
+        
 
 def load_real_world_data(file_path):
     #Baseline code
@@ -191,7 +191,11 @@ def main(args):
     filter = Filter(args)
     global_state = filter.forward(global_state)
 
+    global_state = filter.forward(global_state)
+
     reranker = Reranker(args)
+    global_state = reranker.forward(global_state)
+
     global_state = reranker.forward(global_state)
 
     programmer = Programming(args)
@@ -263,6 +267,7 @@ def main(args):
     # calculate time
 
     # algorithm selection process
+    '''
     '''
     round = 0
     flag = False
