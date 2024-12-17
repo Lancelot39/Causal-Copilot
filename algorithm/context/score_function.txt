@@ -6,6 +6,7 @@
     - Efficient for Gaussian data.
 - **Limitations**:
     - Assumes linearity and Gaussian distribution, limiting its use for non-Gaussian data.
+- **Time Complexity**: O(np), where n is the number of samples and p is the number of variables. Relatively fast, especially for small to medium-sized datasets.
 
 ### **BDeu (Bayesian Dirichlet Equivalent Uniform)**
 
@@ -17,6 +18,7 @@
     - Can be sensitive to the choice of prior parameters.
 - **Suitable Cases**:
     - Discrete data with categorical variables.
+- **Time Complexity**: O(n2^k), where n is the number of samples and k is the number of parents for a node. Can become slow for dense graphs or with many categories per variable.
 
 ### Generalized Score Functions
 
@@ -30,3 +32,4 @@
 - **Suitable Cases**:
     - **Non-Gaussian and Non-linear Data**: When dealing with datasets that do not follow Gaussian distributions or involve non-linear causal relationships, generalized score functions provide a robust alternative to traditional scores.
     - **High-dimensional and Mixed-type Data**: For datasets with complex structures, including multi-dimensional variables and mixed continuous-discrete data, generalized score functions are well-suited to uncovering the underlying causal relationships.
+- **Time Complexity**: O(n^3) for kernel-based methods, where n is the number of samples. Significantly slower than BIC or BDeu, especially for large datasets, due to the use of nonparametric methods and kernel computations.

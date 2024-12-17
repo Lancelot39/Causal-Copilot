@@ -1,7 +1,15 @@
-- **Fisher’s Z (fisherz):**
+Available Independence Tests have been implemented:
+    - fisherz
+    - chisq
+    - gsq
+
+Not Available Independence Tests:
+    - kci
+    - mv_fisherz
+
+- **Fisher's Z (fisherz):**
     - **Description**:
-        
-        Fisher’s Z test is a parametric test based on the correlation between variables. It transforms the correlation coefficient into a Z-score to evaluate the null hypothesis that two variables are conditionally independent given a set of conditioning variables.
+    Fisher's Z test is a parametric test based on the correlation between variables. It transforms the correlation coefficient into a Z-score to evaluate the null hypothesis that two variables are conditionally independent given a set of conditioning variables.
         
     - **Assumptions**:
         - The data follows a Gaussian distribution.
@@ -12,6 +20,8 @@
     - **Limitations**:
         - Assumes linearity and Gaussianity, which may not hold in all datasets.
         - Performance degrades with non-linear relationships or non-Gaussian distributions.
+    - **Time Complexity**: O(n), where n is the number of samples. Very fast, especially for small to medium-sized datasets.
+
 - **Chi-Squared (chisq):**
     - **Description:**
     The Chi-squared test is a non-parametric test commonly used for discrete data. It evaluates the independence of categorical variables by comparing the observed frequency distribution with the expected frequency distribution under the null hypothesis.
@@ -24,6 +34,8 @@
     - **Limitations**:
         - Requires large sample sizes to be reliable.
         - May not be suitable for continuous data without discretization.
+    - **Time Complexity**: O(n), where n is the number of samples. Fast, especially for categorical data.
+
 - **G-Squared (gsq)**
     - **Description**:
     The G-squared test is another non-parametric test for categorical data, similar to the Chi-squared test. It is based on the likelihood ratio and is particularly useful for large sample sizes.
@@ -36,27 +48,18 @@
     - **Limitations**:
         - Requires large sample sizes to be effective.
         - May not be as interpretable or straightforward as the Chi-squared test for small sample sizes.
-- **Kernel-based (kci)**
-    - **Description**:
-    The Kernel-based Conditional Independence (KCI) test is a non-parametric test that uses kernel methods to assess independence. It is particularly effective for detecting non-linear dependencies between variables.
-    - **Assumptions**:
-        - Does not assume linearity or specific distributions, making it highly flexible.
-        - Complexity is cubic in the sample size, making it computationally intensive.
-    - **Advantages**:
-        - Capable of detecting non-linear relationships.
-        - Flexible and applicable to a wide range of data types, including continuous and high-dimensional data.
-    - **Limitations**:
-        - Computationally expensive, especially for large datasets.
-        - Requires careful selection of kernel parameters, which can be challenging without prior knowledge.
+    - **Time Complexity**: O(n), where n is the number of samples. Similar efficiency to Chi-squared test.
+
 - **Missing-value Fisher's Z Conditional Independence Test (mv_fisherz)**
     - **Description**:
-    A variant of the Fisher’s Z test designed to handle datasets with missing values. It uses testwise deletion or other correction techniques to adjust for missing data.
+    A variant of the Fisher's Z test designed to handle datasets with missing values. It uses testwise deletion or other correction techniques to adjust for missing data.
     - **Assumptions**:
         - The data is Gaussian, and the relationships are linear.
         - The missing data mechanism is Missing Completely at Random (MCAR) or Missing at Random (MAR).
     - **Advantages**:
-        - Extends the applicability of Fisher’s Z to datasets with missing values.
+        - Extends the applicability of Fisher's Z to datasets with missing values.
         - Can maintain statistical power despite missing data.
     - **Limitations**:
         - Still assumes linearity and Gaussianity.
         - Performance may degrade if the missing data mechanism is not well understood or handled.
+    - **Time Complexity**: O(n), where n is the number of non-missing samples. Slightly slower than standard Fisher's Z due to missing value handling, but still relatively fast.

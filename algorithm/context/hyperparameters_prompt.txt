@@ -1,0 +1,49 @@
+Given a dataset with the following properties:
+
+1. Columns: [COLUMNS]
+2. Statistics:
+[STATISTICS INFO]
+
+We have selected the following algorithm for causal discovery:
+
+Algorithm: [ALGORITHM_NAME]
+Description: [ALGORITHM_DESCRIPTION]
+
+Now, we need to set up the primary hyperparameters for this algorithm. Please consider the dataset characteristics and the algorithm requirements to suggest appropriate values for the following hyperparameters:
+
+[PRIMARY_HYPERPARAMETERS]
+
+For each primary hyperparameter, provide:
+1. The full name of the hyperparameter that is aligned with your understanding ('independence test', 'max depth', 'score function', etc.)
+2. The suggested value
+3. A brief explanation of why this value is appropriate given the dataset characteristics and algorithm requirements
+4. Each primary hyperparameter is provided with a default value, which should be adjusted based on the dataset characteristics and algorithm requirements
+
+Use the following information about each hyperparameter to inform your decisions:
+
+[HYPERPARAMETER_INFO]
+
+Please provide your suggestions in a structured JSON format. Your response should look like this:
+
+{
+  "algorithm": "[ALGORITHM_NAME]",
+  "hyperparameters": {
+    "[HYPERPARAMETER_1_NAME]": {
+      "full_name": "[HYPERPARAMETER_1_FULL_NAME]",
+      "value": [SUGGESTED_VALUE],
+      "explanation": "[BRIEF_EXPLANATION]"
+    },
+    "[HYPERPARAMETER_2_NAME]": {
+      "full_name": "[HYPERPARAMETER_2_FULL_NAME]",
+      "value": [SUGGESTED_VALUE],
+      "explanation": "[BRIEF_EXPLANATION]"
+    },
+    ...
+  }
+}
+
+Please always determine the hyperparameters from its corresponding "Suggested Values" part, DO NOT use any values just exist in other context but not in "Suggested Values".
+
+Please consider the trade-offs between accuracy and computational efficiency when suggesting values. If you're unsure about a specific value, you may suggest using the default value and explain why.
+
+Please provide your hyperparameter suggestions following this JSON structure.

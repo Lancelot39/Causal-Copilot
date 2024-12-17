@@ -1,0 +1,13 @@
+{
+  "n_nodes": 5,
+  "n_samples": 2500,
+  "n_domains": 1,
+  "noise_type": "gaussian",
+  "function_type": "linear",
+  "node_functions": null,
+  "categorical": null,
+  "measurement_error": null,
+  "selection_bias": null,
+  "confounding": null,
+  "missing_rate": null
+}

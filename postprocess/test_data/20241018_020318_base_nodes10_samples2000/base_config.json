@@ -1,0 +1,24 @@
+{
+  "n_nodes": 10,
+  "n_samples": 2000,
+  "n_domains": 1,
+  "noise_type": "gaussian",
+  "function_type": "linear",
+  "node_functions": {
+    "X0": "independent",
+    "X1": "linear",
+    "X2": "linear",
+    "X3": "linear",
+    "X4": "linear",
+    "X5": "linear",
+    "X6": "linear",
+    "X7": "linear",
+    "X8": "linear",
+    "X9": "linear"
+  },
+  "categorical": null,
+  "measurement_error": null,
+  "selection_bias": null,
+  "confounding": null,
+  "missing_rate": null
+}

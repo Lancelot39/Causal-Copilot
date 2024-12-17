@@ -1,0 +1,21 @@
+{
+  "n_nodes": 8,
+  "n_samples": 1500,
+  "noise_type": "gaussian",
+  "function_type": "neural_network",
+  "node_functions": {
+    "0": "independent",
+    "3": "independent",
+    "5": "independent",
+    "7": "independent",
+    "1": "neural_network",
+    "4": "neural_network",
+    "2": "neural_network",
+    "6": "neural_network"
+  },
+  "categorical": "All columns quantized into 2 categories",
+  "measurement_error": null,
+  "selection_bias": null,
+  "confounding": null,
+  "missing_rate": null
+}

@@ -1,0 +1,5 @@
+{"algo": "PC", "code": "graph = pc(data, alpha=0.05, indep_test='fisherz', stable=True, uc_rule=0, uc_priority=2, mvpc=False, correction_name='MV_Crtn_Fisher_Z', background_knowledge=None, verbose=False)"}
+{"algo": "FCI", "code": "graph, edges = fci(data, independence_test_method='fisherz', alpha=0.05, depth=-1, max_path_length=-1, verbose=False, background_knowledge=None, cache_variables_map=None)"}
+{"algo": "CD-NOD", "code": "graph = cdnod(data, c_indx, alpha=0.05, indep_test='fisherz', stable=True, uc_rule=0, uc_priority=2, mvcdnod=False, correction_name='MV_Crtn_Fisher_Z', background_knowledge=None, verbose=False)"}
+{"algo": "GES", "code": "graph = ges(data, score_func='local_score_BIC', maxP=None, parameters=None)['G']"}
+{"algo": "LiNGAM", "code": "model = lingam.ICALiNGAM(random_state=None, max_iter=1000)\nmodel.fit(data)"}

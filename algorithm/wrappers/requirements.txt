@@ -1,0 +1,90 @@
+**Goal: have a consistent input, arugments, outputs on all the causal-learn algorithms** 
+
+### Input
+
+- Dataframe
+- Numpy array (samples * variables)
+
+### Arguments
+
+- PC
+    - Important parameters
+        - alpha
+        - independence_test
+        - [need to add] depth
+    - Default and less important parameters
+        - stable
+        - uc_rule
+        - uc_priority
+        - mvpc
+        - correction_name
+        - background_knowledge (TODO)
+        - verbose
+        - show_progress
+- FCI
+    - Important parameters
+        - alpha
+        - independence_test
+        - [need to add] depth
+    - Default and less important parameters
+        - max_path_length
+        - background_knowledge (TODO)
+        - verbose
+        - show_progress
+        - cache_variables_map
+- CD-NOD
+    - Important parameters
+        - c_indx (has to be provided by the user)
+        - alpha
+        - independence_test
+        - [need to add] depth
+    - Default and less important parameters
+        - stable
+        - uc_rule
+        - uc_priority
+        - mvpc
+        - correction_name
+        - background_knowledge (TODO)
+        - verbose
+        - show_progress
+- GES
+    - Score function
+    - Max parents
+    - CV
+        - kfold
+        - lambda
+        - dlabel
+- NO-TEARs
+    - max_iter: int = 100,
+    - h_tol: float = 1e-8,
+    - w_threshold: float = 0.0,
+    - tabu_edges: List[Tuple[int, int]] = None,
+    - tabu_parent_nodes: List[int] = None,
+    - tabu_child_nodes: List[int] = None,
+    - sparse: bool = True,
+- ICA-LiNGAM
+- Direct-LiNGAM
+    - Important parameters
+        - c_indx (has to be provided by the user)
+        - alpha
+        - independence_test
+        - [need to add] depth
+    - Default and less important parameters
+        - random_state
+        - prior_knowledge (TODO)
+        - **apply_prior_knowledge_softly**
+        - measure
+
+### Output
+
+- Adjacency matrix (Numpy array, where (j, i) = 1, indicating i → j)
+    - Initially, only output the DAG to maximize the recall
+- Info
+    - PC
+    - FCI
+        - edge property
+    - CD-NOD
+    - GES
+        - score
+    - ICA/Direct/VAR-LiNGAM
+        - causal order

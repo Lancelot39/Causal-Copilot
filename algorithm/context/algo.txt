@@ -1,4 +1,4 @@
-### Input
+## Input
 
 User’s input + Analysis about the data properties + Domain Knowledge
 
@@ -18,11 +18,60 @@ User’s input + Analysis about the data properties + Domain Knowledge
     - Non-stationary/Heterogeneous
 - Domain Knowledge from LLM
 
-### Output
+## Available Algorithms
 
-The algorithm chosen and corresponding experiment codes
+Current available algorithms implemented for usage:
 
-## Algorithms (Tabular)
+- PC
+- FCI
+- CDNOD
+- GES
+- NOTEARS
+- DirectLiNGAM
+- ICALiNGAM
+
+## Domain Knowledge about Algorithm Selection
+
+Based on the characteristics of your data and requirements, consider the following priority order for selecting causal discovery algorithms:
+
+1. If your data is nonstationary or heterogeneous across domains/time:
+   - Use CDNOD as the first choice
+   - Note that DO NOT use it if your data is not heterogeneous or nonstationary
+   
+2. If your data is linear or you prefer a score-based approach and assume no hidden confounders:
+   - Consider GES (Greedy Equivalence Search)
+   
+3. If the noise is non-Gaussian and you believe the relationships are linear:
+   - Try DirectLiNGAM first
+   - If computational resources allow, also consider ICALiNGAM
+   - Note that DO NOT use them if there are non-linear relations in your data.
+
+4. If you have a large dataset with all relevant variables observed:
+   - Start with PC algorithm
+   
+5. If your data is high-dimensional and you prefer a continuous optimization approach:
+   - Experiment with NOTEARS
+   
+6. If you suspect the presence of hidden confounders:
+   - Try FCI as the primary algorithm
+
+Additional considerations:
+
+- For large datasets where efficiency is crucial, prioritize PC or GES
+- If you need a fully directed graph rather than a Markov equivalence class, prefer LiNGAM variants or NOTEARS
+- When dealing with non-linear relationships, consider extensions of these algorithms designed for non-linear data
+
+Default algorithm ranking for general cases (when data doesn't favor any specific characteristics):
+
+1. PC: Good balance between generality and computational efficiency
+2. GES: Efficient for larger datasets and provides a good general approach
+3. FCI: More general than PC but computationally more intensive
+4. NOTEARS: Efficient for high-dimensional data but assumes linear relationships
+5. DirectLiNGAM: Efficient but assumes linear relationships and non-Gaussian noise
+6. ICALiNGAM: More computationally intensive than DirectLiNGAM
+7. CDNOD: Specialized for nonstationary/heterogeneous data, may be overkill for stationary data
+
+## Algorithms Description (Tabular)
 
 ### PC
 
@@ -55,32 +104,32 @@ The algorithm chosen and corresponding experiment codes
     - Computationally more intensive than the PC algorithm.
     - Like PC, it identifies a PAG, which is less informative than a full DAG.
 
-### CD-NOD
+### CDNOD
 
 - **Description**:
-CD-NOD (Causal Discovery from Nonstationary/heterogeneous Data) is a framework designed to discover causal relationships in data where the underlying generating process changes across different domains or over time. This method extends traditional conditional independence based causal discovery approaches to handle nonstationary and heterogeneous data, which is common in many real-world applications.
+CDNOD (Causal Discovery from Nonstationary/heterogeneous Data) is a framework designed to discover causal relationships in data where the underlying generating process changes across different domains or over time. This method extends traditional conditional independence based causal discovery approaches to handle nonstationary and heterogeneous data, which is common in many real-world applications.
 
 **Assumptions**:
 
-- **Nonstationarity**: The data distribution is allowed to change over time or across different domains. CD-NOD assumes that these changes can be captured by a known index (domain or time).
+- **Nonstationarity**: The data distribution is allowed to change over time or across different domains. CDNOD assumes that these changes can be captured by a known index (domain or time).
 - **Faithfulness**: The observed dependencies in the data faithfully represent the underlying causal structure.
 - **Markov Condition**: Each variable is independent of its non-effects given its direct causes.
 
 **Advantages**:
 
-- **Adaptability to Nonstationary Data**: Unlike traditional methods that assume a static data distribution, CD-NOD is tailored for scenarios where the causal structure may change over time or across domains.
-- **Identification of Mechanism Changes**: CD-NOD can not only identify the causal skeleton but also estimate the properties of the changes in the causal mechanisms, providing more information about directions.
+- **Adaptability to Nonstationary Data**: Unlike traditional methods that assume a static data distribution, CDNOD is tailored for scenarios where the causal structure may change over time or across domains.
+- **Identification of Mechanism Changes**: CDNOD can not only identify the causal skeleton but also estimate the properties of the changes in the causal mechanisms, providing more information about directions.
 
 **Limitations**:
 
 - **Dependence on Domain/Time Index**: The method requires accurate and available domain or time indices to effectively model the changes in distribution. It can not handle streaming data.
 - **Computational Complexity**: Handling nonstationary data adds computational overhead, particularly in large datasets with complex causal relationships.
-- **Similar to PC**: While CD-NOD extends PC, it still inherits some limitations, such as the dependency on large sample sizes for reliable conditional independence testing and the output being a Markov equivalence class rather than a fully directed acyclic graph.
+- **Similar to PC**: While CDNOD extends PC, it still inherits some limitations, such as the dependency on large sample sizes for reliable conditional independence testing and the output being a Markov equivalence class rather than a fully directed acyclic graph.
 
 **Suitable Cases**:
 
-- **Nonstationary Environments**: CD-NOD is particularly suitable for applications where data distributions change over time or across different environments, such as in financial markets, climate studies, or biomedical research.
-- **Heterogeneous Data**: When the data is collected from different domains or under different conditions, CD-NOD can effectively identify causal relationships that adapt to these variations.
+- **Nonstationary Environments**: CDNOD is particularly suitable for applications where data distributions change over time or across different environments, such as in financial markets, climate studies, or biomedical research.
+- **Heterogeneous Data**: When the data is collected from different domains or under different conditions, CDNOD can effectively identify causal relationships that adapt to these variations.
 
 ### GES
 

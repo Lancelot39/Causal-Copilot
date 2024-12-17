@@ -1,0 +1,3 @@
+[submodule "causal-learn"]
+	path = causal-learn
+	url = https://github.com/CharonWangg/causal-learn.git

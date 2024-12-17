@@ -1,6 +1,7 @@
 from openai import OpenAI
 import json
 
+
 class Filter(object):
     def __init__(self, args):
         self.args = args
@@ -10,30 +11,21 @@ class Filter(object):
         with open(f"algorithm/context/{filename}.txt", "r") as f:
             return f.read()
 
-    def create_prompt(self, data, statics_dict):
+    def create_prompt(self, data, statistics_desc):
         columns = ', '.join(data.columns)
-        stats = json.loads(statics_dict)
-        
+
         algo_context = self.load_context("algo")
-        score_function_context = self.load_context("score_function")
-        independence_test_context = self.load_context("independence_test")
         prompt_template = self.load_context("algo_select_prompt")
-        
+
         replacements = {
             "[COLUMNS]": columns,
-            "[DATA_TYPE]": stats['Data Type'],
-            "[MISSINGNESS]": str(stats['Missingness']),
-            "[LINEARITY]": str(stats.get('Linearity', 'N/A')),
-            "[GAUSSIAN_ERROR]": str(stats.get('Gaussian Error', 'N/A')),
-            "[STATIONARY]": str(stats.get('Stationary', 'N/A')),
+            "[STATISTICS_DESC]": statistics_desc,
             "[ALGO_CONTEXT]": algo_context,
-            "[SCORE_FUNCTION_CONTEXT]": score_function_context,
-            "[INDEPENDENCE_TEST_CONTEXT]": independence_test_context
         }
-        
+
         for placeholder, value in replacements.items():
             prompt_template = prompt_template.replace(placeholder, value)
-        
+
         return prompt_template
 
     def parse_response(self, response):
@@ -41,27 +33,32 @@ class Filter(object):
             algo_candidates = json.loads(response)
             return {algo['name']: {
                 'description': algo['description'],
-                'justification': algo['justification'],
-                'independence_test_or_score_function': algo['independence_test_or_score_function'],
-                'hyperparameters': algo['hyperparameters']
+                'justification': algo['justification']
             } for algo in algo_candidates['algorithms']}
         except json.JSONDecodeError:
             print("Error: Unable to parse JSON response")
             return {}
 
-    def forward(self, data, statics_dict):
-        prompt = self.create_prompt(data, statics_dict)
-        
+    def forward(self, global_state):
+        prompt = self.create_prompt(global_state.user_data.processed_data, global_state.statistics.description)
+
         response = self.client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a causal discovery expert. Provide your response in JSON format."},
+                {"role": "system",
+                 "content": "You are a causal discovery expert. Provide your response in JSON format."},
                 {"role": "user", "content": prompt}
             ],
             response_format={"type": "json_object"}
         )
-        
+
         output = response.choices[0].message.content
-        algo_candidates = self.parse_response(output)
-        
-        return algo_candidates
+        algorithm_candidates = self.parse_response(output)
+
+        global_state.algorithm.algorithm_candidates = algorithm_candidates
+        global_state.logging.select_conversation.append({
+            "prompt": prompt,
+            "response": response.choices[0].message.content
+        })
+
+        return global_state

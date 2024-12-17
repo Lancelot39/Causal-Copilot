@@ -2,29 +2,17 @@ Given a dataset with the following properties:
 
 1. Columns: [COLUMNS]
 2. Statistics:
-   - Data Type: [DATA_TYPE]
-   - Missingness: [MISSINGNESS]
-   - Linearity: [LINEARITY]
-   - Gaussian Error: [GAUSSIAN_ERROR]
-   - Stationary: [STATIONARY]
+[STATISTICS_DESC]
 
 Please analyze the dataset characteristics and recommend suitable causal discovery algorithms. Use the following context information to inform your recommendations:
 
 Algorithms:
 [ALGO_CONTEXT]
 
-Score Functions:
-[SCORE_FUNCTION_CONTEXT]
-
-Independence Tests:
-[INDEPENDENCE_TEST_CONTEXT]
-
 For each recommended algorithm, provide:
-1. Algorithm name
+1. Algorithm name (name of the available algorithm in the implementation)
 2. Brief description
 3. Justification for its suitability based on the dataset characteristics
-4. Suggested independence test or score function (if applicable)
-5. Key hyperparameters to consider
 
 Present your recommendations in a structured JSON format, focusing on the most suitable algorithms given the dataset characteristics. Limit your recommendations to the top 3 most suitable algorithms.
 
@@ -36,31 +24,16 @@ Please structure your response like this example:
       "name": "Algorithm Name",
       "description": "Brief description of the algorithm.",
       "justification": "Explanation of why this algorithm is suitable for the given dataset.",
-      "independence_test_or_score_function": "Suggested test or function, if applicable.",
-      "hyperparameters": {
-        "Hyperparameter 1": "Description or suggested value",
-        "Hyperparameter 2": "Description or suggested value"
-      }
     },
     {
       "name": "Another Algorithm Name",
       "description": "Brief description of another algorithm.",
       "justification": "Explanation of why this algorithm is also suitable.",
-      "independence_test_or_score_function": "Suggested test or function, if applicable.",
-      "hyperparameters": {
-        "Hyperparameter A": "Description or suggested value",
-        "Hyperparameter B": "Description or suggested value"
-      }
     },
     {
       "name": "Third Algorithm Name",
       "description": "Brief description of a third algorithm.",
       "justification": "Explanation of why this algorithm is also suitable.",
-      "independence_test_or_score_function": "Suggested test or function, if applicable.",
-      "hyperparameters": {
-        "Hyperparameter X": "Description or suggested value",
-        "Hyperparameter Y": "Description or suggested value"
-      }
     }
   ]
 }
