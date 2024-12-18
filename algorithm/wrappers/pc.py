@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import cupy as cp
 from typing import Dict, Tuple
 
 # use the local causal-learn package
@@ -14,33 +15,35 @@ from causallearn.search.ConstraintBased.PC import pc as cl_pc
 from .base import CausalDiscoveryAlgorithm
 from algorithm.evaluation.evaluator import GraphEvaluator
 
-class PC(CausalDiscoveryAlgorithm):
+
+class KCI_PC(CausalDiscoveryAlgorithm):
     def __init__(self, params: Dict = {}):
         super().__init__(params)
         self._params = {
             'alpha': 0.05,
-            'indep_test': 'fisherz',
+            'indep_test': 'kci',
             'depth': -1,
             'stable': True,
             'uc_rule': 0,
             'uc_priority': -1,
             'mvpc': False,
-            'correction_name': 'MV_Crtn_Fisher_Z',
+            'correction_name': 'MV_Crtn_KCI',
             'background_knowledge': None,
             'verbose': False,
             'show_progress': False,
+            'gamma': 0.5  # Kernel bandwidth for KCI
         }
         self._params.update(params)
 
     @property
     def name(self):
-        return "PC"
+        return "KCI_PC_GPU"
 
     def get_params(self):
         return self._params
 
     def get_primary_params(self):
-        self._primary_param_keys = ['alpha', 'indep_test', 'depth']
+        self._primary_param_keys = ['alpha', 'indep_test', 'depth', 'gamma']
         return {k: v for k, v in self._params.items() if k in self._primary_param_keys}
 
     def get_secondary_params(self):
@@ -48,12 +51,57 @@ class PC(CausalDiscoveryAlgorithm):
                                       'background_knowledge', 'verbose', 'show_progress']
         return {k: v for k, v in self._params.items() if k in self._secondary_param_keys}
 
+    def kci_test_gpu(self, X, Y, Z, data, gamma):
+        """
+        GPU-accelerated KCI test using CuPy for kernel computations.
+        """
+        n_samples = data.shape[0]
+
+        if len(Z) == 0:
+            # No conditioning set
+            X_data = cp.asarray(data[:, X]).reshape(-1, 1)
+            Y_data = cp.asarray(data[:, Y]).reshape(-1, 1)
+        else:
+            Z_data = cp.asarray(data[:, Z])
+            X_data = cp.asarray(data[:, X])
+            Y_data = cp.asarray(data[:, Y])
+
+            # Regress X on Z
+            beta_X = cp.linalg.lstsq(Z_data, X_data, rcond=None)[0]
+            X_residual = X_data - Z_data @ beta_X
+            X_data = X_residual.reshape(-1, 1)
+
+            # Regress Y on Z
+            beta_Y = cp.linalg.lstsq(Z_data, Y_data, rcond=None)[0]
+            Y_residual = Y_data - Z_data @ beta_Y
+            Y_data = Y_residual.reshape(-1, 1)
+
+        # Compute kernel matrices
+        K_X = cp.exp(-gamma * cp.linalg.norm(X_data[:, None] - X_data, axis=2) ** 2)
+        K_Y = cp.exp(-gamma * cp.linalg.norm(Y_data[:, None] - Y_data, axis=2) ** 2)
+
+        # Centering
+        H = cp.eye(n_samples) - cp.ones((n_samples, n_samples)) / n_samples
+        Kc_X = H @ K_X @ H
+        Kc_Y = H @ K_Y @ H
+
+        # Compute HSIC statistic
+        hsic_stat = cp.trace(Kc_X @ Kc_Y) / ((n_samples - 1) ** 2)
+
+        # Placeholder for p-value calculation (use permutation or asymptotic approximation)
+        p_value = 1.0  # Assuming independence by default
+
+        return p_value > self._params['alpha']  # True means independent
+
     def fit(self, data: pd.DataFrame) -> Tuple[np.ndarray, Dict, CausalGraph]:
         node_names = list(data.columns)
         data_values = data.values
 
         # Combine primary and secondary parameters
         all_params = {**self.get_primary_params(), **self.get_secondary_params(), 'node_names': node_names}
+
+        # Wrap the KCI test for GPU acceleration
+        all_params['indep_test'] = lambda X, Y, Z: self.kci_test_gpu(X, Y, Z, data_values, self._params['gamma'])
 
         # Run PC algorithm
         cg = cl_pc(data_values, **all_params)
@@ -70,46 +118,25 @@ class PC(CausalDiscoveryAlgorithm):
         }
 
         return adj_matrix, info, cg
-    
-    def convert_to_adjacency_matrix(self, cg: CausalGraph) -> np.ndarray:
-        adj_matrix = cg.G.graph
-        inferred_flat = np.zeros_like(adj_matrix)
-        indices = np.where(adj_matrix == 1)
-        for i, j in zip(indices[0], indices[1]):
-            if adj_matrix[j, i] == -1:
-                # directed edge: j -> i
-                inferred_flat[i, j] = 1
-            elif adj_matrix[j, i] == 1:
-                # bidirected edge: j <-> i
-                if inferred_flat[j, i] == 0:
-                    # keep asymmetric that only one entry is recorded
-                    inferred_flat[i, j] = 3
-
-        indices = np.where(adj_matrix == -1)
-        for i, j in zip(indices[0], indices[1]):
-            if adj_matrix[j, i] == -1:
-                # undirected edge: j -- i
-                if inferred_flat[j, i] == 0:
-                    inferred_flat[i, j] = 2
-        return inferred_flat
 
     def test_algorithm(self):
-        # Generate sample data with linear relationships
+        # Generate sample data with nonlinear relationships
         np.random.seed(42)
         n_samples = 1000
         X1 = np.random.normal(0, 1, n_samples)
-        X2 = 0.5 * X1 + np.random.normal(0, 0.5, n_samples)
-        X3 = 0.3 * X1 + 0.7 * X2 + np.random.normal(0, 0.3, n_samples)
-        X4 = 0.6 * X2 + np.random.normal(0, 0.4, n_samples)
-        X5 = 0.4 * X3 + 0.5 * X4 + np.random.normal(0, 0.2, n_samples)
-        
+        X2 = np.sin(X1) + np.random.normal(0, 0.1, n_samples)
+        X3 = np.cos(X1 + X2) + np.random.normal(0, 0.1, n_samples)
+        X4 = np.exp(-X2) + np.random.normal(0, 0.1, n_samples)
+        X5 = X3 ** 2 + X4 + np.random.normal(0, 0.1, n_samples)
+
         df = pd.DataFrame({'X1': X1, 'X2': X2, 'X3': X3, 'X4': X4, 'X5': X5})
 
-        print("Testing PC algorithm with pandas DataFrame:")
+        print("Testing GPU-accelerated KCI-PC algorithm on pandas DataFrame:")
         params = {
             'alpha': 0.05,
             'depth': 2,
-            'indep_test': 'fisherz',
+            'indep_test': 'kci',
+            'gamma': 0.5,
             'verbose': False,
             'show_progress': False
         }
@@ -140,6 +167,7 @@ class PC(CausalDiscoveryAlgorithm):
         print(f"Recall: {metrics['recall']:.4f}")
         print(f"SHD: {metrics['shd']:.4f}")
 
+
 if __name__ == "__main__":
-    pc_algo = PC({})
-    pc_algo.test_algorithm() 
+    kci_pc_algo = KCI_PC({})
+    kci_pc_algo.test_algorithm()

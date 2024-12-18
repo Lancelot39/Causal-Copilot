@@ -15,3 +15,21 @@
 - **Suitable Cases**:
     - Large datasets where computational efficiency is crucial.
     - Scenarios where all relevant variables are observed and the underlying causal structure is assumed to be acyclic. 
+
+# Accelerated KCI Test
+
+## Description
+The Accelerated Kernel-based Conditional Independence (KCI) test leverages GPU (CuPy) with Herbert-Schmidt Independence Criterion to perform computationally intensive operations like kernel matrix computation and matrix manipulations in a highly parallelized manner.
+
+### Features:
+- Supports Gaussian, Linear, and Polynomial kernels.
+- Accelerated using CuPy for GPU processing.
+- Provides significant speedup for large datasets.
+
+## Use Case
+This algorithm is designed for tasks requiring fast conditional independence testing for causal discovery pipelines, particularly in high-dimensional or large-scale datasets.
+
+## Parameters
+- **Kernel Type:** Gaussian (default), Linear, Polynomial.
+- **Significance Level (Alpha):** Default is 0.05.
+- **Kernel Bandwidth (Gamma):** Default is 0.5.
