@@ -311,16 +311,11 @@ def process_message(message, chat_history, download_btn):
     
             # Initialize global state
             if REQUIRED_INFO['data_uploaded'] and REQUIRED_INFO['initial_query']:
-                print('start analysis')
+                print('strart analysis')
                 global_state = global_state_initialization(args)
 
                 # Load data
                 global_state.user_data.raw_data = pd.read_csv(target_path)
-                if global_state.user_data.user_drop_features is not None:
-                    drop_features = global_state.user_data.user_drop_features
-                    global_state.user_data.raw_data = global_state.user_data.raw_data.drop(drop_features, axis = 1)
-                    print("successfully dropped user intended features: changes directly applied to raw data")
-
                 global_state.user_data.processed_data = global_state.user_data.raw_data
                 yield chat_history, download_btn
                 # TODO: choose important features
