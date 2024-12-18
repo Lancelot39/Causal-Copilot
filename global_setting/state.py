@@ -20,7 +20,7 @@ class UserData:
     important_features: Optional[object] = None #  features that users are interested in
     user_drop_features: Optional[object] = None #  features that users would like to drop based on sparsity table
     llm_drop_features: Optional[object] = None # features that LLM recommended to drop
-    high_corr_drop_features: Optional[object] = None # features dropped due to high correlation
+    nan_indicator: Optional[str] = None
 
 @dataclass
 class Statistics:

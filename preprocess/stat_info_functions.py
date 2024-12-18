@@ -25,6 +25,30 @@ from openai import OpenAI
 
 # new package
 from scipy.interpolate import UnivariateSpline
+from sympy.codegen.ast import Return
+
+
+# Missingness Detect #################################################################################################
+def np_nan_detect(global_state):
+    has_nan = global_state.user_data.raw_data.isnull().values.any()
+    return has_nan
+
+def numeric_str_nan_detect(global_state):
+    nan_value = global_state.user_data.nan_indicator
+    data = global_state.user_data.raw_data
+
+    nan_detect = True
+
+    # missing value is represented as in the int format
+    if nan_value.isdigit():
+        global_state.user_data.raw_data = data.replace(int(nan_value), np.nan, inplace=True)
+    # missing value is represented as in the str format
+    elif data.isin([nan_value]).any().any():
+        global_state.user_data.raw_data = data.replace(nan_value, np.nan, inplace=True)
+    else:
+        nan_detect = False
+
+    return global_state, nan_detect
 
 
 # Missingness Checking #################################################################################################
