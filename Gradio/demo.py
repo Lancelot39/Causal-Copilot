@@ -678,6 +678,9 @@ def process_message(message, chat_history, download_btn):
                     return chat_history, download_btn
                 else:
                     global_state.algorithm.selected_algorithm = user_algo_selection(message)
+                    global_state.algorithm.algorithm_arguments_json = json.loads(global_state.algorithm.selected_algorithm)
+                    # default values for reranker
+                    #assign new arguments for global_state.algorithm.algorithm_arguments_json using default values from hyperparameters.json
                     REQUIRED_INFO['current stage'] == 'user_algo_seleciton'
 
 
