@@ -51,7 +51,7 @@ class Judge(object):
                  revised causal graph based on errors.
         '''
 
-        from postprocess.judge_functions import bootstrap, llm_evaluation, bootstrap_recommend, llm_evaluation_new, kci_pruning
+        from postprocess.judge_functions import bootstrap, llm_evaluation, llm_evaluation_new_cycle,bootstrap_recommend, llm_evaluation_new, kci_pruning
 
         # Statistics Perspective: Bootstrapping to get probability of edges using the selected algorithm.
         edge_recom, boot_probability = bootstrap(data=data, full_graph=full_graph, algorithm=algorithm, hyperparameters=hyperparameters,
@@ -114,7 +114,7 @@ class Judge(object):
         ############ Edge Pruning with LLM ############
         from postprocess.visualization import convert_to_edges
         revised_edges_dict = convert_to_edges(self.global_state.algorithm.selected_algorithm, self.global_state.user_data.processed_data.columns, revised_graph)
-        direct_dict, forbid_dict = llm_evaluation_new(data, self.args, revised_edges_dict, 
+        direct_dict, forbid_dict = llm_evaluation_new_cycle(data, self.args, revised_edges_dict, 
                                                       self.global_state.results.bootstrap_probability, bootstrap_check_dict, 
                                                       prompt_type, voting_num)
         llm_pruning_record={

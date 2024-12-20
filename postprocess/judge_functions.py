@@ -592,6 +592,50 @@ def llm_evaluation(data, args, edges_dict, boot_edges_prob, bootstrap_check_dict
             forbid_dict[(idx_j, idx_i)] = ((var_j, var_i), explanation)
     return direct_dict, forbid_dict
 
+def check_for_cycles(graph, edge_addition):
+    """
+    Check if adding the given edge introduces a cycle in the graph.
+    :param graph: The current causal graph.
+    :param edge_addition: The edge to be added (node_i, node_j).
+    :return: True if a cycle is introduced, False otherwise.
+    """
+    import networkx as nx
+    
+    # Convert the graph to a NetworkX DiGraph
+    G = nx.DiGraph(graph)
+    
+    # Add the proposed edge
+    G.add_edge(edge_addition[0], edge_addition[1])
+    
+    # Check for cycles
+    return not nx.is_directed_acyclic_graph(G)
+
+def check_for_colliders(graph, edge_addition):
+    """
+    Check if adding the given edge creates a new collider in the graph.
+    :param graph: The current causal graph.
+    :param edge_addition: The edge to be added (node_i, node_j).
+    :return: True if a new collider is created, False otherwise.
+    """
+    import networkx as nx
+    
+    # Convert the graph to a NetworkX DiGraph
+    G = nx.DiGraph(graph)
+    
+    # Add the proposed edge
+    G.add_edge(edge_addition[0], edge_addition[1])
+    
+    # Check for colliders
+    for node in G.nodes():
+        parents = list(G.predecessors(node))
+        if len(parents) > 1:
+            for u in parents:
+                for v in parents:
+                    if u != v and not G.has_edge(u, v) and not G.has_edge(v, u):
+                        return True
+    return False
+
+
 def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_dict, prompt_type, vote_num=3):
     """
     Here we let LLM double check the result of initial graph, and make edition (determine direction & delete edge)
@@ -844,6 +888,261 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
         check_node_relationship(main_node)    
     #########################
     return direct_dict, forbid_dict
+
+
+def llm_evaluation_new_cycle(data, args, edges_dict, boot_edges_prob, bootstrap_check_dict, prompt_type, vote_num=3):
+    """
+    Here we let LLM double check the result of initial graph, and make edition (determine direction & delete edge)
+    Provided Info:
+    1. Structure of whole graph
+    (ancestor decendant ... relationship?)
+    2. Bootstrap Probability
+    3. Pair relationship in the original graph
+    Return: Result dicts with domain knowledge and explanation
+    """
+
+    ### conbine uncertain edges
+    uncertain_edges_exist = bootstrap_check_dict['middle_prob_edges']['exist']
+    uncertain_edges_nonexist = bootstrap_check_dict['middle_prob_edges']['non-exist']
+    combined_uncertain_edges = uncertain_edges_exist + uncertain_edges_nonexist
+    # Remove duplicate tuples
+    combined_uncertain_edges = list(set(tuple(sorted((i, j))) for (i, j) in combined_uncertain_edges))
+
+    # Convert edges into node group
+    # Initialize an empty dictionary
+    grouped_dict = {}
+    # Iterate over the list of tuples
+    for idx_i, idx_j in combined_uncertain_edges:
+        # Convert the first element to a string for the key
+        key = data.columns[idx_i]
+        # Append the tuple to the corresponding key in the dictionary
+        if key not in grouped_dict:
+            grouped_dict[key] = []  # Create a new list if the key doesn't exist
+        grouped_dict[key].append((data.columns[idx_i], data.columns[idx_j]))
+    print('grouped_dict',grouped_dict)
+
+    direct_dict = {}
+    forbid_dict = {}
+    ##############iteration##################
+    def check_node_relationship(main_node):
+        # Relationships for main node
+        relation_text_dict, relation_text = edges_to_relationship(data, edges_dict, boot_edges_prob)
+        directed_exist_texts_mainnode = ', '.join([text for text in relation_text_dict['certain_edges'] if main_node in text])
+        try:
+            undirected_exist_texts_mainnode = ', '.join([text for text in relation_text_dict['uncertain_edges'] if main_node in text])
+        except:
+            undirected_exist_texts_mainnode = 'None'
+        # print('directed_exist_texts_mainnode',directed_exist_texts_mainnode)
+        # print('undirected_exist_texts_mainnode',undirected_exist_texts_mainnode)
+        
+        related_pairs = grouped_dict[main_node]
+        # Basic Prompt: No infos and ask relationships directly
+        prompt_pruning = f"""
+        **Context**: 
+        We want to carry out causal discovery analysis, considering these variables: {data.columns.tolist()}. 
+        """
+        # All Pairwise Relationships
+        if 'all_relations' in prompt_type:
+            prompt_pruning += f"""
+            We have conducted the statistical causal discovery algorithm to find the following causal relationships from a statistical perspective:
+            {relation_text}
+            According to the results shown above, it has been determined that {directed_exist_texts_mainnode} and {undirected_exist_texts_mainnode}, but it may not be correct. 
+            """
+        # Markov Blanket Context
+        if 'markov_blanket' in prompt_type:
+            prompt_pruning += f"""
+            We have conducted the statistical causal discovery algorithm to find the following causal relationships from a statistical perspective:
+            Edges of node {main_node}:
+            {directed_exist_texts_mainnode} and {undirected_exist_texts_mainnode}
+            """
+            # Add adjacency matrix context
+        if 'adj_matrix' in prompt_type:
+            adj_matrix = edges_dict_to_adj_matrix(edges_dict, data.columns)
+            prompt_pruning += f"""
+            This is the adjacency matrix representation of the current causal graph:
+
+            **Adjacency Matrix**:
+            Variables: {data.columns.tolist()}
+            Matrix:
+            {adj_matrix.tolist()}
+
+            **Definitions of Causal Structures**:
+            - **Chain Structure (A → B → C)**:
+            - Variable A causes B, and B causes C.
+            - **Fork Structure (A ← B → C)**:
+            - Variable B causes both A and C.
+            - **Collider Structure (A → B ← C)**:
+            - Variables A and C both cause B.
+
+            **Your Task**:
+            1. Analyze the adjacency matrix and identify causal structures such as chains, forks, and colliders.
+            2. Reevaluate the relationships involving {main_node} in the context of these structures.
+            """
+        if 'new_relationship_prompt' in prompt_type:
+            prompt_pruning += f"""
+            We are conducting a causal discovery analysis on the following variables: {data.columns.tolist()}.
+            Our statistical algorithm has identified a potential causal relationship between the following variables:
+            {relation_text}
+
+            **Important Considerations**:
+            
+            1. **Correlation vs. Causation**:
+                - Remember that statistical correlation does not imply causation. A detected association between variables may not indicate a causal link.
+                - Base your reasoning on domain knowledge and logical inference rather than statistical correlations.
+            2. **Direction of Causation**:
+                - The direction of causation is crucial. Ensure that the proposed causal direction is logical and consistent with established domain knowledge.
+                - Avoid assuming causation without proper justification.
+            
+            **Your Task**:
+             1. **Assess the Causal Relationship**:
+                - Evaluate the potential causal relationship between **{main_node}** and the related variables.
+                - Select the most appropriate option from the following:
+                    - **A**: **{main_node}** is a cause of the related variable.
+                    - **B**: The related variable is a cause of **{main_node}**.
+                    - **C**: There is no causal relationship.
+            2. **Justify Your Choice**:
+                - Provide a concise explanation (1-2 sentences) supporting your selection (A, B, or C).
+                - Your explanation should be based on domain-specific reasoning and established knowledge.
+                - Do **not** rely on statistical correlation or data patterns in your justification.
+            **Response Format**:
+
+            Please present your answer in the following format:
+            - **A**: "Option A: Increased sunlight exposure (**{main_node}**) leads to higher levels of vitamin D production (related variable) in the body."
+            - **B**: "Option B: Higher levels of stress hormones (related variable) can cause elevated blood pressure (**{main_node}**) because stress affects cardiovascular function."
+            - **C**: "Option C: There is no direct causal relationship between **{main_node}** and the related variable; they are influenced independently by other factors."
+
+            **Guidelines to Avoid Common Pitfalls**:
+
+            - **Do Not**:
+                - Conflate correlation with causation.
+                - Use statistical terms such as "correlates with" or "is associated with" in your explanation.
+                - Base your reasoning on data patterns or algorithm outputs.
+            
+            - **Avoid**:
+                - Circular reasoning (e.g., "A causes B because B causes A").
+                - Vague explanations lacking domain-specific details.
+            **Ensure that your response adheres strictly to the format and guidelines provided.**
+
+            """
+
+
+            # Relationships for related node
+            # Extract tuples containing main node
+            tuples_with_mainnode = [t for t in edges_dict['uncertain_edges']+edges_dict['certain_edges'] if main_node in t]
+            related_nodes = [item for t in tuples_with_mainnode for item in t if item != main_node]
+            for node in related_nodes:
+                directed_exist_texts_related = ', '.join([text for text in relation_text_dict['certain_edges'] if node in text])
+                undirected_exist_texts_related = ', '.join([text for text in relation_text_dict['uncertain_edges'] if node in text])
+                # print('directed_exist_texts_related',directed_exist_texts_related)
+                # print('undirected_exist_texts_related',undirected_exist_texts_related)
+                prompt_pruning += f"""
+                Edges of node {node}:
+                {directed_exist_texts_related} and {undirected_exist_texts_related}
+                """
+
+        prompt_pruning += f"""
+        **Important Considerations**:
+
+        1. **Correlation vs. Causation**:
+        - Remember that statistical correlation does not imply causation. A detected association between variables may not indicate a causal link.
+        - Base your reasoning on domain knowledge and logical inference rather than statistical correlations.
+
+        2. **Direction of Causation**:
+        - The direction of causation is crucial. Ensure that the proposed causal direction is logical and consistent with established domain knowledge.
+        - Avoid assuming causation without proper justification.
+
+        **Your Task**:
+        Your task is to double check these causal relationships about node {main_node} from a domain knowledge perspective and determine whether this statistically suggested hypothesis is plausible in the context of the domain.  
+
+        Firstly, determine the causal relationship between
+        """
+        for node_i, node_j in related_pairs:
+            prompt_pruning += f" {node_i} and {node_j},"
+        prompt_pruning += f"""\n
+        **Options**
+        - For each node pair, if I intervene the left node, it directly causes changes in the right node, the "result" is 'A'. 
+        - If I intervene the right node, it directly causes changes in the left node, the "result" should be 'B'. 
+        - If you are pretty sure there is no relationship, the "result" is 'C'. 
+        - If you do not know established evidence, the "result" is 'D'.
+        
+        **Do Not**:
+        - Conflate correlation with causation.
+        - Include indirect relationships
+        - Include circular relationships (e.g., "A causes B because B causes A")
+
+        Secondly, please provide an explanation of your result, leveraging your expert knowledge on the causal relationship between the left node and the right node, please use only one to two sentences. 
+        Your response should consider the relevant factors and provide a reasoned explanation based on your understanding of the domain.
+        - **Avoid**:
+        - Circular reasoning (e.g., "A causes B because B causes A").
+        - Vague explanations lacking domain-specific details.
+        - Use statistical terms such as "correlates with" or "is associated with" in your explanation.
+        - Base your reasoning on data patterns or algorithm outputs.
+
+        **Response Format**:
+        Response me following the template below. Do not include anything else. explanations should only include one to two sentences. \n
+        Please seperate your answers for each pair with semicolon ;
+        """
+        for node_i, node_j in related_pairs:
+            prompt_pruning += f"""
+            ({node_i}, {node_j}): A or B or C or D: explanations ; \n
+        """
+        #print('prompt_pruning: ',prompt_pruning)
+        
+        ### Ask with Voting ###
+        if vote_num == 1:
+            llm_answer = call_llm_new(args, prompt_pruning, prompt_type)
+        else:
+            llm_answer_merge = []
+            llm_answer = {}
+            for i_vote in range(vote_num):
+                llm_answer_i = call_llm_new(args, prompt_pruning, prompt_type)
+                llm_answer_merge.append(llm_answer_i)
+            merged_dict ={}
+            for d in llm_answer_merge:
+                for key, value in d.items():
+                    merged_dict.setdefault(key,[]).append(value)
+            for pair_i in merged_dict.keys():
+                result_list = [single_vote['result'] for single_vote in merged_dict[pair_i]]
+                print('result_list',result_list)
+                explanation_list = [single_vote['explanation'] for single_vote in merged_dict[pair_i]]
+                majority_result = Counter(result_list).most_common(1)[0][0]
+                majority_explanation = explanation_list[result_list.index(majority_result)]
+                llm_answer[pair_i]={'result': majority_result,
+                                    'explanation': majority_explanation}
+        ########### end of voting #################### 
+        print('response: ',llm_answer)
+        print('response: ',llm_answer)
+        # Update revised graph and edge dict
+        for pair in llm_answer.keys():
+            var_j, var_i = tuple(item.strip() for item in pair.strip('()').split(','))
+            idx_j, idx_i = data.columns.get_loc(var_j), data.columns.get_loc(var_i)
+            if llm_answer[pair]['result'] == 'A':
+                #if (var_j, var_i) not in edges_dict['certain_edges'] and no cycles and colliders are present
+                if not check_for_cycles(edges_dict['certain_edges'], (var_j, var_i)) and not check_for_colliders(edges_dict['certain_edges'], (var_j, var_i)):
+                    direct_dict[(idx_j, idx_i)] = ((var_j, var_i), llm_answer[pair]['explanation'])
+                    edges_dict['certain_edges'].append((var_j, var_i))
+            elif llm_answer[pair]['result'] == 'B':
+                #if (var_i, var_j) not in edges_dict['certain_edges'] and no cycles and colliders are present
+                if not check_for_cycles(edges_dict['certain_edges'], (var_i, var_j)) and not check_for_colliders(edges_dict['certain_edges'], (var_i, var_j)):
+                    direct_dict[(idx_i, idx_j)] = ((var_i, var_j), llm_answer[pair]['explanation'])
+                    edges_dict['certain_edges'].append((var_i, var_j))
+            elif llm_answer[pair]['result'] == 'C':
+                forbid_dict[(idx_j, idx_i)] = ((var_j, var_i), llm_answer[pair]['explanation'])
+                if (var_j, var_i) in edges_dict['certain_edges']:
+                    edges_dict['certain_edges'].remove((var_j, var_i))
+                if (var_i, var_j) in edges_dict['certain_edges']:
+                    edges_dict['certain_edges'].remove((var_i, var_j))
+
+    for main_node in  grouped_dict.keys():
+        print(f'edges_dict for {main_node}: ')
+        print('directed edges:',edges_dict['certain_edges'])
+        print('undirected edges:',edges_dict['uncertain_edges'])
+        check_node_relationship(main_node)    
+    #########################
+    return direct_dict, forbid_dict
+
+
+
 
 def kci_pruning(data, revised_graph):
     from causallearn.utils.cit import CIT
