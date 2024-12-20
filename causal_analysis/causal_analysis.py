@@ -25,17 +25,28 @@ class Analysis(object):
 
         # Hardcoded dataset
         self.data = pd.read_csv('dataset/Auto_mpg/Auto_mpg.csv')
-        
-        # Dynamically analyze column types and print disclaimers
-        self._print_data_disclaimer()
+        # Originally, we planned to use processed_data from global_state:
+        # self.data = global_state.user_data.processed_data
 
-        # Hardcoded adjacency from base_graph.npy
+        # If global_state.result.revised_graph existed, it’s overridden by the next line:
+        # self.graph = convert_adj_mat(global_state.result.revised_graph)
+        
+        # Now, we hardcode the graph:
         self.graph = convert_adj_mat(np.load('dataset/Auto_mpg/base_graph.npy'))
+
+        # Dynamically analyze column types and print disclaimers
+        # (Previously we had a hard-coded disclaimer message, now removed)
+        # print("\n" + "="*60)
+        # print("DISCLAIMER: The Auto MPG dataset primarily contains continuous numeric features.")
+        # print("Make sure this aligns with your causal assumptions and modeling approaches.")
+        # print("="*60 + "\n")
+        # Instead of the above hard-coded disclaimer, we now analyze the columns:
+        self._print_data_disclaimer()
 
         # Create DiGraph
         self.G = nx.from_numpy_array(self.graph, create_using=nx.DiGraph)
         self.G = nx.relabel_nodes(self.G, {i: name for i, name in enumerate(self.data.columns)})
-        
+
         # Construct Causal Model via dowhy/gcm
         self.causal_model = gcm.InvertibleStructuralCausalModel(self.G)
         gcm.auto.assign_causal_mechanisms(self.causal_model, self.data)
@@ -44,6 +55,8 @@ class Analysis(object):
     def _print_data_disclaimer(self):
         """
         Analyze the dataset's columns and print disclaimers about their nature (continuous/discrete/categorical).
+
+        Previously, we had a hard-coded disclaimer. Now we dynamically check column types and counts.
         """
         dtypes = self.data.dtypes
         numeric_cols = dtypes[dtypes != 'object'].index.tolist()
@@ -115,7 +128,7 @@ class Analysis(object):
                 output_dir = self.global_state.user_data.output_graph_dir
             else:
                 output_dir = "./auto_mpg_output"  # local folder for standalone testing
-            
+
             os.makedirs(output_dir, exist_ok=True)
 
             print("Generating SHAP plots...\n")
