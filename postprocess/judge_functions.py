@@ -703,7 +703,7 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
             """
             # Add adjacency matrix context
         if 'adj_matrix' in prompt_type:
-            adj_matrix = edges_dict_to_adj_matrix(edges_dict, data.columns)
+            adj_matrix = edges_dict_to_adj_mat(edges_dict, data.columns)
             prompt_pruning += f"""
             This is the adjacency matrix representation of the current causal graph:
 
