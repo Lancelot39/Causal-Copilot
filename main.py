@@ -151,20 +151,6 @@ def process_user_query(global_state, query, data):
         drops = query_dict['dropped_variable']
         dropped_variables = [variable.strip() for variable in drops.split(",")]
         print(f"Variables to be dropped: {dropped_variables}")
-    
-    if "lazy_mode" in query_dict:
-        lazy = query_dict['lazy_mode']
-        affirmative_list = ['yes', 'y', 'true', 'ok', 'okay', 'on']
-        if lazy == 1 or (isinstance(lazy, str) and lazy.lower() in affirmative_list):
-            islazy = True
-        else:
-            islazy = False 
-        global_state.user_data.lazy_mode = islazy
-        print(f'Lazy mode: {"On" if islazy else "Off"}')
-    
-    if "cat_as_num" in query_dict:
-        cols = [col.strip() for col in query_dict['cat_as_num'].split(",")]
-        global_state.user_data.cat_as_num = cols
         
     # Drop the column as user intended 
     if len(dropped_variables) > 0: 

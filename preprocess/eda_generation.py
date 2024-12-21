@@ -11,8 +11,10 @@ class EDA(object):
         """
         self.global_state = global_state
         self.data = global_state.user_data.processed_data[global_state.user_data.visual_selected_features]
+        self.raw_data = global_state.user_data.raw_data
         self.save_dir = global_state.user_data.output_graph_dir
-        self.focus_cols = global_state.user_data.selected_features 
+        self.focus_cols = global_state.user_data.initial_selected_features 
+        print(global_state.user_data.initial_selected_features)
         # limit the number of features contained
         if self.data.shape[1] > 10:
             df = self.data.copy()
@@ -155,79 +157,55 @@ class EDA(object):
                     # )
         return correlation_summary
     
-    def additional_analysis(self): 
+    def additional_analysis(self):  
         """
-        :return: plot paths stored in a list path_ls
+        :return: plot path 
         """
-        path_ls = []
-        if self.focus_cols == None:
-            return
-        if len(self.focus_cols) == 0:
-            return
-        
-        df = self.data.copy()
+        sns.set_style("dark")
 
+        orange_black = [
+            '#fdc029', '#df861d', '#FF6347', '#aa3d01', '#a30e15', '#800000', '#171820'
+        ]
+
+        # Setting plot styling.
+        plt.style.use('ggplot') # https://python-charts.com/matplotlib/styles/
+
+        plt.rcParams['figure.figsize'] = (18, 14)
+        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams["axes.grid"] = True
+        plt.rcParams["grid.color"] = orange_black[0]
+        plt.rcParams["grid.alpha"] = 0.5
+        plt.rcParams["grid.linestyle"] = '--'
+        plt.rcParams["font.family"] = "monospace"
+        plt.rcParams['axes.edgecolor'] = 'black'
+        plt.rcParams['figure.frameon'] = False
+        plt.rcParams['axes.spines.left'] = True
+        plt.rcParams['axes.spines.bottom'] = True
+        plt.rcParams['axes.spines.top'] = False
+        plt.rcParams['axes.spines.right'] = False
+        plt.rcParams['axes.linewidth'] = 1.0
+        if self.focus_cols == None:
+            return None
+        if len(self.focus_cols) == 0:
+            return None
+        
+        df = self.raw_data.copy()
+        df = df.loc[:, self.focus_cols]
+        print(self.focus_cols)
+        print(df)
         # maybe address Number-Stored-As-String problem later
 
         # if column only has 0, 1 --> boolean values, classify it as categorical
         bool_features = df.columns[df.apply(lambda col: col.isin([0, 1]).all())] # find columns with only boolean values 
         num_cols = df.select_dtypes(include=['number']).columns.difference(bool_features)
         cat_cols = df.select_dtypes(include=['object', 'category']).columns.union(bool_features)
-
-
-        n_total = (len(num_cols) + len(cat_cols))
-        n_rows = n_total // 2 + (n_total % 2 != 0)
-        n_cols = 2 
-
-        fig, axes = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(9, 3 * n_rows))
-        axes = axes.reshape(-1)
-        idx = 0
-
-        for col in num_cols:
-            # # Violinplot
-            # sns.violinplot(y = df[col], ax = axes[idx])
-            # axes[idx].set_title(f'{col} - Violin')
-            # axes[idx].set_ylabel(f'{col}')
-            # idx += 1
-            # Boxplot
-            sns.boxplot(x=df[col], ax=axes[idx])
-            axes[idx].set_title(f'{col} - Boxplot', fontsize = 10)
-            axes[idx].set_xlabel(f'{col}', fontsize = 8)
-            idx += 1
-        
-        # # add a pairplot ?
-        # sns.pairplot(df.loc[:, num_cols], ax=axes[idx]) # ok so pairplot does not support ax feature, so ig not
-        # axes[idx].set_title("Pairplot of Numerical Variables")
-        # idx += 1
-
-        for i, col in enumerate(cat_cols):
-            # # Stripplot
-            # if(cat_cols > 10)
-            # sns.stripplot(x = col, data = df, ax=axes[idx])
-            # axes[idx].set_title(f'{col} - Stripplot')
-            # axes[idx].set_xlabel(f'{col}')
-            # axes[idx].set_ylabel('Value')
-            # idx += 1
-            # Countplot
-            sns.countplot(x=df[col], ax=axes[idx])
-            axes[idx].set_title(f'{col} - Countplot', fontsize = 10)
-            axes[idx].set_xlabel(f'{col}' ,fontsize = 8)
-            axes[idx].set_ylabel('Count', fontsize = 8)
-            idx += 1
-
-        for ax in axes.reshape(-1):
-            ax.xaxis.label.set_size(8)
-            ax.tick_params(axis = 'x', labelsize = 6, rotation = 45)
-        plt.tight_layout()
-        save_path_additional_g1 = os.path.join(self.save_dir, 'eda_add_g1.jpg')
-        plt.savefig(save_path_additional_g1, dpi=1000)
-        path_ls.append(save_path_additional_g1)
-
+   
         # Top 6 focused variable's correlational graph
-        label_encoder = LabelEncoder()
+        label_encoders = {}
         # Convert categorical features using label encoding
         for feature in cat_cols:
-            df[feature] = label_encoder.fit_transform(df[feature])
+            label_encoders[feature] = LabelEncoder()
+            df[feature] = label_encoders[feature].fit_transform(df[feature])
         
         corr_matrix = df.corr()
         corr_values = corr_matrix.unstack().reset_index()
@@ -237,7 +215,12 @@ class EDA(object):
 
         top_corr = corr_values.iloc[corr_values['Correlation'].abs().sort_values(ascending = False).index, :].head(6)
 
-        # TODO (Chris, 2024-11-23): create and revise plots depending on variable type
+        # decode labeled data after correlation analysis
+        for feature in cat_cols:
+            df[feature] = label_encoders[feature].inverse_transform(df[feature])
+
+        # plot subplots based on types of data:
+        # num-num --> scatter, num-cat --> violin, cat-cat --> count with legend
         fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(12, 4 * 2))
         fig.suptitle("Plots of Top 6 Correlated Focus Variables")
         idx = 0
@@ -274,11 +257,10 @@ class EDA(object):
             ax.xaxis.label.set_size(8)
             ax.tick_params(axis = 'x', labelsize = 6, rotation = 45)
         plt.tight_layout()
-        save_path_additional_g2 = os.path.join(self.save_dir, 'eda_add_g2.jpg')
-        plt.savefig(save_path_additional_g2, dpi=1000)
-        path_ls.append(save_path_additional_g1)
+        save_path_additional = os.path.join(self.save_dir, 'eda_additional.jpg')
+        plt.savefig(save_path_additional, dpi=1000)
 
-        return path_ls 
+        return save_path_additional
 
     def generate_eda(self):
         plot_path_dist = self.plot_dist()
