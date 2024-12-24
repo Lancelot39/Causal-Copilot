@@ -1,5 +1,5 @@
 {
-  "algorithm_name": "PC",
+  "algorithm_name": "KCI-PC (GPU-accelerated)",
   "alpha": {
     "meaning": "Desired significance level in (0, 1)",
     "suggested_values": {
@@ -7,18 +7,16 @@
       "small_sample": 0.1,
       "large_sample": 0.01
     },
-    "reasoning": "Adjust based on sample size, more conservative (lower) values for larger samples. If < 500, use 0.1; Else if 500-10000 (<10000 but >500), use 0.05; Else if > 10000, using 0.01."
+    "reasoning": "Adjust based on sample size. Use higher values (e.g., 0.1) for small samples (< 500), medium values (e.g., 0.05) for moderate samples (500-10000), and lower values (e.g., 0.01) for large samples (> 10000)."
   },
-  "indep_test": {
-    "meaning": "Independence test method",
+  "gamma": {
+    "meaning": "Kernel bandwidth parameter for RBF kernel in KCI",
     "suggested_values": {
-      "default": "fisherz",
-      "continuous": "fisherz",
-      "discrete": "chisq",
-      "mixed": "gsq"
+      "default": 0.5,
+      "low_variance": 0.1,
+      "high_variance": 1.0
     },
-    "reasoning": "Choose based on data type: 'fisherz' for continuous, 'chisq' for discrete, 'gsq' for mixed data types.",
-    "context_file": "algorithm/context/tools/independence_test.txt"
+    "reasoning": "Adjust based on the scale of data. Lower gamma (0.1) for small-scale data with low variance, and higher gamma (1.0) for high-variance data. Default (0.5) works well for most cases."
   },
   "depth": {
     "meaning": "Maximum depth for fast adjacency search",
@@ -29,7 +27,24 @@
       "large_graph": 2,
       "extra_large_graph": 1
     },
-    "reasoning": "Use -1 for unlimited depth. For large graphs, limiting depth (e.g., 1-3) can significantly speed up the algorithm at the cost of some accuracy. A graph with node number < 10, use depth 6; A graph with node number 10 - 25, use depth 4; A graph with node number 25-50, use depth 2; A graph with node number > 50, use depth 1."
+    "reasoning": "Use -1 for unlimited depth. For large graphs, limit depth (e.g., 1-3) to significantly speed up the algorithm at the cost of some accuracy. For graphs with < 10 nodes, use depth 6; for 10-25 nodes, use depth 4; for 25-50 nodes, use depth 2; for > 50 nodes, use depth 1."
+  },
+  "use_gpu": {
+    "meaning": "Whether to enable GPU acceleration",
+    "suggested_values": {
+      "default": true,
+      "cpu_only": false
+    },
+    "reasoning": "Enable GPU acceleration for large datasets to leverage faster kernel computations. For small datasets or CPU-only environments, set to false."
+  },
+  "kernel_type": {
+    "meaning": "Choice of kernel function for KCI test",
+    "suggested_values": {
+      "default": "rbf",
+      "polynomial": "poly",
+      "sigmoid": "sigmoid"
+    },
+    "reasoning": "RBF kernel (default) is most commonly used and effective. Polynomial or sigmoid kernels may be used for specific non-linear relationships."
   },
   "uc_rule": {
     "meaning": "How unshielded colliders are oriented",
@@ -39,7 +54,7 @@
       "maxP": 1,
       "definiteMaxP": 2
     },
-    "reasoning": "Use 0 for standard PC, 1 or 2 for more conservative collider orientations in the presence of faithfulness violations."
+    "reasoning": "Use 0 for standard PC, and 1 or 2 for more conservative collider orientations in the presence of faithfulness violations."
   },
   "uc_priority": {
     "meaning": "Rule for resolving conflicts between unshielded colliders",
@@ -52,5 +67,14 @@
       "prioritize_stronger_star": 4
     },
     "reasoning": "Higher values (2-4) are more conservative. Use 3 or 4 when you want to prioritize stronger colliders in case of conflicts."
+  },
+  "sample_size": {
+    "meaning": "Number of samples for edge sampling in PC algorithm",
+    "suggested_values": {
+      "default": 100,
+      "small_graph": 50,
+      "large_graph": 200
+    },
+    "reasoning": "For small graphs, fewer samples (e.g., 50) suffice. For larger graphs, increase to 200 for better accuracy but with higher computational cost."
   }
-} 
+}
