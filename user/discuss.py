@@ -96,7 +96,7 @@ if __name__ == '__main__':
         parser.add_argument(
             '--apikey',
             type=str,
-            default="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",
+            default=None,
             help='API Key'
         )
 
