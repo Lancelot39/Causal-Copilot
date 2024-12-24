@@ -1,7 +1,7 @@
 
-from fges.fges import FGES
-from fges.SEMScore import SEMBicScore
-from fges.search_util import *
+from .fges import FGES
+from .SEMScore import SEMBicScore
+from .search_util import *
 import numpy as np
 
 class SemEstimator:

@@ -1,8 +1,8 @@
 
 import networkx as nx
 
-from fges.meekrules import MeekRules
-from fges.graph_util import *
+from .meekrules import MeekRules
+from .graph_util import *
 import numpy as np
 import queue
 

@@ -1,4 +1,4 @@
-import fges.graph_util as graph_util
+from . import graph_util
 import itertools
 
 

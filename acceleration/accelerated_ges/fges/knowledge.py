@@ -15,7 +15,7 @@ forbids the edge X --> Y, then it forbids any edge which connects a MyNode
 named "X" to a MyNode named "Y", even if the underlying MyNodes themselves
 named "X" and "Y", respectively, are not the same.
 """
-import fges.graph_util as graph_util
+from . import graph_util
 
 class Knowledge:
     def __init__(self):

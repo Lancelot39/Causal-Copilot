@@ -1,13 +1,13 @@
 import networkx as nx
 import itertools
-import fges.graph_util as graph_util
 from sortedcontainers import SortedListWithKey
-from fges.meekrules import MeekRules
+from . import graph_util
+from .meekrules import MeekRules
 import numpy as np
 import time
 import dill
 import os
-from fges.knowledge import Knowledge
+from .knowledge import Knowledge
 
 
 class Arrow:

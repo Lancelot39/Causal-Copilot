@@ -1,6 +1,6 @@
 ### FGES
 
-- **Description**: Fast Greedy Equivalence Search (fGES) is a score-based causal discovery algorithm that parallelizes and reorganizes caching in the well-known Greedy Equivalence Search (GES) algorithm. 
+- **Description**: Fast Greedy Equivalence Search (FGES) is a score-based causal discovery algorithm that parallelizes and reorganizes caching in the well-known Greedy Equivalence Search (GES) algorithm. 
 
 - **Assumptions**:
     - **Causal Sufficiency**: All relevant variables are observed, no hidden confounders.

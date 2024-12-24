@@ -10,7 +10,7 @@ class Filter(object):
         self.client = OpenAI(organization=args.organization, project=args.project, api_key=args.apikey)
 
     def load_algo_context(self):
-        guidelines_path = "algorithm/context/guidelines.txt"
+        guidelines_path = "algorithm/context/algos/guidelines.txt"
         algos_folder = "algorithm/context/algos"
 
         with open(guidelines_path, "r") as f:

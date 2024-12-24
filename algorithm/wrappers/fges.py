@@ -8,7 +8,7 @@ import sys
 sys.path.insert(0, 'causal-learn')
 sys.path.append('algorithm')
 
-from acceleration.accelerated_ges.fges.fges import FGES
+from acceleration.accelerated_ges.fges.fges import Fges
 from acceleration.accelerated_ges.fges.SEMScore import SEMBicScore
 
 from .base import CausalDiscoveryAlgorithm
@@ -20,9 +20,6 @@ class FGES(CausalDiscoveryAlgorithm):
         super().__init__(params)
         self._params = {
             'sparsity': 10,
-            'filename': '', 
-            'checkpoint_frequency': 0, 
-            'save_name': 'result'
         }
         self._params.update(params)
 
@@ -38,7 +35,7 @@ class FGES(CausalDiscoveryAlgorithm):
         return {k: v for k, v in self._params.items() if k in self._primary_param_keys}
 
     def get_secondary_params(self):
-        self._secondary_param_keys = ['filename', 'checkpoint_frequency', 'save_name']
+        self._secondary_param_keys = []
         return {k: v for k, v in self._params.items() if k in self._secondary_param_keys}
 
     def fit(self, data: pd.DataFrame) -> Tuple[np.ndarray, Dict, Dict]:
@@ -51,7 +48,7 @@ class FGES(CausalDiscoveryAlgorithm):
         # Run FGES algorithm
         score = SEMBicScore(**self.get_primary_params(), dataset=data_values)
         variables = list(range(len(node_names)))
-        model = Fges(variables, score, **self.get_secondary_params())
+        model = Fges(variables, score, filename='input', checkpoint_frequency=0, save_name='result')
 
         result = model.search()
 

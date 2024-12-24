@@ -1,4 +1,3 @@
-from .accelerated_lingam.directlingam import DirectLiNGAM as AcceleratedDirectLiNGAM
-from .accelerated_ges.fges.fges import FGES
+from .accelerated_ges.fges.fges import Fges
 
-__all__ = ['AcceleratedDirectLiNGAM', 'FGES']
+__all__ = ['Fges']

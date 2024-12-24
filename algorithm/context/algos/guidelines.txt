@@ -57,4 +57,6 @@ Default algorithm ranking for general cases (when data doesn't favor any specifi
 4. NOTEARS: Efficient for high-dimensional data but assumes linear relationships
 5. DirectLiNGAM: Efficient but assumes linear relationships and non-Gaussian noise
 6. ICALiNGAM: More computationally intensive than DirectLiNGAM
-7. CDNOD: Specialized for nonstationary/heterogeneous data, may be overkill for stationary data 
+7. CDNOD: Specialized for nonstationary/heterogeneous data, may be overkill for stationary data
+8. XGES: Fast version of GES, more efficient for larger datasets
+9. FGES: Fast version of GES for sparse larger datasets
