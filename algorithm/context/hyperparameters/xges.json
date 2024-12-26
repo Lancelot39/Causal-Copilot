@@ -1,0 +1,10 @@
+{
+    "algorithm_name": "XGES",
+    "alpha": {
+        "meaning": "The penalty term for the BIC score",
+        "suggested_values": {
+            "default": 2
+        },
+        "reasoning": "Use alpha = 1 for standard BIC, adjust lower <1 for complex models, or higher >1 to favor simplicity, depending on dataset size and goals."
+    }
+}

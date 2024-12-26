@@ -1,0 +1,25 @@
+### FGES
+
+- **Description**: Fast Greedy Equivalence Search (FGES) is a score-based causal discovery algorithm that parallelizes and reorganizes caching in the well-known Greedy Equivalence Search (GES) algorithm. 
+
+- **Assumptions**:
+    - **Causal Sufficiency**: All relevant variables are observed, no hidden confounders.
+    - **Faithfulness**: The observed statistical dependencies correspond to true causal relationships.
+    - **Markov Condition**: Every variable is conditionally independent of its non-effects given its direct causes.
+    - **No Cycles**: The causal structure is assumed to be acyclic.
+
+- **Advantages**:
+    - **Efficiency in Complex Search Spaces**: Efficiently navigates large search spaces using equivalence class representation.
+    - **Versatility**: Can use various score functions (BIC or generalized scores).
+    - **Global Optimization**: Optimizes a global criterion through local steps.
+    - **Extra Efficiency and Accuracy on Large-Scale Sparse Data**: Effective for large-scale datasets with sparse underlying causal structures, leveraging sparsity to improve computational performance.
+
+- **Limitations**:
+    - **Loss of Accuracy**: Performance may degrade with densely connected graphs due to the combinatorial nature of the search.
+    - **Parametric Assumptions**: BIC score assumes Gaussianity and linearity.
+    - **Output**: Produces a Markov equivalence class rather than a single DAG.
+
+- **Suitable Cases**:
+    - **Sparse, Large-Scale Data with Gaussian/Linear Assumptions**: Efficient with acceptable loss of performance/accuracy.
+    - **Complex, Non-Gaussian Data**: Can use generalized score functions.
+    - **Applications Requiring Global Optimization**: High-dimensional causal discovery tasks. 

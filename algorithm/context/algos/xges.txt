@@ -1,0 +1,24 @@
+### XGES
+
+- **Description**: Extremely Greedy Equivalence Search (XGES) is a score-based causal discovery algorithm that involves a new heuristic to improve the search strategy of GES. XGES favors deleting edges early in the search over inserting edges, reducing the chance of the search ending in local optima.
+
+
+- **Assumptions**:
+    - **Causal Sufficiency**: All relevant variables are observed, no hidden confounders.
+    - **Faithfulness**: The observed statistical dependencies correspond to true causal relationships.
+    - **Markov Condition**: Every variable is conditionally independent of its non-effects given its direct causes.
+    - **No Cycles**: The causal structure is assumed to be acyclic.
+
+- **Advantages**:
+    - **Efficiency in Complex Search Spaces**: Efficiently navigates large search spaces using equivalence class representation.
+    - **Versatility**: Can use various score functions (BIC or generalized scores).
+    - **Global Optimization**: Optimizes a global criterion through local steps.
+
+- **Limitations**:
+    - **Parametric Assumptions**: BIC score assumes Gaussianity and linearity.
+    - **Score Functions**: Currently only include BIC score as the criteria.
+    - **Output**: Produces a Markov equivalence class rather than a single DAG.
+
+- **Suitable Cases**:
+    - **Large-Scale Data with Gaussian/Linear Assumptions**: More efficient with BIC score with acceptable loss of accuracy.
+    - **Applications Requiring Global Optimization**: High-dimensional causal discovery tasks. 
