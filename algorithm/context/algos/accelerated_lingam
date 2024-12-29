@@ -1,0 +1,31 @@
+### AcceleratedLiNGAM
+
+- **Description**: AcceleratedLiNGAM (Accelerated Linear Non-Gaussian Acyclic Model) identifies causal structures in data with linear relationships and non-Gaussian noise. The algorithms are accelerated by CUDA.
+
+- **Assumptions**:
+
+  - **Linearity**: Relationships between variables are linear.
+  - **Non-Gaussianity**: Noise terms are non-Gaussian.
+  - **Acyclicity**: The causal graph is a DAG.
+
+- **Advantages**:
+
+  - **Unique Identification**: Can uniquely identify causal structure.
+  - **No Time-Ordering Required**: Flexible in various applications.
+  - **Computing Efficiency**: Accelerated computing on CUDA.
+
+- **Limitations**:
+
+  - **Sensitivity to Assumptions**: Relies heavily on linearity and non-Gaussianity.
+  - **Computational Complexity**: ICA step can be computationally demanding.
+
+- **Variants**:
+  - **Direct-LiNGAM**
+    - Uses stepwise regression for better precision
+    - More scalable than ICA-LiNGAM
+  - **ICA-LiNGAM**
+    - Uses linear ICA to estimate causal order
+    - Faster but potentially less precise
+- **Suitable Cases**:
+  - Econometrics, neuroscience, financial time series
+  - Data with known non-Gaussian noise
