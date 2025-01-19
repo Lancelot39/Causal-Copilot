@@ -5,13 +5,16 @@ import numpy as np
 import os
 
 class EDA(object):
-    def __init__(self, global_state):
+    def __init__(self, global_state): 
         """
         :param global_state: a dict containing global variables and information
         """
         self.global_state = global_state
         self.data = global_state.user_data.processed_data[global_state.user_data.visual_selected_features]
+        self.raw_data = global_state.user_data.raw_data
         self.save_dir = global_state.user_data.output_graph_dir
+        self.focus_cols = global_state.user_data.initial_selected_features 
+        print(global_state.user_data.initial_selected_features)
         # limit the number of features contained
         if self.data.shape[1] > 10:
             df = self.data.copy()
@@ -19,7 +22,8 @@ class EDA(object):
             random_columns = np.random.choice(df.columns, size=10, replace=False)
             self.data = df[random_columns]
         # Identify categorical features
-        self.categorical_features = self.data.select_dtypes(include=['object', 'category']).columns
+        bool_features = self.data.columns[self.data.apply(lambda col: col.isin([0, 1]).all())] # find columns with only boolean values 
+        self.categorical_features = self.data.select_dtypes(include=['object', 'category']).columns.union(bool_features)
 
     def plot_dist(self):
         df = self.data.copy()
@@ -130,6 +134,111 @@ class EDA(object):
                     var_i, var_j = correlation_matrix.columns[i], correlation_matrix.columns[j]
                     correlation_summary[(var_i, var_j)] = correlation_matrix.iloc[i, j]
         return correlation_summary
+    
+    def additional_analysis(self):  
+        """
+        :return: plot path 
+        """
+        sns.set_style("dark")
+
+        orange_black = [
+            '#fdc029', '#df861d', '#FF6347', '#aa3d01', '#a30e15', '#800000', '#171820'
+        ]
+
+        # Setting plot styling.
+        plt.style.use('ggplot') # https://python-charts.com/matplotlib/styles/
+
+        plt.rcParams['figure.figsize'] = (18, 14)
+        plt.rcParams['figure.dpi'] = 300
+        plt.rcParams["axes.grid"] = True
+        plt.rcParams["grid.color"] = orange_black[0]
+        plt.rcParams["grid.alpha"] = 0.5
+        plt.rcParams["grid.linestyle"] = '--'
+        plt.rcParams["font.family"] = "monospace"
+        plt.rcParams['axes.edgecolor'] = 'black'
+        plt.rcParams['figure.frameon'] = False
+        plt.rcParams['axes.spines.left'] = True
+        plt.rcParams['axes.spines.bottom'] = True
+        plt.rcParams['axes.spines.top'] = False
+        plt.rcParams['axes.spines.right'] = False
+        plt.rcParams['axes.linewidth'] = 1.0
+        if self.focus_cols == None:
+            return None
+        if len(self.focus_cols) == 0:
+            return None
+        
+        df = self.raw_data.copy()
+        df = df.loc[:, self.focus_cols]
+        print(self.focus_cols)
+        print(df)
+        # maybe address Number-Stored-As-String problem later
+
+        # if column only has 0, 1 --> boolean values, classify it as categorical
+        bool_features = df.columns[df.apply(lambda col: col.isin([0, 1]).all())] # find columns with only boolean values 
+        num_cols = df.select_dtypes(include=['number']).columns.difference(bool_features)
+        cat_cols = df.select_dtypes(include=['object', 'category']).columns.union(bool_features)
+   
+        # Top 6 focused variable's correlational graph
+        label_encoders = {}
+        # Convert categorical features using label encoding
+        for feature in cat_cols:
+            label_encoders[feature] = LabelEncoder()
+            df[feature] = label_encoders[feature].fit_transform(df[feature])
+        
+        corr_matrix = df.corr()
+        corr_values = corr_matrix.unstack().reset_index()
+        corr_values.columns = ['Var1', 'Var2', 'Correlation']
+        corr_values = corr_values[corr_values['Var1'] != corr_values['Var2']]
+        corr_values = corr_values.drop_duplicates(subset = 'Correlation', keep = 'first').reset_index()
+
+        top_corr = corr_values.iloc[corr_values['Correlation'].abs().sort_values(ascending = False).index, :].head(6)
+
+        # decode labeled data after correlation analysis
+        for feature in cat_cols:
+            df[feature] = label_encoders[feature].inverse_transform(df[feature])
+
+        # plot subplots based on types of data:
+        # num-num --> scatter, num-cat --> violin, cat-cat --> count with legend
+        fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(12, 4 * 2))
+        fig.suptitle("Plots of Top 6 Correlated Focus Variables")
+        idx = 0
+        axes = axes.reshape(-1)
+        for i, row in top_corr.iterrows():
+            var1, var2 = row['Var1'], row['Var2']
+            corr_value = row['Correlation']
+            if var1 in num_cols and var2 in num_cols:
+                sns.scatterplot(x=var1, y=var2, data=df, ax = axes[idx], s = 15)
+                axes[idx].set_title(f'Scatterplot (Corr: {corr_value:.2f})', fontsize = 10)
+                idx += 1
+            elif var1 in num_cols and var2 in cat_cols or var1 in cat_cols and var2 in num_cols:
+                cat_var = var1 if var1 in cat_cols else var2
+                num_var = var1 if var1 in num_cols else var2
+                sns.violinplot(x=cat_var, y=num_var, data=df, ax=axes[idx])
+                axes[idx].set_title(f'Violinplot (Corr: {corr_value:.2f})', fontsize = 10)
+                idx += 1 
+            elif var1 in cat_cols and var2 in cat_cols:
+                sns.countplot(x=var1, hue=var2, data=df, ax=axes[idx])
+                axes[idx].set_title(f'Count Plot (Corr: {corr_value:.2f})', fontsize = 10)
+                axes[idx].legend(
+                    title= " ".join(var2.split("_")[:2]), 
+                    loc='best', 
+                    frameon=True, 
+                    borderpad=0.5, 
+                    labelspacing=0.5, 
+                    borderaxespad=0.5, 
+                    title_fontsize=8,
+                    fontsize=6
+                )
+                idx += 1 
+
+        for ax in axes.reshape(-1):
+            ax.xaxis.label.set_size(8)
+            ax.tick_params(axis = 'x', labelsize = 6, rotation = 45)
+        plt.tight_layout()
+        save_path_additional = os.path.join(self.save_dir, 'eda_additional.jpg')
+        plt.savefig(save_path_additional, dpi=1000)
+
+        return save_path_additional
 
     def additional_analysis(self):  
         """

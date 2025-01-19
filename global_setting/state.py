@@ -16,6 +16,7 @@ class UserData:
     knowledge_docs: Optional[str] = None
     output_report_dir: Optional[str] = None
     output_graph_dir: Optional[str] = None
+    initial_selected_features: Optional[object] = None
     selected_features: Optional[object] = None
     important_features: Optional[object] = None
     visual_selected_features: Optional[object] = None
@@ -24,6 +25,7 @@ class UserData:
     llm_drop_features: Optional[object] = None
     high_corr_drop_features: Optional[object] = None
     nan_indicator: Optional[str] = None
+
 
 @dataclass
 class Statistics:

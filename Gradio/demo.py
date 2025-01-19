@@ -184,19 +184,27 @@ def process_message(message, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_hi
                 # Initialize config
                 config = get_demo_config()
                 config.data_file = target_path
+                config.initial_query = message
                 for key, value in config.__dict__.items():
                     setattr(args, key, value)
                 print('check initial query')
+
                 config.initial_query = message
                 chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE, args = process_initial_query(message, chat_history, download_btn, args, REQUIRED_INFO, CURRENT_STAGE)
                 yield global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-    
+
             # Initialize global state
             if REQUIRED_INFO['data_uploaded'] and REQUIRED_INFO['initial_query']:
                 print('strart analysis')
                 global_state = global_state_initialization(args)
                 # Load data
                 global_state.user_data.raw_data = pd.read_csv(target_path)
+
+                if global_state.user_data.user_drop_features is not None:
+                    drop_features = global_state.user_data.user_drop_features
+                    global_state.user_data.raw_data = global_state.user_data.raw_data.drop(drop_features, axis = 1)
+                    print("successfully dropped user intended features: changes directly applied to raw data")
+                    
                 global_state.user_data.processed_data = global_state.user_data.raw_data
                 yield global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 

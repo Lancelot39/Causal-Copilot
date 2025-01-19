@@ -682,5 +682,4 @@ def check_cycle(args, data, graph):
             ind_i = columns.str.lower().get_loc(remove_nodes[0].lower())
             ind_j = columns.str.lower().get_loc(remove_nodes[1].lower())
             graph[ind_i, ind_j] = graph[ind_j, ind_i] = 0
-    
     return graph
