@@ -21,41 +21,35 @@ import matplotlib.pyplot as plt
 from statsmodels.tsa.stattools import acf, pacf
 import json
 from openai import OpenAI
+# from Gradio.demo import global_state
 
 # new package
-from fancyimpute import IterativeImputer
+from scipy.interpolate import UnivariateSpline
+from sympy.codegen.ast import Return
 
 
-# Correlation checking #################################################################################################
-def correlation_check(global_state):
-    df = global_state.user_data.raw_data[global_state.user_data.selected_features].select_dtypes(include=['number'])
-    m = df.shape[1]
 
-    correlation_matrix = df.corr()
-    drop_feature = []
+# Missingness Detect #################################################################################################
+def np_nan_detect(global_state):
+    has_nan = global_state.user_data.raw_data.isnull().values.any()
+    return has_nan
 
-    for i in range(m):
-        for j in range(i + 1, m):
-            corr_value = correlation_matrix.iloc[i, j]
-            if abs(corr_value) > 0.9:
-                var1 = df.columns[i]
-                var2 = df.columns[j]
+def numeric_str_nan_detect(global_state):
+    nan_value = global_state.user_data.nan_indicator
+    data = global_state.user_data.raw_data
 
-                if var1 not in global_state.user_data.important_features:
-                    drop_feature.append(var1)
-                elif var2 not in global_state.user_data.important_features:
-                    drop_feature.append(var2)
-                else:
-                    continue
+    nan_detect = True
 
-    # Update global state
-    global_state.user_data.high_corr_drop_features = drop_feature
-    global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if
-                                                element not in drop_feature]
+    # missing value is represented as in the int format
+    if nan_value.isdigit():
+        global_state.user_data.raw_data = data.replace(int(nan_value), np.nan, inplace=True)
+    # missing value is represented as in the str format
+    elif data.isin([nan_value]).any().any():
+        global_state.user_data.raw_data = data.replace(nan_value, np.nan, inplace=True)
+    else:
+        nan_detect = False
 
-    global_state.user_data.processed_data = global_state.user_data.raw_data[global_state.user_data.selected_features]
-
-    return global_state
+    return global_state, nan_detect
 
 
 # Missingness Checking #################################################################################################
@@ -107,54 +101,110 @@ def missing_ratio_table(global_state):
 
     return global_state
 
-
-def user_llm_select_feature(global_state, args):
+def drop_greater_miss_50_feature(global_state):
     # Step 1: Drop features whose ratio is greater than 0.5
     ratio_greater_05 = [k for k, v in global_state.statistics.miss_ratio.items() if v >= 0.5]
-    ratio_greater_05_drop = [element for element in ratio_greater_05 if element not in global_state.user_data.important_features] # keep important features
+    ratio_greater_05_drop = [element for element in ratio_greater_05 if
+                             element not in global_state.user_data.important_features]  # keep important features
 
     # Update global state
-    global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if element not in ratio_greater_05_drop]
+    global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if
+                                                element not in ratio_greater_05_drop]
 
-    # Step 2: Determine selected features for missingness ratio 0.3~0.5
+    return global_state
+
+
+
+def llm_select_dropped_features(global_state, args):
+    ratio_between_05_03 = [k for k, v in global_state.statistics.miss_ratio.items() if 0.5 > v >= 0.3]
+
+    client = OpenAI(organization=args.organization, project=args.project, api_key=args.apikey)
+    prompt = (f'Given the list of features of a dataset: {global_state.user_data.selected_features} \n\n,'
+              f'which features listed below do you think may be potential confounders: \n\n {ratio_between_05_03}?'
+              'Your response should be given in a list format, and the name of features should be exactly the same as the feature names I gave.'
+              'You only need to give me the list of features, no other justifications are needed. If there are no features you think should be potential confounder,'
+              'just give me an empty list.')
+
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "user", "content": prompt}
+        ]
+    )
+    llm_select_feature = response.choices[0].message.content
+    llm_select_feature = llm_select_feature.replace('```json', '').replace('```', '').strip()
+
+    llm_drop_feature = [element for element in ratio_between_05_03 if element not in llm_select_feature]
+    llm_drop_keep_important = [element for element in llm_drop_feature if
+                               element not in global_state.user_data.important_features]  # keep important features
+
+    global_state.user_data.llm_drop_features = llm_drop_keep_important
+
+    return global_state
+
+
+
+
+def drop_greater_miss_between_30_50_feature(global_state):
+    # Determine selected features for missingness ratio 0.3~0.5
     user_drop = global_state.user_data.user_drop_features
     if user_drop:
         global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if element not in user_drop]
-        # df_dropped = df.drop(columns=user_drop)
-        # llm_drop = []
     else:
-        # LLM determine dropped features
-        ratio_between_05_03 = [k for k, v in global_state.statistics.miss_ratio.items() if 0.5 > v >= 0.3]
-
-        client = OpenAI(organization=args.organization, project=args.project, api_key=args.apikey)
-        prompt = (f'Given the list of features of a dataset: {global_state.user_data.selected_features} \n\n,'
-                  f'which features listed below do you think may be potential confounders: \n\n {ratio_between_05_03}?'
-                  'Your response should be given in a list format, and the name of features should be exactly the same as the feature names I gave.'
-                  'You only need to give me the list of features, no other justifications are needed. If there are no features you think should be potential confounder,'
-                  'just give me an empty list.')
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant."},
-                {"role": "user", "content": prompt}
-            ]
-        )
-        llm_select_feature = response.choices[0].message.content
-        llm_select_feature = llm_select_feature.replace('```json', '').replace('```', '').strip()
-
-        llm_drop_feature = [element for element in ratio_between_05_03 if element not in llm_select_feature]
-        llm_drop_keep_important = [element for element in llm_drop_feature if element not in global_state.user_data.important_features]  # keep important features
-
-        global_state.user_data.llm_drop_features = llm_drop_keep_important
         global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if
-                                                     element not in llm_drop_keep_important]
+                                                     element not in global_state.user_data.llm_drop_features]
 
         return global_state
 
 
+# Correlation checking #################################################################################################
+def correlation_check(global_state):
+    df = global_state.user_data.raw_data[global_state.user_data.selected_features]
+    m = df.shape[1]
+
+    correlation_matrix = df.corr()
+    drop_feature = []
+
+    for i in range(m):
+        for j in range(i + 1, m):
+            corr_value = correlation_matrix.iloc[i, j]
+            if abs(corr_value) > 0.9:
+                var1 = df.columns[i]
+                var2 = df.columns[j]
+
+                if var1 not in global_state.user_data.important_features:
+                    drop_feature.append(var1)
+                elif var2 not in global_state.user_data.important_features:
+                    drop_feature.append(var2)
+                else:
+                    continue
+
+    # Update global state
+    global_state.user_data.high_corr_drop_features = list(set(drop_feature))
+    global_state.user_data.selected_features = [element for element in global_state.user_data.selected_features if
+                                                element not in drop_feature]
+
+    global_state.user_data.processed_data = global_state.user_data.raw_data[global_state.user_data.selected_features]
+
+    return global_state
 
 # TIME SERIES PROCESSING ###############################################################################################
+def spline_imputation(df: pd.DataFrame):
+    for col in df.columns:
+        x_non_missing = np.array(df.index[df[col].notna()].astype(np.int64) // 10 ** 9)  # convert to time stamp
+        y_non_missing = df[col].dropna().values
+
+        spline = UnivariateSpline(x_non_missing, y_non_missing, s=0)
+
+        x_missing = np.array(df.index[df[col].isna()].astype(np.int64) // 10 ** 9)
+        df.loc[df[col].isna(), col] = spline(x_missing)
+
+    return df
+
+# imput = spline_imputation(data)
+# print(imput)
+
 
 def series_lag_est(time_series, nlags = 50):
 
@@ -200,18 +250,22 @@ def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
 
     for column in clean_df.columns:
 
-        dtype = clean_df[column].dtype
+        col_data = clean_df[column]
 
-        if pd.api.types.is_numeric_dtype(dtype) and dtype != 'bool':
-            # check if it's a boolean column with 0s and 1s and if it's a column with numerically encoded labels 
-            if clean_df[column].isin([0, 1]).all(): 
-                column_type[column] = 'Category'
+        # Exclude NaN values for type determination
+        non_nan_data = col_data.dropna()
+
+        if pd.api.types.is_numeric_dtype(non_nan_data):
+            is_effective_integer = np.all(np.floor(non_nan_data) == non_nan_data)
+            # Check if numeric
+            if is_effective_integer and non_nan_data.nunique() < 6:
+                column_type[column] = "Category"
             else:
-                column_type[column] = 'Continuous'
+                column_type[column] = "Continuous"
+
         else:
-            column_type[column] = 'Category'
-        # elif isinstance(dtype, pd.CategoricalDtype) or pd.api.types.is_object_dtype(dtype) or dtype == 'bool' or dtype == 'int64':
-        #     column_type[column] = 'Category'
+            # Non-numeric data types
+            column_type[column] = "Category"
 
     all_type = list(column_type.values())
     unique_type = list(set(all_type))
@@ -237,8 +291,8 @@ def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
 
     return column_type, overall_type
 
-# clean_data, miss_res, each_type, dataset_type = data_preprocess(df = df, ratio = 0.5, ts = False)
-# print(clean_data)
+# column_type, overall_type = data_preprocess(clean_df = df, ts = False)
+# print(column_type)
 
 def imputation (df: pd.DataFrame, column_type: dict, ts: bool = False):
     '''
@@ -264,10 +318,10 @@ def imputation (df: pd.DataFrame, column_type: dict, ts: bool = False):
             df[column] = imputer_cat.fit_transform(df[[column]]).ravel()
 
     if ts:
-        imputer = IterativeImputer(max_iter=10, random_state=0)
-        imputed_data = imputer.fit_transform(df)
-        df = pd.DataFrame(imputed_data, columns=df.columns)
-        # df = df.ffill()
+        # imputer = IterativeImputer(max_iter=10, random_state=0)
+        # imputed_data = imputer.fit_transform(df)
+        # df = pd.DataFrame(imputed_data, columns=df.columns)
+        df = spline_imputation(df)
 
     # Z-score normalization
     scaler = StandardScaler()
@@ -278,7 +332,7 @@ def imputation (df: pd.DataFrame, column_type: dict, ts: bool = False):
 # imputed_data = imputation(df = clean_data, column_type = each_type, ts = False)
 
 
-def linearity_check (df: pd.DataFrame, num_test: int = 100, alpha: float = 0.1, path = None):
+def linearity_check (df_raw: pd.DataFrame, global_state):
     '''
     :param df: imputed data in Pandas DataFrame format.
     :param num_test: maximum number of tests.
@@ -288,8 +342,21 @@ def linearity_check (df: pd.DataFrame, num_test: int = 100, alpha: float = 0.1, 
 
     pval = []
     models = []
-    m = df.shape[1]
 
+    # Use information from global state
+    num_test = global_state.statistics.num_test
+    alpha = global_state.statistics.alpha
+    path = global_state.user_data.output_graph_dir
+
+    selected_features = global_state.user_data.selected_features
+    visual_selected_features = global_state.user_data.visual_selected_features
+
+    if len(selected_features) >= 10:
+        df = df_raw[visual_selected_features]
+    else:
+        df = df_raw
+
+    m = df.shape[1]
     tot_pairs = m * (m - 1) / 2
     combinations_list = list(combinations(list(range(m)), 2))
     pair_num = min(int(tot_pairs), num_test)
@@ -315,10 +382,10 @@ def linearity_check (df: pd.DataFrame, num_test: int = 100, alpha: float = 0.1, 
 
     # Once there is one pair of test has been rejected, we conclude non-linearity
     if corrected_result.sum() == 0:
-        check_result = {"Linearity": True}
+        global_state.statistics.linearity = True
         selected_models = models[:4]
     else:
-        check_result = {"Linearity": False}
+        global_state.statistics.linearity = False
         # Select one of the non-linear pairs to plot residuals
         non_linear_indices = [i for i, result in enumerate(corrected_result) if result]
         linear_indices = [i for i, result in enumerate(corrected_result) if not result]
@@ -356,7 +423,7 @@ def linearity_check (df: pd.DataFrame, num_test: int = 100, alpha: float = 0.1, 
     print(f"Saving residuals plot to {os.path.join(path, 'residuals_plot.jpg')}")
     fig.savefig(os.path.join(path, 'residuals_plot.jpg'))
 
-    return check_result
+    return global_state
 
 # linearity_res = linearity_check(df = imputed_data, path = '/Users/fangnan/Library/CloudStorage/OneDrive-UCSanDiego/UCSD/ML Research/Causal Copilot/preprocess/stat_figures')
 # print(linearity_res)
@@ -366,17 +433,24 @@ def linearity_check (df: pd.DataFrame, num_test: int = 100, alpha: float = 0.1, 
  #
  # Input: cleaned and transformed data & Linearity testing results
  # Output: testing results
-def gaussian_check(df: pd.DataFrame, linearity, num_test: int = 100, alpha: float = 0.1, path=None):
-    '''
-    :param df: imputed data in Pandas DataFrame format.
-    :param linearity: indicator of linearity.
-    :param num_test: maximum number of tests.
-    :param alpha: significance level.
-    :return: indicator of gaussian errors.
-    '''
+def gaussian_check(df_raw, global_state):
 
     pval = []
     collect_result = []
+
+    # Use information from global state
+    linearity = global_state.statistics.linearity
+    num_test = global_state.statistics.num_test
+    alpha = global_state.statistics.alpha
+    path = global_state.user_data.output_graph_dir
+
+    selected_features = global_state.user_data.selected_features
+    visual_selected_features = global_state.user_data.visual_selected_features
+
+    if len(selected_features) >= 10:
+        df = df_raw[visual_selected_features]
+    else:
+        df = df_raw
 
     m = df.shape[1]
     tot_pairs = m * (m - 1) / 2
@@ -417,10 +491,10 @@ def gaussian_check(df: pd.DataFrame, linearity, num_test: int = 100, alpha: floa
         corrected_result = multipletests(pval, alpha=alpha, method='fdr_by')[0]
 
         if corrected_result.sum() == 0:
-            check_result = {"Gaussian Error": True}
+            global_state.statistics.gaussian_error = True
             selected_results = collect_result[:4]
         else:
-            check_result = {"Gaussian Error": False}
+            global_state.statistics.gaussian_error = False
             non_gaussain_indices = [i for i, result in enumerate(corrected_result) if result]
             gaussian_indices = [i for i, result in enumerate(corrected_result) if not result]
             num_nongaussian_pair = len(non_gaussain_indices)
@@ -440,7 +514,7 @@ def gaussian_check(df: pd.DataFrame, linearity, num_test: int = 100, alpha: floa
         col_x_name = df.columns[selected_pair[0]]
         col_y_name = df.columns[selected_pair[1]]
 
-        sm.qqplot(res, line='45', ax=axs[idx])
+        sm.qqplot(res, line='45', ax=axs[idx], markerfacecolor='blue')
         axs[idx].set_title(f'{col_x_name} vs {col_y_name}')
 
     # Hide any unused subplots if less than 4 pairs were tested
@@ -451,7 +525,7 @@ def gaussian_check(df: pd.DataFrame, linearity, num_test: int = 100, alpha: floa
         os.makedirs(path)
     fig.savefig(os.path.join(path, 'qq_plot.jpg'))
 
-    return check_result
+    return global_state
 
 # gaussian_res = gaussian_check(df = imputed_data, linearity = linearity_res, path='/Users/fangnan/Library/CloudStorage/OneDrive-UCSanDiego/UCSD/ML Research/Causal Copilot/preprocess/stat_figures')
 #
@@ -539,6 +613,7 @@ def stat_info_collection(global_state):
 
     # Update global state
     global_state.statistics.data_type = dataset_type["Data Type"]
+    global_state.statistics.data_type_column = each_type
 
     # Imputation
     if global_state.statistics.missingness:
@@ -549,18 +624,12 @@ def stat_info_collection(global_state):
     # Check assumption for continuous data
     if global_state.statistics.data_type == "Continuous":
         if global_state.statistics.linearity is None:
-            # Linearity assumption checking
-            linearity_res = linearity_check(df=imputed_data, num_test=global_state.statistics.num_test, alpha=global_state.statistics.alpha,
-                                            path=global_state.user_data.output_graph_dir)
             # Update global state
-            global_state.statistics.linearity = linearity_res["Linearity"]
+            global_state = linearity_check(df_raw=imputed_data, global_state=global_state)
 
         if global_state.statistics.gaussian_error is None:
-            # Gaussian error checking
-            gaussian_res = gaussian_check(df=imputed_data, linearity=global_state.statistics.linearity, num_test=global_state.statistics.num_test, alpha=global_state.statistics.alpha,
-                                          path=global_state.user_data.output_graph_dir)
             # Update global state
-            global_state.statistics.gaussian_error = gaussian_res["Gaussian Error"]
+            global_state = gaussian_check(df_raw=imputed_data, global_state=global_state)
 
     else:
         global_state.statistics.linearity = False
@@ -573,8 +642,8 @@ def stat_info_collection(global_state):
 
         stationary_res = stationary_check(df=imputed_data, max_test=global_state.statistics.num_test, alpha=global_state.statistics.alpha)
         global_state.statistics.stationary = stationary_res["Stationary"]
-        if global_state.statistics.time_lag is None:
-            global_state.statistics.time_lag =time_series_lag_est(imputed_data, nlags = 50)
+
+        global_state.statistics.time_lag =time_series_lag_est(df=imputed_data, nlags = global_state.statistics.nlags)
 
     # merge the domain index column back to the data if it exists
     if col_domain_index is not None:

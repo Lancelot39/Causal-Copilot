@@ -1,0 +1,17 @@
+### PC
+
+- **Description**: The PC algorithm is a constraint-based method that learns the structure of a causal graph from data by testing conditional independencies between variables. It constructs a directed acyclic graph (DAG) representing the causal relationships.
+- **Assumptions**
+    - **Causal Sufficiency**: No hidden confounders exist, meaning all relevant variables are observed.
+    - **Faithfulness**: The observed statistical dependencies reflect the true causal structure, without any coincidental independencies.
+    - **Markov Condition**: Each variable is conditionally independent of its non-effects given its direct causes.
+    - **Non-cyclic**: The underlying causal structure is acyclic.
+- **Advantages**
+    - Efficient for large-scale datasets due to its ability to quickly prune unnecessary edges.
+- **Limitations**
+    - The pairwise independence test can only operate on a pair of single-dimensional observation variable.
+    - Output Markov Equivalent class rather than Directed Acyclic Graph
+    - Would be benefit if have large sample for statistical independence tests
+- **Suitable Cases**:
+    - Large datasets where computational efficiency is crucial.
+    - Scenarios where all relevant variables are observed and the underlying causal structure is assumed to be acyclic. 

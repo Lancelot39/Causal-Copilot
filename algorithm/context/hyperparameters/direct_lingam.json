@@ -1,0 +1,34 @@
+{
+  "algorithm_name": "DirectLiNGAM",
+  "measure": {
+    "meaning": "Measure to evaluate independence",
+    "suggested_values": {
+      "default": "pwling",
+      "kernel": "kernel"
+    },
+    "reasoning": "Use 'pwling' for pairwise likelihood-based measure, or 'kernel' for kernel-based measure."
+  },
+  "random_state": {
+    "meaning": "Seed used by the random number generator",
+    "suggested_values": {
+      "default": null,
+      "fixed_seed": 42
+    },
+    "reasoning": "Set to null for random behavior, or a fixed integer for reproducible results."
+  },
+  "prior_knowledge": {
+    "meaning": "Prior knowledge used for causal discovery",
+    "suggested_values": {
+      "default": null
+    },
+    "reasoning": "Can be set to a matrix where 0 means no path, 1 means a directed path, and -1 means no prior knowledge."
+  },
+  "apply_prior_knowledge_softly": {
+    "meaning": "Whether to apply prior knowledge softly",
+    "suggested_values": {
+      "default": false,
+      "soft_application": true
+    },
+    "reasoning": "Set to true to apply prior knowledge in a soft manner, false for strict application."
+  }
+} 

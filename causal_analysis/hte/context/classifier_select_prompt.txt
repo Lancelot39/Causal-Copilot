@@ -1,0 +1,44 @@
+Given a dataset with the following properties:
+
+1. Columns: [COLUMNS]
+2. Statistics:
+[STATISTICS_DESC]
+
+We want to predict [TARGET_NODE] with a classification model.
+
+Please analyze the dataset characteristics and the task description, and recommend the most suitable one classification algorithm. Use the following context information to inform your recommendations:
+
+Based on the characteristics of your data and requirements, consider the following priority order for selecting classifiers:
+1. If your data is linear:
+   - Use LogisticRegression for small dataset 
+   - Use SGDClassifier for large dataset
+   
+2. If your data is non-linear:
+   - Use RandomForestClassifier for small to medium dataset or interpretability is important
+   - Use SVC for small to medium dataset if you think kernel method is appropriate
+   - Use HistGradientBoostingClassifier for Large-scale and high dimensional datasets
+   
+You can only choose from these Classifiers, and use exactly the same name in your response:
+[ALGO_CONTEXT]
+
+For the chosen one algorithm, provide:
+1. Classifier name (name of the available classifier in the implementation)
+2. Brief description
+3. Justification for its suitability based on the dataset characteristics
+
+Present your recommendation in a structured JSON format, provide only the most suitable algorithm given the dataset characteristics.
+**You can only choose from these Regressors**:
+- LogisticRegression  
+- RandomForestClassifier  
+- HistGradientBoostingClassifier  
+- SVC 
+- SGDClassifier  
+
+Please structure your response like this example, DO NOT include anything else:
+
+{
+  "name": "classifier Name",
+  "description": "Brief description of the classifier.",
+  "justification": "Explanation of why this classifier is suitable for the given dataset.",
+}
+    

@@ -1,0 +1,112 @@
+{
+    "directlingam": {
+        "terms": [
+            {"name": "np3m2_term", "expression": "N * p**3 * M**2"},
+            {"name": "p4m3_term", "expression": "p**4 * M**3"}
+        ],
+        "min_runtime": 10,
+        "log_transform": false,
+        "param_calculations": {
+            "M": {"type": "rank", "expression": "max(int(log(min(N, p))/log(2)), 2)"}
+        }
+    },
+    "acceleratedlingam": {
+        "terms": [
+            {"name": "np3m2_term", "expression": "N * p**3 * M**2"},
+            {"name": "p4m3_term", "expression": "p**4 * M**3"}
+        ],
+        "min_runtime": 10,
+        "log_transform": false,
+        "param_calculations": {
+            "M": {"type": "rank", "expression": "max(int(log(min(N, p))/log(2)), 2)"}
+        }
+    },
+    "pc": {
+        "terms": [
+            {"name": "log_p", "expression": "log(p)"},
+            {"name": "log_d", "expression": "log(d)"},
+            {"name": "log_exp_d", "expression": "d * log(2)"},
+            {"name": "log_N", "expression": "log(N)"}
+        ],
+        "min_runtime": 10,
+        "log_transform": true,
+        "param_calculations": {
+            "d": {"type": "degree", "expression": "int(density * (p - 1))"}
+        }
+    },
+    "ges": {
+        "terms": [
+            {"name": "log_p2", "expression": "log(p * p)"},
+            {"name": "log_exp_k", "expression": "k * log(2)"},
+            {"name": "log_score", "expression": "log(N)"},
+            {"name": "log_iter", "expression": "log(E)"}
+        ],
+        "min_runtime": 10,
+        "log_transform": true,
+        "param_calculations": {
+            "E": {"type": "edges", "expression": "int((p * (p - 1)) / 2 * density)"},
+            "k": {"type": "derived", "expression": "int(log(E)/log(2)) if E > 0 else 0"}
+        }
+    },
+    "cdnod": {
+        "terms": [
+            {"name": "log_p", "expression": "log(p + 1)"},
+            {"name": "log_d", "expression": "log(d)"},
+            {"name": "log_exp_d", "expression": "d * log(2)"},
+            {"name": "log_N", "expression": "log(N)"}
+        ],
+        "min_runtime": 10,
+        "log_transform": true,
+        "param_calculations": {
+            "d": {"type": "degree", "expression": "int(density * (p - 1))"}
+        }
+    },
+    "fci": {
+        "terms": [
+            {"name": "log_p2", "expression": "log(p * p)"},
+            {"name": "log_exp_n", "expression": "p * log(2)"}
+        ],
+        "min_runtime": 10,
+        "log_transform": true,
+        "param_calculations": {
+            "E": {"type": "edges", "expression": "int((p * (p - 1)) / 2 * density)"}
+        }
+    },
+    "xges": {
+        "terms": [
+            {"name": "log_p2", "expression": "log(p * p)"},
+            {"name": "log_exp_k", "expression": "k * log(2)"},
+            {"name": "log_score", "expression": "log(N)"},
+            {"name": "log_iter", "expression": "log(E)"}
+        ],
+        "min_runtime": 10,
+        "log_transform": true,
+        "param_calculations": {
+            "E": {"type": "edges", "expression": "int((p * (p - 1)) / 2 * density)"},
+            "k": {"type": "derived", "expression": "int(log(E)/log(2)) if E > 0 else 0"}
+        }
+    },
+    "fges": {
+        "terms": [
+            {"name": "p2_term", "expression": "log(p * p)"},
+            {"name": "exp_p_term", "expression": "log(2 ** p)"},
+            {"name": "score_term", "expression": "log(N)"},
+            {"name": "iteration_term", "expression": "log(E)"}
+        ],
+        "min_runtime": 10,
+        "log_transform": true,
+        "param_calculations": {
+            "E": {"type": "edges", "expression": "int((p * (p - 1)) / 2 * density)"}
+        }
+    },
+    "notears": {
+        "terms": [
+            {"name": "log_n", "expression": "log(N)"},
+            {"name": "log_p2", "expression": "log(p * p)"},
+            {"name": "log_iter", "expression": "log(N)"}
+        ],
+        "min_runtime": 10,
+        "log_transform": true,
+        "param_calculations": {}
+    }
+} 

@@ -51,26 +51,26 @@ class Judge(object):
                  revised causal graph based on errors.
         '''
 
-        from postprocess.judge_functions import bootstrap, llm_evaluation, bootstrap_recommend, llm_evaluation_new, kci_pruning
+        from postprocess.judge_functions import bootstrap, bootstrap_recommend, llm_evaluation_new, kci_pruning, check_cycle
 
         # Statistics Perspective: Bootstrapping to get probability of edges using the selected algorithm.
         edge_recom, boot_probability = bootstrap(data=data, full_graph=full_graph, algorithm=algorithm, hyperparameters=hyperparameters,
                                                   boot_num=boot_num, ts=False, parallel=self.args.parallel)
-        print("Edge Recommendations from Bootstrap method: ", edge_recom)
+        #print("Edge Recommendations from Bootstrap method: ", edge_recom)
         #print("Bootstrap Probability: ", boot_probability)
 
         from causallearn.utils.PCUtils.BackgroundKnowledge import BackgroundKnowledge
         bk = BackgroundKnowledge()
         ############Edge Pruning with Bootstrap############
-        print('Bootstrap Pruning Decisioning')
+        print('Bootstrap Pruning Decisioning...')
         revised_graph = full_graph.copy()
         bootstrap_check_dict = bootstrap_recommend(full_graph, boot_probability)
-        print('bootstrap_check_dict: ',bootstrap_check_dict)
+        #print('bootstrap_check_dict: ',bootstrap_check_dict)
         # add non-exist edges with high prob
         if bootstrap_check_dict['high_prob_edges']['non-exist'] != []:
             for idx_i, idx_j in bootstrap_check_dict['high_prob_edges']['non-exist']:
                   revised_graph[idx_i, idx_j] = 1
-                  revised_graph[idx_j, idx_i] = -1
+                  revised_graph[idx_j, idx_i] = 0
                   node_pattern1 = data.columns[idx_j]
                   node_pattern2 = data.columns[idx_i]
                   bk.add_required_by_pattern(node_pattern1, node_pattern2)
@@ -121,18 +121,13 @@ class Judge(object):
             'direct_record': direct_dict,
             'forbid_record': forbid_dict
         }
-        ##########
-        with open('postprocess/test_result/Auto_mpg/results.txt', 'a') as file:
-            # Write each result on a new line
-            file.write(f"{llm_pruning_record}\n")
-        ##########
         
         ####construct prior knowledge and revise graph according to LLM#########
         for direct_pair in direct_dict:
             j, i = direct_pair[0], direct_pair[1]
-            if (revised_graph[i, j]!=1 or revised_graph[j, i]!=-1) and (i, j) not in fixed_pairs:
+            if (revised_graph[i, j]!=1 or revised_graph[j, i]!=0) and (i, j) not in fixed_pairs:
                 revised_graph[i, j] = 1
-                revised_graph[j, i] = -1
+                revised_graph[j, i] = 0
                 node_pattern1 = data.columns[j]
                 node_pattern2 = data.columns[i]
                 bk.add_required_by_pattern(node_pattern1, node_pattern2)
@@ -150,29 +145,16 @@ class Judge(object):
         print('kci_forbid_dict', kci_forbid_dict)
         for idx_j, idx_i in kci_forbid_dict.keys():
             revised_graph[idx_i, idx_j] = revised_graph[idx_j, idx_i] = 0
-        direct_dict_filtered = {key: value for key, value in direct_dict.items() if key not in kci_forbid_dict}
-        print('direct_dict_filtered', direct_dict_filtered)
+        
+        ########### Check Cycles ##########
+        revised_graph = check_cycle(self.args, data, revised_graph)
 
         return {}, bootstrap_check_dict, boot_probability, llm_pruning_record, revised_graph, bk
 
 
     def forward(self, global_state, prompt_type, voting_num):
-        
-        if self.global_state.algorithm.selected_algorithm in ['DirectLiNGAM', 'ICALiNGAM', 'NOTEARS']:
-            adj_matrix = global_state.results.converted_graph
-        else:
-            if self.global_state.algorithm.selected_algorithm == 'FCI':
-                g = global_state.results.raw_result[0]
-            elif self.global_state.algorithm.selected_algorithm == 'GES':
-                g = global_state.results.raw_result['G']
-            else:
-                g = global_state.results.raw_result
-            try:
-                adj_matrix = g.graph
-            except:
-                adj_matrix = g.G.graph
+        adj_matrix = global_state.results.converted_graph
 
-        
         (conversation,
          global_state.results.bootstrap_check_dict, 
          global_state.results.bootstrap_probability,
@@ -201,15 +183,15 @@ class Judge(object):
         # Add and Orientation
         for add_pair in user_revise_dict['add_edges']+user_revise_dict['orient_edges']:
             bk.add_required_by_pattern(add_pair[0], add_pair[1])
-            idx_j = variables.get_loc(add_pair[0])
-            idx_i = variables.get_loc(add_pair[1])
+            idx_j = variables.str.lower().get_loc(add_pair[0].lower())
+            idx_i = variables.str.lower().get_loc(add_pair[1].lower())
             revised_graph[idx_i, idx_j] = 1
-            revised_graph[idx_j, idx_i] = -1
+            revised_graph[idx_j, idx_i] = 0
         # Forbid
         for forbid_pair in user_revise_dict['forbid_edges']:
             bk.add_forbidden_by_pattern(forbid_pair[0], forbid_pair[1])
-            idx_j = variables.get_loc(forbid_pair[0])
-            idx_i = variables.get_loc(forbid_pair[1])
+            idx_j = variables.str.lower().get_loc(forbid_pair[0].lower())
+            idx_i = variables.str.lower().get_loc(forbid_pair[1].lower())
             revised_graph[idx_i, idx_j] = revised_graph[idx_j, idx_i] = 0
         # Update Revised Graph
         self.global_state.results.revised_graph = revised_graph 
@@ -219,6 +201,7 @@ class Judge(object):
 
     def graph_refutation(self, global_state):
         import networkx as nx
+        from openai import OpenAI
         data = global_state.user_data.processed_data
         revised_graph = global_state.results.revised_graph
         savepath = global_state.user_data.output_graph_dir
@@ -236,8 +219,28 @@ class Judge(object):
         cleaned_matches = [match.strip() for match in matches]
         # Concatenate all matches with a space
         result = ' '.join(cleaned_matches)
+        # Generate an analysis paragraph
+        prompt = f"""
+**Context**
+To analyze the reliability of the causal graph, we conduct a graph refutation test, and we need a brief analysis for it.
+**Your Task**
+Write a brief 1 paragraph analysis for the causal graph refutation test based on the provided test result and test introduction.
+**Test Result**
+{result}
+**Test Introduction**
+The results of falsify_graph show the output of two tests. The first measures whether the LMCs implied by the graph are satisfied by the data. It compares the number of LMCs violated by the given graph to the number of LMCs violated by random graphs. For a significance value of 0.05, if the number of LMC violations by the given graph is lower than the 5% best random graphs, then we do not reject the graph. The second test (tPa) checks whether the graph is falsifiable. That is, assuming that the given graph is correct, how many other graphs share the same number of LMC violations? Since the graph is assumed to be correct, the correct LMCs are those that are implied by the graph and hence the reference number of violations is zero. For a significance value of 0.05, if less than 5% of random graphs have zero LMC violations, then it indicates that the LMCs implied by the graph can falsify (or refute) the graph.
+"""
+        client = OpenAI(organization=self.args.organization, project=self.args.project, api_key=self.args.apikey)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an expert in the causal discovery field and helpful assistant."},
+                {"role": "user", "content": prompt}
+            ]
+        )
+        response_doc = response.choices[0].message.content
 
-        return result  
+        return response_doc  
 
     def evaluation(self, global_state, revise=False):
         '''

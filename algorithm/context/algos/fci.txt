@@ -1,0 +1,12 @@
+### FCI
+
+- **Description**: FCI is an extension of the PC algorithm designed to handle the presence of hidden confounders. It outputs a Partial Ancestral Graph (PAG) representing causal relationships with hidden variables.
+- **Assumptions**
+    - **Faithfulness**: The observed dependencies reflect the underlying causal graph.
+    - **Markov Condition**: Each variable is independent of its non-effects given its direct causes.
+- **Advantages**
+    - Accommodate  the existence of hidden confounders
+- **Limitations**:
+    - Similar to PC's limitations
+    - Computationally more intensive than the PC algorithm.
+    - Like PC, it identifies a PAG, which is less informative than a full DAG. 

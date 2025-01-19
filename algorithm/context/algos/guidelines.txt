@@ -1,0 +1,61 @@
+## Available Algorithms
+
+Current algorithms implemented for usage. Note that some algorithms are GPU accelerated and are not be available on current system, current system's GPU availability is [GPU_AVAILABLE]. Do not choose the GPU-accelerated algorithms if the GPU availability is False:
+
+- PC
+- FCI
+- CDNOD
+- GES
+- NOTEARS
+- DirectLiNGAM
+- AcceleratedLiNGAM (GPU-accelerated)
+- ICALiNGAM
+- FGES
+- XGES
+
+## Domain Knowledge about Algorithm Selection
+
+Based on the characteristics of your data and requirements, consider the following priority order for selecting causal discovery algorithms:
+
+1. If your data is nonstationary or heterogeneous across domains/time:
+   - Use CDNOD as the first choice
+   - Note that DO NOT use it if your data is not heterogeneous or nonstationary
+   
+2. If your data is linear or you prefer a score-based approach and assume no hidden confounders:
+   - Consider XGES (Extremely Greedy Equivalence Search) first
+   - Consider GES (Greedy Equivalence Search) then
+   - Consider FGES (Fast Greedy Equivalence Search) lastly
+
+3. If the noise is non-Gaussian and the relationships are linear:
+   - Try AcceleratedLiNGAM first
+   - Try DirectLiNGAM then
+   - If computational resources allow, also consider ICALiNGAM
+   - Note that DO NOT use them if there are non-linear relations in your data.
+
+4. If you have a large dataset with all relevant variables observed:
+   - Start with PC algorithm
+   
+5. If your data is high-dimensional and you prefer a continuous optimization approach:
+   - Experiment with NOTEARS
+   
+6. If you suspect the presence of hidden confounders:
+   - Try FCI as the primary algorithm
+
+Additional considerations:
+
+- For large datasets where efficiency is crucial, prioritize PC or GES
+- If you need a fully directed graph rather than a Markov equivalence class, prefer LiNGAM variants or NOTEARS
+- When dealing with non-linear relationships, consider extensions of these algorithms designed for non-linear data
+
+Default algorithm ranking for general cases (when data doesn't favor any specific characteristics):
+
+1. PC: Good balance between generality and computational efficiency
+2. GES: Efficient for larger datasets and provides a good general approach
+3. FCI: More general than PC but computationally more intensive
+4. NOTEARS: Efficient for high-dimensional data but assumes linear relationships
+5. DirectLiNGAM: Efficient but assumes linear relationships and non-Gaussian noise
+6. AcceleratedLiNGAM: Based on GPU parallelization, very efficient but assumes linear relationships and non-Gaussian noise
+7. ICALiNGAM: More computationally intensive than DirectLiNGAM
+8. CDNOD: Specialized for nonstationary/heterogeneous data, may be overkill for stationary data 
+9. XGES: Fast version of GES, more efficient for larger datasets
+10. FGES: Fast version of GES for sparse larger datasets

@@ -1,0 +1,9 @@
+{
+  "PC": "algorithm/context/hyperparameters/pc.json",
+  "FCI": "algorithm/context/hyperparameters/fci.json",
+  "GES": "algorithm/context/hyperparameters/ges.json",
+  "NOTEARS": "algorithm/context/hyperparameters/notears.json",
+  "CDNOD": "algorithm/context/hyperparameters/cdnod.json",
+  "DirectLiNGAM": "algorithm/context/hyperparameters/direct_lingam.json",
+  "ICALiNGAM": "algorithm/context/hyperparameters/ica_lingam.json"
+}

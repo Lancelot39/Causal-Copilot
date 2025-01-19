@@ -1,0 +1,48 @@
+{
+  "algorithm_name": "NOTEARS",
+  "max_iter": {
+    "meaning": "Maximum number of dual ascent steps during optimization",
+    "suggested_values": {
+      "default": 100,
+      "complex": 250
+    },
+    "reasoning": "Increase for more complex graphs (with many variables)."
+  },
+  "h_tol": {
+    "meaning": "Exit tolerance for h(W) during optimization",
+    "suggested_values": {
+      "default": 1e-8,
+      "strict": 1e-10,
+      "relaxed": 1e-6
+    },
+    "reasoning": "Lower values enforce stricter acyclicity. Use lower values for more accurate results, higher values for faster convergence."
+  },
+  "w_threshold": {
+    "meaning": "Threshold for absolute edge weights",
+    "suggested_values": {
+      "default": 0.0,
+      "sparse": 0.3,
+      "dense": 0.1
+    },
+    "reasoning": "Higher values lead to sparser graphs. Adjust based on expected graph density and to filter out weak connections."
+  },
+  "sparse": {
+    "meaning": "Whether to use sparse optimization",
+    "suggested_values": {
+      "default": true,
+      "sparse": true,
+      "dense": false
+    },
+    "reasoning": "Use true for sparse optimization, which has better identifiability of the true graph."
+  },
+  "beta": {
+    "meaning": "L1 regularization coefficient for edge weights",
+    "suggested_values": {
+      "default": 0.01,
+      "very_sparse": 0.1,
+      "moderately_sparse": 0.02,
+      "dense": 0.001
+    },
+    "reasoning": "Higher values lead to sparser graphs. Adjust based on expected graph density and to filter out weak connections."
+  }
+} 

@@ -1,0 +1,22 @@
+### CDNOD
+
+- **Description**:
+CDNOD (Causal Discovery from Nonstationary/heterogeneous Data) is a framework designed to discover causal relationships in data where the underlying generating process changes across different domains or over time. This method extends traditional conditional independence based causal discovery approaches to handle nonstationary and heterogeneous data.
+
+- **Assumptions**:
+    - **Nonstationarity**: The data distribution is allowed to change over time or across different domains.
+    - **Faithfulness**: The observed dependencies in the data faithfully represent the underlying causal structure.
+    - **Markov Condition**: Each variable is independent of its non-effects given its direct causes.
+
+- **Advantages**:
+    - **Adaptability to Nonstationary Data**: Unlike traditional methods that assume a static data distribution.
+    - **Identification of Mechanism Changes**: Can identify the causal skeleton and estimate properties of changes in causal mechanisms.
+
+- **Limitations**:
+    - **Dependence on Domain/Time Index**: Requires accurate domain or time indices.
+    - **Computational Complexity**: Handling nonstationary data adds computational overhead.
+    - **Similar to PC**: Inherits some PC limitations like dependency on large sample sizes.
+
+- **Suitable Cases**:
+    - **Nonstationary Environments**: Financial markets, climate studies, biomedical research.
+    - **Heterogeneous Data**: Data collected from different domains or conditions. 

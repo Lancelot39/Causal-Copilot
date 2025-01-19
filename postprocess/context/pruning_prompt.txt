@@ -1,0 +1,46 @@
+**Context**: 
+We want to carry out causal discovery analysis, considering these variables: [COLUMNS]
+[RELATIONSHIP]
+
+**Your Task**:
+Your task is to double check these causal relationships about node {main_node} from a domain knowledge perspective and determine whether this statistically suggested hypothesis is plausible in the context of the domain.
+[TASK] 
+
+**Options**
+- For each node pair, if I intervene the left node, it directly causes changes in the right node, the "result" is 'A'. 
+- If I intervene the right node, it directly causes changes in the left node, the "result" should be 'B'. 
+- If you are pretty sure there is no relationship, the "result" is 'C'. 
+- If you do not know established evidence, the "result" is 'D'.
+
+**Important Considerations**:
+
+1. **Correlation vs. Causation**:
+- Remember that statistical correlation does not imply causation. A detected association between variables may not indicate a causal link.
+- Base your reasoning on domain knowledge and logical inference rather than statistical correlations.
+
+2. **Direction of Causation**:
+- The direction of causation is crucial. Ensure that the proposed causal direction is logical and consistent with established domain knowledge.
+- Avoid assuming causation without proper justification.
+
+Secondly, please provide an explanation of your result, leveraging your expert knowledge on the causal relationship between the left node and the right node, please use only one to two sentences. 
+Your response should consider the relevant factors and provide a reasoned explanation based on your understanding of the domain.
+- **Avoid**:
+- Circular reasoning (e.g., "A causes B because B causes A").
+- Vague explanations lacking domain-specific details.
+- Use statistical terms such as "correlates with" or "is associated with" in your explanation.
+- Base your reasoning on data patterns or algorithm outputs.
+
+**Response Format**:
+Response me following the template below. Do not include anything else. explanations should only include one to two sentences. \n
+Please seperate your answers for each pair with semicolon ;
+[FORMAT]
+
+**YOU SHOULD**
+Follow the template below
+Seperate answers for each pair with ; Do not use ; at other places
+Each answers for one pair should be in a new line
+**Response Template**
+(smoker, cancer): A: Smoking introduces harmful substances into the respiratory system, leading to cellular damage and mutation, which significantly raises the likelihood of cancer development in the lungs or respiratory tract, subsequently impacting the occurrence of respiratory problems like shortness of breath;
+(xray, cancer): B: The causal effect of cancer on X-ray is that X-rays are often used to diagnose or detect cancer in different parts of the body, such as the bones, lungs, breasts, or kidneys123. Therefore, having cancer may increase the likelihood of getting an X-ray as part of the diagnostic process or follow-up care;
+(height, color): C: These two variables are independent because the height of a person does not influence or affect the color of a car they own or drive;
+(sleep, job performance): D: The relationship between the amount of sleep a person gets and their performance in a job can be complex and is not definitively understood;

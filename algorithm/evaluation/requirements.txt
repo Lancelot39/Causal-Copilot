@@ -1,0 +1,76 @@
+# Evaluation Protocol
+
+# Update (2024/11/30)
+
+- The simulation currently do not consider hidden confounders
+- The algorithms currently do not use PAG as output (exclude FCI)
+
+# General Rules
+
+- Input type: an asymmetry numpy array with the index as entries labelling the edge type
+    - Note: If the array has symmetric entries, then it needs to be processed to asymmetric by keeping the (i, j) one
+        - If (i, j) == (j, i), remove the (j, i)
+- After sampling to DAGs, examine the average metrics across the sampled instances
+- The evaluation for time-series is executed from two perspectives:
+    - Summary graph (summarized from all time-delayed graphs)
+    - Instantaneous graph (only applicable to parts of algorithms)
+
+## Evaluation Logic
+
+- Consider the case that algorithms outputting PAG are rare and we have possible included them (FCI, tsFCI), from efficiency perspective, we do not consider the PAG’s edge type in evaluation.
+- Metrics:
+    - Pairwise: Precision/Recall/F1
+    - Graph: SHD
+- For dataset has hidden confounders, sample MAGs to evaluate
+    - Average metrics across 1000 MAGs
+- For dataset does not any hidden confounders, sample DAGs to evaluate
+    - Average metrics across 1000 DAGs
+- Edge type
+    - No edge
+        - index: 0
+    - → (directed edge)
+        - index: 1
+        - Possible cases:
+            - →
+    - - (undirected edge)
+        - index: 2
+        - Possible cases (need sample):
+            - →
+            - ←
+    - ↔ (bi-directed edge)
+        - index: 3
+        - Possible cases:
+            - For dataset do not have hidden confounders
+                - No edge
+                - ←
+                - →
+            - For dataset have hidden confounders
+                - ↔
+    - o→ (o can be arrow or tail)
+        - index: 4
+        - Possible cases:
+            - →
+            - ↔
+                - For dataset do not have hidden confounders
+                    - No edge
+                    - (overlapped) ←
+                    - (overlapped) →
+                - For dataset have hidden confounders
+                    - ↔
+    - o- (o can be arrow or tail)
+        - index: 5
+        - Possible cases:
+            - →
+            - ←
+    - o-o (o can be arrow or tail)
+        - index: 6
+        - Possible cases:
+            - →
+            - ←
+            - ↔
+                - For dataset do not have hidden confounders
+                    - No edge
+                    - (overlapped) ←
+                    - (overlapped) →
+                - For dataset have hidden confounders
+                    - ↔

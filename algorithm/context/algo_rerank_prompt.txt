@@ -1,0 +1,26 @@
+I will conduct causal discovery on the Tabular Dataset [TABLE_NAME] containing the following Columns:
+
+[COLUMNS]
+
+The Detailed Background Information is listed below:
+
+[KNOWLEDGE_INFO]
+
+The Statistics Information about the dataset is:
+
+[STATISTICS_INFO]
+
+Based on the above information, please select the best-suited algorithm from the following candidate:
+
+[ALGORITHM_CANDIDATES]
+
+Note that the user can wait for [WAIT_TIME] minutes for the algorithm execution, please ensure the time cost of the selected algorithm would not exceed it!
+The estimated time costs of the following algorithms are below. Consider the time cost wisely when selecting the algorithm, it is critical but less important than the performance when the time cost does not exceed the waiting time, the importance ratio to the performance is 1:2:
+
+[TIME_INFO]
+
+Expert Guidelines on choosing optimal algorithm:
+
+[ALGORITHM_GUIDELINES]
+
+Return the selected alorithm in the json format: {"algorithm": "algorithm_name"}, do not include any other information.

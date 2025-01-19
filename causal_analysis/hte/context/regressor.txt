@@ -1,0 +1,190 @@
+## Available Regressors
+
+Current available regressors implemented for usage:
+
+- LinearRegression
+- ElasticNet
+- RandomForestRegressor
+- HistGradientBoostingRegressor
+- HuberRegressor
+- SGDRegressor
+
+
+## Regressors Description  
+
+### **LinearRegression**
+
+- **Description**:  
+  A simple, interpretable linear regression model that assumes a linear relationship between the dependent variable and the independent variables.  
+
+- **Assumptions**:  
+  1. The relationship between features and outcomes is linear.  
+  2. No multicollinearity among features.  
+
+- **Advantages**:  
+  1. Easy to implement and interpret.  
+  2. Computationally efficient for small to medium datasets.  
+
+- **Limitations**:  
+  1. Poor performance with nonlinear relationships.  
+  2. Susceptible to overfitting in high-dimensional data without regularization.  
+
+- **Suitable Cases**:  
+  1. Small datasets with linear relationships.  
+
+---
+
+### **ElasticNet**
+
+- **Description**:  
+  A regularized linear regression model that combines L1 (Lasso) and L2 (Ridge) penalties to handle multicollinearity and perform feature selection.  
+
+- **Assumptions**:  
+  1. The relationship between features and outcomes is approximately linear.  
+  2. Some features may have minimal or no effect on the outcome.  
+
+- **Advantages**:  
+  1. Handles high-dimensional data effectively.  
+  2. Performs automatic feature selection by shrinking irrelevant coefficients to zero.  
+
+- **Limitations**:  
+  1. Requires careful tuning of hyperparameters (\(\alpha\) and \(l1\_ratio\)).  
+  2. Still assumes a linear relationship between features and the outcome.  
+
+- **Suitable Cases**:  
+  1. High-dimensional data with many irrelevant or correlated features.  
+  2. Scenarios where feature selection is important.  
+
+---
+
+### **RandomForestRegressor**
+
+- **Description**:  
+  An ensemble learning method that uses multiple decision trees to capture nonlinear relationships and improve robustness to overfitting through averaging.  
+
+- **Assumptions**:  
+  1. No specific assumptions about the relationship between features and outcomes (nonparametric).  
+
+- **Advantages**:  
+  1. Captures complex, nonlinear relationships.  
+  2. Robust to outliers and noise.  
+  3. Provides feature importance metrics.  
+
+- **Limitations**:  
+  1. Computationally expensive for large datasets.  
+  2. May overfit if the number of trees is too small or the depth of trees is too large.  
+
+- **Suitable Cases**:  
+  1. Medium-sized datasets with nonlinear relationships.  
+  2. Scenarios with noisy data or strong feature interactions.  
+
+---
+
+### **HistGradientBoostingRegressor**
+
+- **Description**:  
+  A gradient boosting algorithm optimized for large datasets, using histogram-based binning for efficiency. It is particularly effective for high-dimensional and large-scale data.  
+
+- **Assumptions**:  
+  1. No specific assumptions about the functional form of relationships (nonparametric).  
+
+- **Advantages**:  
+  1. Scalable to large datasets.  
+  2. Captures complex nonlinear relationships.  
+  3. Automatically handles missing data.  
+
+- **Limitations**:  
+  1. Requires careful tuning of hyperparameters (e.g., learning rate, number of bins).  
+  2. Computationally intensive for very high-dimensional data.  
+
+- **Suitable Cases**:  
+  1. Large-scale datasets with nonlinear relationships.  
+  2. High-dimensional data with noise and complex feature interactions.  
+
+---
+
+### **HuberRegressor**
+
+- **Description**:  
+  A robust linear regression model that minimizes the impact of outliers by using the Huber loss function, which is less sensitive to extreme values.  
+
+- **Assumptions**:  
+  1. The relationship between features and outcomes is linear.  
+  2. The data contains some outliers but is mostly well-behaved.  
+
+- **Advantages**:  
+  1. Robust to outliers in both features and outcomes.  
+  2. Simple and interpretable.  
+
+- **Limitations**:  
+  1. Does not perform well with highly nonlinear relationships.  
+  2. Computationally slower than standard linear regression.  
+
+- **Suitable Cases**:  
+  1. Small to medium datasets with linear relationships and outliers.  
+  2. Scenarios where robustness to extreme values is critical.  
+
+---
+
+### **SGDRegressor**
+
+- **Description**:  
+  A linear model optimized using Stochastic Gradient Descent (SGD), which is highly scalable and can include regularization (e.g., L1, L2, or ElasticNet penalties).  
+
+- **Assumptions**:  
+  1. The relationship between features and outcomes is linear.  
+  2. Data size is large enough to benefit from stochastic updates.  
+
+- **Advantages**:  
+  1. Scalable to very large datasets.  
+  2. Supports regularization for high-dimensional data.  
+
+- **Limitations**:  
+  1. Requires careful tuning of learning rate and regularization parameters.  
+  2. May converge slowly or fail to converge without proper tuning.  
+
+- **Suitable Cases**:  
+  1. Very large datasets with linear relationships.  
+  2. High-dimensional datasets where regularization is needed.  
+
+
+## Domain Knowledge about Algorithm Selection
+
+Based on the characteristics of your data and requirements, consider the following priority order for selecting causal discovery algorithms:
+
+1. If your data is nonstationary or heterogeneous across domains/time:
+   - Use CDNOD as the first choice
+   - Note that DO NOT use it if your data is not heterogeneous or nonstationary
+   
+2. If your data is linear or you prefer a score-based approach and assume no hidden confounders:
+   - Consider GES (Greedy Equivalence Search)
+   
+3. If the noise is non-Gaussian and you believe the relationships are linear:
+   - Try DirectLiNGAM first
+   - If computational resources allow, also consider ICALiNGAM
+   - Note that DO NOT use them if there are non-linear relations in your data.
+
+4. If you have a large dataset with all relevant variables observed:
+   - Start with PC algorithm
+   
+5. If your data is high-dimensional and you prefer a continuous optimization approach:
+   - Experiment with NOTEARS
+   
+6. If you suspect the presence of hidden confounders:
+   - Try FCI as the primary algorithm
+
+Additional considerations:
+
+- For large datasets where efficiency is crucial, prioritize PC or GES
+- If you need a fully directed graph rather than a Markov equivalence class, prefer LiNGAM variants or NOTEARS
+- When dealing with non-linear relationships, consider extensions of these algorithms designed for non-linear data
+
+Default algorithm ranking for general cases (when data doesn't favor any specific characteristics):
+
+1. PC: Good balance between generality and computational efficiency
+2. GES: Efficient for larger datasets and provides a good general approach
+3. FCI: More general than PC but computationally more intensive
+4. NOTEARS: Efficient for high-dimensional data but assumes linear relationships
+5. DirectLiNGAM: Efficient but assumes linear relationships and non-Gaussian noise
+6. ICALiNGAM: More computationally intensive than DirectLiNGAM
+7. CDNOD: Specialized for nonstationary/heterogeneous data, may be overkill for stationary data

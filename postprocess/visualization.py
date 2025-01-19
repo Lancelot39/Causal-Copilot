@@ -25,23 +25,8 @@ class Visualization(object):
         self.save_dir = global_state.user_data.output_graph_dir
         self.threshold = threshold
 
-    def get_pos(self, g):
-        if self.global_state.algorithm.selected_algorithm == 'FCI':
-            adj_matrix = g[0].graph
-        elif self.global_state.algorithm.selected_algorithm == 'PC' or self.global_state.algorithm.selected_algorithm == 'CDNOD':
-            adj_matrix = g.G.graph
-        elif self.global_state.algorithm.selected_algorithm == 'GES':
-            adj_matrix = g['G'].graph
-        elif self.global_state.algorithm.selected_algorithm == 'NOTEARS':
-            variables = self.data.columns
-            adj_matrix = np.zeros((len(variables), len(variables)))
-            for parent, child in g.edges():
-                i = variables.get_loc(parent)
-                j = variables.get_loc(child) 
-                adj_matrix[j, i] = g.get_edge_data(parent, child)['weight']
-        elif self.global_state.algorithm.selected_algorithm in ['ICALiNGAM', 'DirectLiNGAM']:
-            adj_matrix = g.adjacency_matrix_
-
+    def get_pos(self, mat):
+        adj_matrix = (mat != 0).astype(int).T
         g = nx.from_numpy_array(adj_matrix, create_using=nx.DiGraph)
         # Relabel nodes with variable names from data columns
         mapping = {i: self.data.columns[i] for i in range(len(self.data.columns))}
@@ -49,63 +34,48 @@ class Visualization(object):
         pos = nx.spring_layout(g)
         return pos
 
-    def plot_pdag(self, g, save_path, pos=None, relation=False):
+    def plot_pdag(self, mat, save_path, pos=None, relation=False):
+        #print(mat)
         algo = self.global_state.algorithm.selected_algorithm
         path = os.path.join(self.save_dir, save_path)
+        edges_dict = convert_to_edges(algo, self.data.columns, mat)
+        pag = PAG()
+        for edge in edges_dict['certain_edges']:
+            pag.add_edge(edge[0], edge[1], pag.directed_edge_name)
+        for edge in edges_dict['uncertain_edges']:
+            pag.add_edge(edge[0], edge[1], pag.undirected_edge_name)
+        for edge in edges_dict['bi_edges']:
+            pag.add_edge(edge[0], edge[1], pag.bidirected_edge_name)
+        for edge in edges_dict['half_certain_edges']:
+            pag.add_edge(edge[0], edge[1], pag.directed_edge_name)
+            pag.add_edge(edge[1], edge[0], pag.circle_edge_name)
+        for edge in edges_dict['half_uncertain_edges']:
+            pag.add_edge(edge[0], edge[1], pag.undirected_edge_name)
+            pag.add_edge(edge[1], edge[0], pag.circle_edge_name)
+        for edge in edges_dict['none_edges']:
+            pag.add_edge(edge[0], edge[1], pag.circle_edge_name)
+            pag.add_edge(edge[1], edge[0], pag.circle_edge_name)
 
-        if algo in ['PC', 'FCI', 'CDNOD', 'GES'] or relation:
-            edges_dict = convert_to_edges(algo, self.data.columns, g)
-            pag = PAG()
-            for edge in edges_dict['certain_edges']:
-                pag.add_edge(edge[0], edge[1], pag.directed_edge_name)
-            for edge in edges_dict['uncertain_edges']:
-                pag.add_edge(edge[0], edge[1], pag.undirected_edge_name)
-            for edge in edges_dict['bi_edges']:
-                pag.add_edge(edge[0], edge[1], pag.bidirected_edge_name)
-            for edge in edges_dict['half_edges']:
-                pag.add_edge(edge[0], edge[1], pag.directed_edge_name)
-                pag.add_edge(edge[1], edge[0], pag.circle_edge_name)
-            for edge in edges_dict['none_edges']:
-                pag.add_edge(edge[0], edge[1], pag.circle_edge_name)
-                pag.add_edge(edge[1], edge[0], pag.circle_edge_name)
-
-            if pos is not None:
-                dot_graph = draw(pag, full_node_names=list(pos.keys()), pos=pos, shape='circle')  
-                pos_G = pos              
-            else:
-                dot_graph = draw(pag, shape='circle')
-                pos_G = None
-            dot_graph.render(outfile=path, cleanup=True)
-            
-            return pos_G
-            
-        elif algo in ['DirectLiNGAM', 'ICALiNGAM', 'NOTEARS']:
-            labels = [f'{col}' for i, col in enumerate(self.data.columns)]
-            variables = self.data.columns
-            if isinstance(g, np.ndarray):
-                mat = g
-            else:
-                if algo in ['NOTEARS']:
-                    mat = np.zeros((len(variables), len(variables)))
-                    for parent, child in g.edges():
-                        i = variables.get_loc(parent)
-                        j = variables.get_loc(child) 
-                        mat[j, i] = g.get_edge_data(parent, child)['weight']
-                else:
-                    mat = g.adjacency_matrix_
-            pyd = make_dot(mat, labels=labels, pos=pos)         
-            pyd.render(outfile=path, cleanup=True)
-            return None
-
+        if pos is not None:
+            dot_graph = draw(pag, full_node_names=list(pos.keys()), pos=pos, shape='circle')  
+            pos_G = pos              
+        else:
+            dot_graph = draw(pag, shape='circle')
+            pos_G = None
+        dot_graph.render(outfile=path, cleanup=True)
+        
+        return pos_G
+       
     def boot_heatmap_plot(self):
         
         boot_prob_dict = {k: v for k, v in self.bootstrap_prob.items() if v is not None and sum(v.flatten())>0}
         name_map = {'certain_edges': 'Directed Edge', #(->)
                     'uncertain_edges': 'Undirected Edge', #(-)
                     'bi_edges': 'Bi-Directed Edge', #(<->)
-                    'half_edges': 'Non-Ancestor Edge', #(o->)
-                    'non_edges': 'No D-Seperation Edge', #(o-o)
-                    'non_existence':'No Edge'}
+                    'half_certain_edges': 'Directed Non-Ancestor Edge', #(o->)
+                    'half_uncertain_edges': 'Undirected Non-Ancestor Edge', #(o-)
+                    'none_edges': 'No D-Seperation Edge', #(o-o)
+                    'none_existence':'No Edge'}
         paths = []
         for key in boot_prob_dict.keys():
             prob_mat = boot_prob_dict[key]
@@ -187,71 +157,50 @@ class Visualization(object):
 
         return save_path
 
-def convert_to_edges(algo, variables, g):
-    if isinstance(g, np.ndarray):
-        adj_matrix = g
-    #elif self.global_state.algorithm.selected_algorithm == 'DirectLiNGAM':
-    elif algo == 'DirectLiNGAM':
-        adj_matrix = g.adjacency_matrix_
-    else:
-        #if self.global_state.algorithm.selected_algorithm == 'FCI':
-        if algo  == 'FCI':
-            g = g[0]
-        #elif self.global_state.algorithm.selected_algorithm == 'GES':
-        elif algo  == 'GES':
-            g = g['G']
-        try:
-            adj_matrix = g.graph
-        except:
-            adj_matrix = g.G.graph
-
+def convert_to_edges(algo, variables, mat):
     labels = {i: variables[i] for i in range(len(variables))}
 
     certain_edges = [] # ->
     uncertain_edges = []  # -
     bi_edges = []    #<->
-    half_edges = []  # o->
+    half_certain_edges = []  # o->
+    half_uncertain_edges = []  # o-
     none_edges = []  # o-o
 
-    indices = np.where(adj_matrix == 1)
-
-    for i, j in zip(indices[0], indices[1]):
-        # save the determined edges (j -> i)
-        if adj_matrix[j, i] == -1:
-            certain_edges.append((j, i))
-        # save the bidirected edges (j <-> i)
-        elif adj_matrix[j, i] == 1:
-            bi_edges.append((j, i))
-        # save the half determined edges (j o-> i)
-        elif adj_matrix[j, i] == 2:
-            half_edges.append((j, i))
-    indices = np.where(adj_matrix == 2)
-    for i, j in zip(indices[0], indices[1]):
-        # save the non determined edges (j o-o i)
-        if adj_matrix[j, i] == 2:
-            none_edges.append((j, i))
-    indices = np.where(adj_matrix == -1)
-    for i, j in zip(indices[0], indices[1]):
-        # save the uncertain edges (j - i)
-        if adj_matrix[j, i] == -1:
-            uncertain_edges.append((j, i))
+    for ind_i in range(mat.shape[0]):
+        for ind_j in range(mat.shape[0]):
+            if ind_i == ind_j: continue
+            elif mat[ind_i, ind_j] == 1: 
+                certain_edges.append((ind_j, ind_i))
+            elif mat[ind_i, ind_j] == 2: 
+                uncertain_edges.append((ind_i, ind_j))
+            elif mat[ind_i, ind_j] == 3: 
+                bi_edges.append((ind_i, ind_j))
+            elif mat[ind_i, ind_j] == 4: 
+                half_certain_edges.append((ind_j, ind_i))
+            elif mat[ind_i, ind_j] == 5: 
+                half_uncertain_edges.append((ind_j, ind_i))
+            elif mat[ind_i, ind_j] == 6: 
+                none_edges.append((ind_j, ind_i))
 
     uncertain_edges = list({tuple(sorted(t)) for t in uncertain_edges})
     none_edges = list({tuple(sorted(t)) for t in none_edges})
-    all_edges = certain_edges.copy() + uncertain_edges.copy() + bi_edges.copy() + half_edges.copy() + none_edges.copy()
+    all_edges = certain_edges.copy() + uncertain_edges.copy() + bi_edges.copy() + half_certain_edges.copy() + half_uncertain_edges.copy() + none_edges.copy()
 
     all_edges_names = [(labels[edge[0]], labels[edge[1]]) for edge in all_edges]
     certain_edges_names = [(labels[edge[0]], labels[edge[1]]) for edge in certain_edges]
     uncertain_edges_names = [(labels[edge[0]], labels[edge[1]]) for edge in uncertain_edges]
     bi_edges_names = [(labels[edge[0]], labels[edge[1]]) for edge in bi_edges]
-    half_edges_names = [(labels[edge[0]], labels[edge[1]]) for edge in half_edges]
+    half_certain_edges_names = [(labels[edge[0]], labels[edge[1]]) for edge in half_certain_edges]
+    half_uncertain_edges_names = [(labels[edge[0]], labels[edge[1]]) for edge in half_uncertain_edges]
     none_edges_names = [(labels[edge[0]], labels[edge[1]]) for edge in none_edges]
     edges_dict = {
         'all_edges': all_edges_names,
         'certain_edges': certain_edges_names,
         'uncertain_edges': uncertain_edges_names,
         'bi_edges': bi_edges_names,
-        'half_edges': half_edges_names,
+        'half_certain_edges': half_certain_edges_names,
+        'half_uncertain_edges': half_uncertain_edges_names,
         'none_edges': none_edges_names
     }
     return edges_dict

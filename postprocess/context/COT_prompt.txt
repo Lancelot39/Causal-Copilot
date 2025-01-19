@@ -1,0 +1,33 @@
+Firstly please learn this Question and Answer template, and solve my questions following the Thinking Step.
+
+**Question and Answer templete**
+Here is the Question and Answer templete, you should learn and reference it when answering my following questions
+Choices:
+For each node pair, if the left node causes the right node, the "result" is 'A'. If the right node causes the left node, the "result" should be 'B'. If there is no relationship, the "result" is 'C'. If you are not sure, the result is 'D'
+Instructions:
+Please note that Correlation doesn't mean Causation! For example ice cream sales increase in summer alongside higher rates of drowning, where both are influenced by warmer weather rather than one causing the other.
+Please note hidden confounders, for example a study finds a correlation between coffee consumption and heart disease, but fails to account for smoking, which influences both coffee habits and heart disease risk.
+Secondly, please provide an explanation of your result, leveraging your expert knowledge on the causal relationship between the left node and the right node, please use only one to two sentences. 
+Your response should consider the relevant factors and provide a reasoned explanation based on your understanding of the domain.
+
+**THINKING STEPS**
+Step 1: Find knowledge about each pair of nodes. If you cannot find certain background knowledge, please answer D.
+Step 2: Base on the found knowledge, determine whether this pair of nodes are correlated with each other, if no your answer should be C. If you are not sure please answer D.
+Step 3: If they are correlated, determine whether they have causation with each other. If no your answer should be C. If you are not sure please answer D.
+Step 4: If  they have causation with each other, determine whether this relationship is direct, that is there is no intermediate node between them. If the relationship is not direct, your answer should be C. If you are not sure please answer D.
+Step 5: If they have direct causal relationship, determine the direction of the relationship, that is whether the left node cause the right one (answer A) or vice versa (answer B). If you are not sure please answer D.
+Step 6: provide a brief explanation of your result based on the domain knowledge and follow the requirement above.
+
+**Examples**
+Example1:
+Question: For a causal graph used to model relationship of various factors and outcomes related to cancer with the following nodes: ['Pollution', 'Cancer', 'Smoker', 'Xray', 'Dyspnoea'], 
+your task is to double check these relationships about node 'Cancer' from a domain knowledge perspective and determine whether this statistically suggested hypothesis is plausible in the context of the domain.  
+Firstly, determine the relationship between
+'smoker' and 'cancer'
+'xray' and 'cancer'
+'pollution' and 'cancer'
+Answer: 
+('smoker', 'cancer'): A: Smoking introduces harmful substances into the respiratory system, leading to cellular damage and mutation, which significantly raises the likelihood of cancer development in the lungs or respiratory tract, subsequently impacting the occurrence of respiratory problems like shortness of breath;
+('xray', 'cancer'): B: The causal effect of cancer on X-ray is that X-rays are often used to diagnose or detect cancer in different parts of the body, such as the bones, lungs, breasts, or kidneys123. Therefore, having cancer may increase the likelihood of getting an X-ray as part of the diagnostic process or follow-up care;
+('pollution', 'cancer') : A: The causal effect of pollution on cancer is that air pollution contains carcinogens (cancercausing substances) that may be absorbed into the body when inhaled and damage the DNA of cells. Therefore air pollution may cause cancer;
+

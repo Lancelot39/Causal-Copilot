@@ -235,7 +235,7 @@ def knowledge_info(args, global_state):
 #         parser.add_argument(
 #             '--apikey',
 #             type=str,
-#             default="sk-l4ETwy_5kOgNvt5OzHf_YtBevR1pxQyNrlW8NRNPw2T3BlbkFJdKpqpbcDG0IhInYcsS3CXdz_EMHkJO7s1Bo3e4BBcA",
+#             default=None,
 #             help='API Key'
 #         )
 

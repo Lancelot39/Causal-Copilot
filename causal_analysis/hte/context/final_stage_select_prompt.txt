@@ -1,0 +1,35 @@
+Given a dataset with the following properties:
+
+1. Columns: [COLUMNS]
+2. Statistics:
+[STATISTICS_DESC]
+
+We want to choose a nonlinear regression model for the DML final stage to estimate HTE.
+
+Please analyze the dataset characteristics and the task description, and recommend the most suitable one regression algorithm. Use the following context information to inform your recommendations:
+
+You can only choose from these Regressors, and use exactly the same name in your response:
+[ALGO_CONTEXT]
+
+For each recommended algorithm, provide:
+1. Regressors name (name of the available regressor in the implementation)
+2. Brief description
+3. Justification for its suitability based on the dataset characteristics
+
+Present your recommendations in a structured JSON format, provide only the most suitable one algorithm given the dataset characteristics.
+**You can only choose from these Regressors**:
+- LinearRegression
+- ElasticNet
+- RandomForestRegressor
+- HistGradientBoostingRegressor
+- HuberRegressor
+- SGDRegressor
+
+Please structure your response like this example, DO NOT include anything else:
+
+{
+  "name": "Regressor Name",
+  "description": "Brief description of the regressor.",
+  "justification": "Explanation of why this regressor is suitable for the given dataset.",
+}
+

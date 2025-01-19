@@ -80,8 +80,8 @@ def simulate_parameter(B, w_ranges=((-2.0, -0.5), (0.5, 2.0))):
         W += B * (S == i) * U
     return W
 
-def simulate_linear_sem(W, n, sem_type, noise_scale=None):
-    """Simulate samples from linear SEM with specified type of noise.
+def simulate_linear_sem(W, n, sem_type, noise_scale=None, discrete_ratio=0.3, max_categories=10):
+    """Simulate samples from linear SEM with specified type of noise and mixed continuous/discrete variables.
 
     For uniform, noise z ~ uniform(-a, a), where a = noise_scale.
 
@@ -90,31 +90,59 @@ def simulate_linear_sem(W, n, sem_type, noise_scale=None):
         n (int): num of samples, n=inf mimics population risk
         sem_type (str): gauss, exp, gumbel, uniform, logistic, poisson
         noise_scale (np.ndarray): scale parameter of additive noise, default all ones
+        discrete_ratio (float): ratio of discrete columns, default 0.3
+        max_categories (int): number of categories for discrete columns, default 10
 
     Returns:
-        X (np.ndarray): [n, d] sample matrix, [d, d] if n=inf
+        X (np.ndarray): [n, d] sample matrix with mixed continuous and discrete variables
     """
-    def _simulate_single_equation(X, w, scale):
+    def _simulate_single_equation(X, w, scale, is_discrete=False, n_cats=None):
         """X: [n, num of parents], w: [num of parents], x: [n]"""
-        if sem_type == 'gaussian':
-            z = np.random.normal(scale=scale, size=n)
-            x = X @ w + z
-        elif sem_type == 'exponential':
-            z = np.random.exponential(scale=scale, size=n)
-            x = X @ w + z
-        elif sem_type == 'gumbel':
-            z = np.random.gumbel(scale=scale, size=n)
-            x = X @ w + z
-        elif sem_type == 'uniform':
-            z = np.random.uniform(low=-scale, high=scale, size=n)
-            x = X @ w + z
-        elif sem_type == 'logistic':
-            x = np.random.binomial(1, sigmoid(X @ w)) * 1.0
-        elif sem_type == 'poisson':
-            x = np.random.poisson(np.exp(X @ w)) * 1.0
+        if is_discrete:
+            # For discrete variables, generate multi-dimensional output first
+            if X.shape[1] == 0:
+                # No parents - generate random logits
+                logits = np.random.normal(scale=scale, size=(n, n_cats))
+            else:
+                # Generate logits based on parents, the noise is added via sampling
+                logits = np.zeros((n, n_cats))
+                for k in range(n_cats):
+                    if sem_type == 'gaussian':
+                        logits[:, k] = X @ w
+                    elif sem_type == 'exponential':
+                        logits[:, k] = X @ w
+                    elif sem_type == 'gumbel':
+                        logits[:, k] = X @ w
+                    elif sem_type == 'uniform':
+                        logits[:, k] = X @ w
+                    else:
+                        raise ValueError('unsupported sem type for discrete variables')
+
+            # Apply softmax to get probabilities
+            probs = np.exp(logits) / np.sum(np.exp(logits), axis=1, keepdims=True)
+            # Sample from categorical distribution
+            return np.array([np.random.choice(n_cats, p=p) for p in probs]).astype(float)
+
         else:
-            raise ValueError('unknown sem type')
-        return x
+            if sem_type == 'gaussian':
+                z = np.random.normal(scale=scale, size=n)
+                x = X @ w + z
+            elif sem_type == 'exponential':
+                z = np.random.exponential(scale=scale, size=n)
+                x = X @ w + z
+            elif sem_type == 'gumbel':
+                z = np.random.gumbel(scale=scale, size=n)
+                x = X @ w + z
+            elif sem_type == 'uniform':
+                z = np.random.uniform(low=-scale, high=scale, size=n)
+                x = X @ w + z
+            elif sem_type == 'logistic':
+                x = np.random.binomial(1, sigmoid(X @ w)) * 1.0
+            elif sem_type == 'poisson':
+                x = np.random.poisson(np.exp(X @ w)) * 1.0
+            else:
+                raise ValueError('unknown sem type')
+            return x
 
     d = W.shape[0]
     if noise_scale is None:
@@ -134,62 +162,118 @@ def simulate_linear_sem(W, n, sem_type, noise_scale=None):
             return X
         else:
             raise ValueError('population risk not available')
+
+    # Sample discrete columns based on ratio
+    n_discrete = int(d * discrete_ratio)
+    discrete_columns = np.random.choice(d, size=n_discrete, replace=False)
+
     # empirical risk
     G = ig.Graph.Weighted_Adjacency(W.tolist())
-    print(G)
     ordered_vertices = G.topological_sorting()
     assert len(ordered_vertices) == d
     X = np.zeros([n, d])
     for j in ordered_vertices:
         parents = G.neighbors(j, mode=ig.IN)
-        X[:, j] = _simulate_single_equation(X[:, parents], W[parents, j], scale_vec[j])
+        is_discrete = j in discrete_columns
+        n_categories = np.random.randint(2, max_categories)
+        X[:, j] = _simulate_single_equation(X[:, parents], W[parents, j], scale_vec[j], is_discrete, n_categories)
     return X
 
-def simulate_nonlinear_sem(B, n, sem_type, noise_scale=None):
-    """Simulate samples from nonlinear SEM.
+def simulate_nonlinear_sem(B, n, sem_type, noise_scale=None, discrete_ratio=0.3, max_categories=10):
+    """Simulate samples from nonlinear SEM with mixed continuous and discrete variables.
 
     Args:
         B (np.ndarray): [d, d] binary adj matrix of DAG
         n (int): num of samples
         sem_type (str): mlp, mim, gp, gp-add
         noise_scale (np.ndarray): scale parameter of additive noise, default all ones
+        discrete_ratio (float): ratio of discrete columns, default 0.3
+        max_categories (int): number of categories for discrete columns, default 10
 
     Returns:
-        X (np.ndarray): [n, d] sample matrix
+        X (np.ndarray): [n, d] sample matrix with mixed continuous and discrete variables
     """
-    def _simulate_single_equation(X, scale):
+    def _simulate_single_equation(X, scale, is_discrete=False, n_cats=None):
         """X: [n, num of parents], x: [n]"""
-        z = np.random.normal(scale=scale, size=n)
         pa_size = X.shape[1]
-        if pa_size == 0:
-            return z
-        if sem_type == 'mlp':
-            hidden = 100
-            W1 = np.random.uniform(low=0.5, high=2.0, size=[pa_size, hidden])
-            W1[np.random.rand(*W1.shape) < 0.5] *= -1
-            W2 = np.random.uniform(low=0.5, high=2.0, size=hidden)
-            W2[np.random.rand(hidden) < 0.5] *= -1
-            x = sigmoid(X @ W1) @ W2 + z
-        elif sem_type == 'mim':
-            w1 = np.random.uniform(low=0.5, high=2.0, size=pa_size)
-            w1[np.random.rand(pa_size) < 0.5] *= -1
-            w2 = np.random.uniform(low=0.5, high=2.0, size=pa_size)
-            w2[np.random.rand(pa_size) < 0.5] *= -1
-            w3 = np.random.uniform(low=0.5, high=2.0, size=pa_size)
-            w3[np.random.rand(pa_size) < 0.5] *= -1
-            x = np.tanh(X @ w1) + np.cos(X @ w2) + np.sin(X @ w3) + z
-        elif sem_type == 'gp':
-            from sklearn.gaussian_process import GaussianProcessRegressor
-            gp = GaussianProcessRegressor()
-            x = gp.sample_y(X, random_state=None).flatten() + z
-        elif sem_type == 'gp-add':
-            from sklearn.gaussian_process import GaussianProcessRegressor
-            gp = GaussianProcessRegressor()
-            x = sum([gp.sample_y(X[:, i, None], random_state=None).flatten()
-                     for i in range(X.shape[1])]) + z
+        
+        if is_discrete:
+            # For discrete variables, generate multi-dimensional output first
+            if pa_size == 0:
+                # No parents - generate random logits
+                logits = np.random.normal(scale=scale, size=(n, n_cats))
+            else:
+                if sem_type == 'mlp':
+                    hidden = 100
+                    # Generate separate MLPs for each category
+                    logits = np.zeros((n, n_cats))
+                    for k in range(n_cats):
+                        W1 = np.random.uniform(low=0.5, high=2.0, size=[pa_size, hidden])
+                        W1[np.random.rand(*W1.shape) < 0.5] *= -1
+                        W2 = np.random.uniform(low=0.5, high=2.0, size=hidden)
+                        W2[np.random.rand(hidden) < 0.5] *= -1
+                        logits[:, k] = sigmoid(X @ W1) @ W2
+                elif sem_type == 'mim':
+                    logits = np.zeros((n, n_cats))
+                    for k in range(n_cats):
+                        w1 = np.random.uniform(low=0.5, high=2.0, size=pa_size)
+                        w1[np.random.rand(pa_size) < 0.5] *= -1
+                        w2 = np.random.uniform(low=0.5, high=2.0, size=pa_size)
+                        w2[np.random.rand(pa_size) < 0.5] *= -1
+                        w3 = np.random.uniform(low=0.5, high=2.0, size=pa_size)
+                        w3[np.random.rand(pa_size) < 0.5] *= -1
+                        logits[:, k] = np.tanh(X @ w1) + np.cos(X @ w2) + np.sin(X @ w3)
+                elif sem_type == 'gp' or sem_type == 'gp-add':
+                    from sklearn.gaussian_process import GaussianProcessRegressor
+                    logits = np.zeros((n, n_cats))
+                    for k in range(n_cats):
+                        gp = GaussianProcessRegressor()
+                        if sem_type == 'gp':
+                            logits[:, k] = gp.sample_y(X, random_state=None).flatten()
+                        else:  # gp-add
+                            logits[:, k] = sum([gp.sample_y(X[:, i, None], random_state=None).flatten() 
+                                              for i in range(X.shape[1])])
+                else:
+                    raise ValueError('unknown sem type')
+            
+            # Apply softmax to get probabilities
+            probs = np.exp(logits) / np.sum(np.exp(logits), axis=1, keepdims=True)
+            # Sample from categorical distribution
+            return np.array([np.random.choice(n_cats, p=p) for p in probs]).astype(float)
+            
         else:
-            raise ValueError('unknown sem type')
-        return x
+            # Original continuous variable generation
+            z = np.random.normal(scale=scale, size=n)
+            if pa_size == 0:
+                return z
+                
+            if sem_type == 'mlp':
+                hidden = 100
+                W1 = np.random.uniform(low=0.5, high=2.0, size=[pa_size, hidden])
+                W1[np.random.rand(*W1.shape) < 0.5] *= -1
+                W2 = np.random.uniform(low=0.5, high=2.0, size=hidden)
+                W2[np.random.rand(hidden) < 0.5] *= -1
+                x = sigmoid(X @ W1) @ W2 + z
+            elif sem_type == 'mim':
+                w1 = np.random.uniform(low=0.5, high=2.0, size=pa_size)
+                w1[np.random.rand(pa_size) < 0.5] *= -1
+                w2 = np.random.uniform(low=0.5, high=2.0, size=pa_size)
+                w2[np.random.rand(pa_size) < 0.5] *= -1
+                w3 = np.random.uniform(low=0.5, high=2.0, size=pa_size)
+                w3[np.random.rand(pa_size) < 0.5] *= -1
+                x = np.tanh(X @ w1) + np.cos(X @ w2) + np.sin(X @ w3) + z
+            elif sem_type == 'gp':
+                from sklearn.gaussian_process import GaussianProcessRegressor
+                gp = GaussianProcessRegressor()
+                x = gp.sample_y(X, random_state=None).flatten() + z
+            elif sem_type == 'gp-add':
+                from sklearn.gaussian_process import GaussianProcessRegressor
+                gp = GaussianProcessRegressor()
+                x = sum([gp.sample_y(X[:, i, None], random_state=None).flatten()
+                         for i in range(X.shape[1])]) + z
+            else:
+                raise ValueError('unknown sem type')
+            return x
 
     d = B.shape[0]
     scale_vec = noise_scale * np.ones(d) if noise_scale else np.ones(d)
@@ -197,9 +281,16 @@ def simulate_nonlinear_sem(B, n, sem_type, noise_scale=None):
     G = ig.Graph.Adjacency(B.tolist())
     ordered_vertices = G.topological_sorting()
     assert len(ordered_vertices) == d
+    
+    # Sample discrete columns based on ratio
+    n_discrete = int(d * discrete_ratio)
+    discrete_columns = np.random.choice(d, size=n_discrete, replace=False)
+    
     for j in ordered_vertices:
         parents = G.neighbors(j, mode=ig.IN)
-        X[:, j] = _simulate_single_equation(X[:, parents], scale_vec[j])
+        is_discrete = j in discrete_columns
+        n_categories = np.random.randint(2, max_categories)
+        X[:, j] = _simulate_single_equation(X[:, parents], scale_vec[j], is_discrete, n_categories)
     return X
 
 def count_accuracy(B_true, B_est):
@@ -281,7 +372,9 @@ class DataSimulator:
             self.graph_dict = {i: f'X{i+1}' for i in range(n_nodes)}
         self.ground_truth['graph'] = self.graph_dict
 
-    def generate_single_domain_data(self, n_samples: int, noise_scale: float, noise_type: str, function_type: Union[str, List[str], Dict[str, str]]) -> pd.DataFrame:
+    def generate_single_domain_data(self, n_samples: int, noise_scale: float, noise_type: str, 
+                                    function_type: Union[str, List[str], Dict[str, str]], 
+                                    discrete_ratio: float = 0.0, max_categories: int = 5) -> pd.DataFrame:
         """Generate data for a single domain based on the graph structure."""
         # assert if function_type, noise_type, noise_scale are valid
         print(f"function_type: {function_type}, noise_type: {noise_type}, noise_scale: {noise_scale}")
@@ -293,14 +386,16 @@ class DataSimulator:
         assert isinstance(noise_scale, float) and noise_scale > 0
         if function_type == 'linear':
             W = simulate_parameter(self.graph)
-            data = simulate_linear_sem(W, n_samples, noise_type, noise_scale)
+            data = simulate_linear_sem(W, n_samples, noise_type, noise_scale, discrete_ratio, max_categories)
         else:
-            data = simulate_nonlinear_sem(self.graph, n_samples, function_type, noise_scale)
+            data = simulate_nonlinear_sem(self.graph, n_samples, function_type, noise_scale, discrete_ratio, max_categories)
         
         data_df = pd.DataFrame(data, columns=self.variable_names)
         return data_df
     
-    def generate_multi_domain_data(self, n_samples: int, noise_scale: float, noise_type: str, function_type: Union[str, List[str], Dict[str, str]]) -> pd.DataFrame:
+    def generate_multi_domain_data(self, n_samples: int, noise_scale: float, noise_type: str, 
+                                   function_type: Union[str, List[str], Dict[str, str]], 
+                                   discrete_ratio: float = 0.0, max_categories: int = 5) -> pd.DataFrame:
         """Generate data for a single domain based on the graph structure."""
         # assert if function_type, noise_type, noise_scale are valid
         print(f"function_type: {function_type}, noise_type: {noise_type}, noise_scale: {noise_scale}")
@@ -316,11 +411,11 @@ class DataSimulator:
             data = []
             W = simulate_parameter(self.graph)
             for i in range(self.n_domains):
-                data.extend(simulate_linear_sem(W, n_samples, noise_type, noise_scale) * C[:, i])
+                data.extend(simulate_linear_sem(W, n_samples, noise_type, noise_scale, discrete_ratio, max_categories) * C[:, i])
         else:
             data = []
             for i in range(self.n_domains):
-                data.extend(simulate_nonlinear_sem(self.graph, n_samples, function_type, noise_scale) * C[:, i])
+                data.extend(simulate_nonlinear_sem(self.graph, n_samples, function_type, noise_scale, discrete_ratio, max_categories) * C[:, i])
         
         data_df = pd.DataFrame(data, columns=self.variable_names)
         data_df['domain_index'] = np.repeat(range(self.n_domains), n_samples)
@@ -330,7 +425,8 @@ class DataSimulator:
     def generate_data(self, n_samples: int, noise_scale: float = 1.0, 
                       noise_type: str = 'gaussian', 
                       function_type: Union[str, List[str], Dict[str, str]] = 'linear',
-                      n_domains: int = 1, variable_names: List[str] = None) -> None:
+                      n_domains: int = 1, variable_names: List[str] = None,
+                      discrete_ratio: float = 0.0, max_categories: int = 5) -> None:
         """Generate heterogeneous data from multiple domains."""
         if self.graph is None:
             raise ValueError("Generate graph first")
@@ -341,9 +437,11 @@ class DataSimulator:
         self.n_domains = n_domains
 
         if n_domains == 1:
-            domain_df = self.generate_single_domain_data(domain_size, noise_scale, noise_type, function_type)
+            domain_df = self.generate_single_domain_data(domain_size, noise_scale, noise_type, function_type, 
+                                                          discrete_ratio, max_categories)
         else:
-            domain_df = self.generate_multi_domain_data(domain_size, noise_scale, noise_type, function_type)
+            domain_df = self.generate_multi_domain_data(domain_size, noise_scale, noise_type, function_type, 
+                                                       discrete_ratio, max_categories)
     
         self.data = domain_df
         # shuffle the self.data
@@ -354,29 +452,21 @@ class DataSimulator:
             else:
                 self.data.columns = variable_names + ['domain_index']
             
+        self.ground_truth['discrete_ratio'] = discrete_ratio
+        self.ground_truth['max_categories'] = max_categories
         self.ground_truth['noise_type'] = noise_type
         self.ground_truth['function_type'] = function_type
         self.ground_truth['n_domains'] = n_domains
+ 
 
-    def add_categorical_variable(self, n_categories: int = 10) -> None:
-        """Convert all original data to quantized or categorical values."""
+    def add_measurement_error(self, error_std: float = 0.3, error_rate: float = 0.5) -> None:
+        """Randomly sample a subset of columns to add gaussian measurement error."""
         if self.data is None:
             raise ValueError("Generate data first")
 
-        for column in self.data.columns:
-            if column != 'domain_index':  # Skip domain_index
-                self.data[column] = pd.qcut(self.data[column], q=n_categories, labels=range(n_categories))
-        
-        self.ground_truth['categorical'] = f"All columns (except domain_index) quantized into {n_categories} categories"
-
-    def add_measurement_error(self, error_std: float = 0.1, columns: Union[str, List[str]] = None) -> None:
-        """Add measurement error to specified columns or all if not specified."""
-        if self.data is None:
-            raise ValueError("Generate data first")
-
-        columns = columns or [col for col in self.data.columns if col != 'domain_index']
-        if isinstance(columns, str):
-            columns = [columns]
+        n_cols = int(error_rate * len(self.data.columns))
+        available_cols = [col for col in self.data.columns if col != 'domain_index']
+        columns = np.random.choice(available_cols, size=n_cols, replace=False)
 
         for col in columns:
             if pd.api.types.is_numeric_dtype(self.data[col]):
@@ -384,72 +474,41 @@ class DataSimulator:
         
         self.ground_truth['measurement_error'] = {col: error_std for col in columns}
 
-    def add_selection_bias(self, condition: Callable[[pd.DataFrame], pd.Series]) -> None:
-        """Introduce selection bias based on a given condition."""
+    def add_missing_values(self, missing_rate: float = 0.1) -> None:
+        """Introduce missing values to the whole dataframe with a specified missing rate."""
         if self.data is None:
             raise ValueError("Generate data first")
 
-        self.data = self.data[condition(self.data)].reset_index(drop=True)
-        self.ground_truth['selection_bias'] = str(condition)
-
-    def add_confounding(self, affected_columns: List[str], strength: float = 0.5) -> None:
-        """Add a confounder that affects specified columns."""
-        if self.data is None:
-            raise ValueError("Generate data first")
-
-        confounder = np.random.randn(len(self.data))
-        for col in affected_columns:
-            if col in self.data.columns and col != 'domain_index':
-                self.data[col] += strength * confounder
+        # Get all columns except domain_index
+        columns = [col for col in self.data.columns if col != 'domain_index']
         
-        self.ground_truth['confounding'] = {'affected_columns': affected_columns, 'strength': strength}
-
-    def add_missing_values(self, missing_rate: float = 0.1, columns: Union[str, List[str]] = None) -> None:
-        """Introduce missing values to specified columns or all if not specified."""
-        if self.data is None:
-            raise ValueError("Generate data first")
-
-        columns = columns or [col for col in columns if col != 'domain_index']
-        if isinstance(columns, str):
-            columns = [columns]
-
-        for col in columns:
-            mask = np.random.random(len(self.data)) < missing_rate
-            self.data.loc[mask, col] = np.nan
+        # Create missing value mask for the whole dataframe
+        mask = np.random.random(size=self.data[columns].shape) < missing_rate
         
-        self.ground_truth['missing_rate'] = {col: missing_rate for col in columns}
+        # Apply mask to create NaN missing values
+        self.data[columns] = np.where(mask, np.nan, self.data[columns])
+        
+        # Record which columns were affected
+        affected_columns = [col for col in columns if mask[:, columns.index(col)].any()]
+        self.ground_truth['missing_rate'] = {col: missing_rate for col in affected_columns}
 
     def generate_dataset(self, n_nodes: int, n_samples: int, edge_probability: float = 0.3,
                          noise_scale: float = 1.0, noise_type: str = 'gaussian',
-                         function_type: Union[str, List[str], Dict[str, str]] = 'random',
-                         add_categorical: bool = False, add_measurement_error: bool = False,
-                         add_selection_bias: bool = False, add_confounding: bool = False,
-                         add_missing_values: bool = False, n_domains: int = 1,
+                         function_type: Union[str, List[str], Dict[str, str]] = 'random', discrete_ratio: float = 0.0, max_categories: int = 5,
+                         add_measurement_error: bool = False, add_missing_values: bool = False, n_domains: int = 1, 
+                         error_std: float = 0.3, error_rate: float = 0.5, missing_rate: float = 0.1,
                          variable_names: List[str] = None, graph_type: str = 'ER') -> Tuple[Dict[int, str], pd.DataFrame]:
         """
         Generate a complete heterogeneous dataset with various characteristics.
         """
         self.generate_graph(n_nodes, edge_probability, variable_names, graph_type)
-        self.generate_data(n_samples, noise_scale, noise_type, function_type, n_domains, variable_names)
-        
-        if add_categorical:
-            n_categories = np.random.randint(2, 10)
-            self.add_categorical_variable(n_categories=n_categories)
-        
+        self.generate_data(n_samples, noise_scale, noise_type, function_type, n_domains, variable_names, discrete_ratio, max_categories)
+                    
         if add_measurement_error:
-            self.add_measurement_error(error_std=np.random.uniform(0.05, 0.2))
-        
-        if add_selection_bias:
-            condition = lambda df: df[np.random.choice(df.columns)] > df[np.random.choice(df.columns)].median()
-            self.add_selection_bias(condition)
-        
-        if add_confounding:
-            n_confounded = np.random.randint(2, max(3, n_nodes // 2))
-            affected_columns = np.random.choice(self.data.columns, n_confounded, replace=False)
-            self.add_confounding(affected_columns.tolist(), strength=np.random.uniform(0.3, 0.7))
+            self.add_measurement_error(error_std=error_std, error_rate=error_rate)
         
         if add_missing_values:
-            self.add_missing_values(missing_rate=np.random.uniform(0.05, 0.2))
+            self.add_missing_values(missing_rate=missing_rate)
         
         # original (i, j) == 1 (i -> j), here we return the transpose of the graph to be (i, j) == 1 -> (j -> i)
         return self.graph.T, self.data
@@ -518,6 +577,39 @@ class DataSimulator:
         self.generate_dataset(n_nodes, n_samples, **kwargs)
         self.save_simulation(output_dir, prefix)
 
+def test_mixed_data_generation():
+    """
+    Test case that generates a dataset with mixed data types and various data quality issues:
+    - Linear Gaussian base relationships
+    - Mix of continuous and discrete variables
+    - Missing values
+    - Measurement/observation errors
+    """
+    simulator = DataSimulator()
+    
+    # Generate complex mixed dataset
+    graph, data = simulator.generate_dataset(
+        # Basic parameters
+        n_nodes=5,
+        n_samples=500,
+        edge_probability=0.3,
+        
+        # Linear Gaussian base
+        function_type='linear',
+        noise_type='gaussian',
+        
+        # Add discrete variables
+        discrete_ratio=0.3,  # 30% of variables will be discrete
+        max_categories=5,
+        
+        # Add data quality issues
+        add_missing_values=True,
+        add_measurement_error=True,
+    )
+    
+    print("Test dataset generated with mixed data specifications")
+    return graph, data
+
 # Generate pure simulated data using base simulator
 # base_simulator = DataSimulator()
 
@@ -541,159 +633,150 @@ class DataSimulator:
 # base_simulator.generate_and_save_dataset(function_type='linear', n_nodes=10, n_samples=1000, edge_probability=0.3, n_domains=5)
 
 
-# Example usage
-# domain_simulator = DomainSpecificSimulator()
-
-# # Simulate and save neuroscience data
-# domain_simulator.simulate_and_save('neuroscience', n_regions=20, n_timepoints=1000)
-
-# # Simulate and save climate data
-# domain_simulator.simulate_and_save('climate', n_variables=6, n_samples=1000)
-
-# # Simulate and save gene regulatory network data
-# domain_simulator.simulate_and_save('gene_regulatory_network', n_genes=50, n_samples=500)
 
 
 if __name__ == "__main__":
-    import numpy as np
-    import pandas as pd
-    import sys
-    sys.path.insert(0, 'causal-learn')
-    from causallearn.search.ConstraintBased.PC import pc
-    from causallearn.search.ConstraintBased.FCI import fci
-    from causallearn.search.ConstraintBased.CDNOD import cdnod
-    from causallearn.utils.GraphUtils import GraphUtils
-    from causallearn.search.FCMBased import lingam
-    from causallearn.graph.AdjacencyConfusion import AdjacencyConfusion
-    from causallearn.graph.SHD import SHD
-    import sklearn.metrics
+    # import numpy as np
+    # import pandas as pd
+    # import sys
+    # sys.path.insert(0, 'causal-learn')
+    # from causallearn.search.ConstraintBased.PC import pc
+    # from causallearn.search.ConstraintBased.FCI import fci
+    # from causallearn.search.ConstraintBased.CDNOD import cdnod
+    # from causallearn.utils.GraphUtils import GraphUtils
+    # from causallearn.search.FCMBased import lingam
+    # from causallearn.graph.AdjacencyConfusion import AdjacencyConfusion
+    # from causallearn.graph.SHD import SHD
+    # import sklearn.metrics
 
-    from causallearn.graph.GeneralGraph import GeneralGraph
-    from causallearn.graph.GraphNode import GraphNode
-    from causallearn.graph.Edge import Edge
-    from causallearn.graph.Endpoint import Endpoint
-    from causallearn.utils.DAG2CPDAG import dag2cpdag
+    # from causallearn.graph.GeneralGraph import GeneralGraph
+    # from causallearn.graph.GraphNode import GraphNode
+    # from causallearn.graph.Edge import Edge
+    # from causallearn.graph.Endpoint import Endpoint
+    # from causallearn.utils.DAG2CPDAG import dag2cpdag
 
-    def array2cpdag(adj_array):
-        g = GeneralGraph([])
-        node_map = {}
-        num_nodes = adj_array.shape[0]
+    # def array2cpdag(adj_array):
+    #     g = GeneralGraph([])
+    #     node_map = {}
+    #     num_nodes = adj_array.shape[0]
         
-        # Create nodes
-        for i in range(num_nodes):
-            node_name = f"X{i+1}"
-            node_map[node_name] = GraphNode(node_name)
-            g.add_node(node_map[node_name])
+    #     # Create nodes
+    #     for i in range(num_nodes):
+    #         node_name = f"X{i+1}"
+    #         node_map[node_name] = GraphNode(node_name)
+    #         g.add_node(node_map[node_name])
         
-        # Create edges
-        for i in range(num_nodes):
-            for j in range(num_nodes):
-                if adj_array[i, j] == 1:
-                    node1 = node_map[f"X{i+1}"]
-                    node2 = node_map[f"X{j+1}"]
-                    edge = Edge(node1, node2, Endpoint.TAIL, Endpoint.ARROW)
-                    g.add_edge(edge)
+    #     # Create edges
+    #     for i in range(num_nodes):
+    #         for j in range(num_nodes):
+    #             if adj_array[i, j] == 1:
+    #                 node1 = node_map[f"X{i+1}"]
+    #                 node2 = node_map[f"X{j+1}"]
+    #                 edge = Edge(node1, node2, Endpoint.TAIL, Endpoint.ARROW)
+    #                 g.add_edge(edge)
         
-        truth_cpdag = dag2cpdag(g)
-        return truth_cpdag
+    #     truth_cpdag = dag2cpdag(g)
+    #     return truth_cpdag
 
-    def evaluate_algorithms():
-        results = {'PC': [], 'CDNOD': []} #  'FCI': [], 'CDNOD': [], 'LiNGAM': []}
+    # def evaluate_algorithms():
+    #     results = {'PC': [], 'CDNOD': []} #  'FCI': [], 'CDNOD': [], 'LiNGAM': []}
         
-        for _ in range(1):
-            base_simulator = DataSimulator()
-            graph, data = base_simulator.generate_dataset(
-                function_type='linear',
-                n_nodes=10,
-                n_samples=10000,
-                edge_probability=0.15,
-                noise_type='gaussian',
-                n_domains=2
-            )
-            # Convert data to DataFrame
-            df = pd.DataFrame(data)
-            df_wo_domain = df.drop(columns=['domain_index']).values
-            c_indx = df['domain_index'].values.reshape(-1, 1)
-            print('graph: ', graph)
+    #     for _ in range(1):
+    #         base_simulator = DataSimulator()
+    #         graph, data = base_simulator.generate_dataset(
+    #             function_type='linear',
+    #             n_nodes=10,
+    #             n_samples=10000,
+    #             edge_probability=0.15,
+    #             noise_type='gaussian',
+    #             n_domains=2
+    #         )
+    #         # Convert data to DataFrame
+    #         df = pd.DataFrame(data)
+    #         df_wo_domain = df.drop(columns=['domain_index']).values
+    #         c_indx = df['domain_index'].values.reshape(-1, 1)
+    #         print('graph: ', graph)
             
-            # # PC Algorithm
-            pc_graph = pc(df_wo_domain)
-            pc_shd = SHD(array2cpdag(graph), pc_graph.G).get_shd()
-            print('pc_graph: ', pc_graph.G.graph)
+    #         # # PC Algorithm
+    #         pc_graph = pc(df_wo_domain)
+    #         pc_shd = SHD(array2cpdag(graph), pc_graph.G).get_shd()
+    #         print('pc_graph: ', pc_graph.G.graph)
 
+    #         adj = AdjacencyConfusion(array2cpdag(graph), pc_graph.G)
+    #         pc_precision = adj.get_adj_precision()
+    #         pc_recall = adj.get_adj_recall()
+    #         pc_f1 = 2 * pc_precision * pc_recall / (pc_precision + pc_recall)
+    #         results['PC'].append((pc_shd, pc_precision, pc_recall, pc_f1))
+    #         print(results['PC'])
 
-
-            adj = AdjacencyConfusion(array2cpdag(graph), pc_graph.G)
-            pc_precision = adj.get_adj_precision()
-            pc_recall = adj.get_adj_recall()
-            pc_f1 = 2 * pc_precision * pc_recall / (pc_precision + pc_recall)
-            results['PC'].append((pc_shd, pc_precision, pc_recall, pc_f1))
-            print(results['PC'])
-
-            # # FCI Algorithm
-            # fci_graph, _ = fci(df_wo_domain)
-            # fci_shd = SHD(array2cpdag(graph), fci_graph).get_shd()
-            # adj = AdjacencyConfusion(array2cpdag(graph), fci_graph)
-            # fci_precision = adj.get_adj_precision()
-            # fci_recall = adj.get_adj_recall()
-            # fci_f1 = 2 * fci_precision * fci_recall / (fci_precision + fci_recall)
-            # results['FCI'].append((fci_shd, fci_precision, fci_recall, fci_f1))
+    #         # # FCI Algorithm
+    #         # fci_graph, _ = fci(df_wo_domain)
+    #         # fci_shd = SHD(array2cpdag(graph), fci_graph).get_shd()
+    #         # adj = AdjacencyConfusion(array2cpdag(graph), fci_graph)
+    #         # fci_precision = adj.get_adj_precision()
+    #         # fci_recall = adj.get_adj_recall()
+    #         # fci_f1 = 2 * fci_precision * fci_recall / (fci_precision + fci_recall)
+    #         # results['FCI'].append((fci_shd, fci_precision, fci_recall, fci_f1))
             
-            # CDNOD Algorithm
-            cdnod_graph = cdnod(df_wo_domain, c_indx, alpha=0.01)
-            print(cdnod_graph.G.graph)
-            cdnod_graph.G.remove_node(GraphNode(f'X{len(cdnod_graph.G.nodes)}'))
-            print(cdnod_graph.G.graph)
-            cdnod_shd = SHD(array2cpdag(graph), cdnod_graph.G).get_shd()
-            adj = AdjacencyConfusion(array2cpdag(graph), cdnod_graph.G)
-            cdnod_precision = adj.get_adj_precision()
-            cdnod_recall = adj.get_adj_recall()
-            cdnod_f1 = 2 * cdnod_precision * cdnod_recall / (cdnod_precision + cdnod_recall)
-            results['CDNOD'].append((cdnod_shd, cdnod_precision, cdnod_recall, cdnod_f1))
+    #         # CDNOD Algorithm
+    #         cdnod_graph = cdnod(df_wo_domain, c_indx, alpha=0.01)
+    #         print(cdnod_graph.G.graph)
+    #         cdnod_graph.G.remove_node(GraphNode(f'X{len(cdnod_graph.G.nodes)}'))
+    #         print(cdnod_graph.G.graph)
+    #         cdnod_shd = SHD(array2cpdag(graph), cdnod_graph.G).get_shd()
+    #         adj = AdjacencyConfusion(array2cpdag(graph), cdnod_graph.G)
+    #         cdnod_precision = adj.get_adj_precision()
+    #         cdnod_recall = adj.get_adj_recall()
+    #         cdnod_f1 = 2 * cdnod_precision * cdnod_recall / (cdnod_precision + cdnod_recall)
+    #         results['CDNOD'].append((cdnod_shd, cdnod_precision, cdnod_recall, cdnod_f1))
             
-            # # Drop the last node of the estimated graph
-            # cdnod_graph_dropped = cdnod_graph.G
-            # cdnod_shd_dropped = SHD(array2cpdag(graph), cdnod_graph_dropped).get_shd()
-            # adj = AdjacencyConfusion(array2cpdag(graph), cdnod_graph_dropped)
-            # cdnod_precision_dropped = adj.get_adj_precision()
-            # cdnod_recall_dropped = adj.get_adj_recall()
-            # cdnod_f1_dropped = 2 * cdnod_precision_dropped * cdnod_recall_dropped / (cdnod_precision_dropped + cdnod_recall_dropped)
-            # results['CDNOD_dropped'] = results.get('CDNOD_dropped', []) + [(cdnod_shd_dropped, cdnod_precision_dropped, cdnod_recall_dropped, cdnod_f1_dropped)]
+    #         # # Drop the last node of the estimated graph
+    #         # cdnod_graph_dropped = cdnod_graph.G
+    #         # cdnod_shd_dropped = SHD(array2cpdag(graph), cdnod_graph_dropped).get_shd()
+    #         # adj = AdjacencyConfusion(array2cpdag(graph), cdnod_graph_dropped)
+    #         # cdnod_precision_dropped = adj.get_adj_precision()
+    #         # cdnod_recall_dropped = adj.get_adj_recall()
+    #         # cdnod_f1_dropped = 2 * cdnod_precision_dropped * cdnod_recall_dropped / (cdnod_precision_dropped + cdnod_recall_dropped)
+    #         # results['CDNOD_dropped'] = results.get('CDNOD_dropped', []) + [(cdnod_shd_dropped, cdnod_precision_dropped, cdnod_recall_dropped, cdnod_f1_dropped)]
             
-            # # LiNGAM Algorithm
-            # model = lingam.DirectLiNGAM()
-            # model.fit(df_wo_domain)
-            # inferred_flat_lingam = np.where(model.adjacency_matrix_ != 0, 1, 0)
-            # lingam_shd = np.sum(graph.flatten() != inferred_flat_lingam.flatten())
-            # lingam_precision = sklearn.metrics.precision_score(graph.flatten(), inferred_flat_lingam.flatten())
-            # lingam_recall = sklearn.metrics.recall_score(graph.flatten(), inferred_flat_lingam.flatten())
-            # lingam_f1 = sklearn.metrics.f1_score(graph.flatten(), inferred_flat_lingam.flatten())
-            # results['LiNGAM'].append((lingam_shd, lingam_precision, lingam_recall, lingam_f1))
+    #         # # LiNGAM Algorithm
+    #         # model = lingam.DirectLiNGAM()
+    #         # model.fit(df_wo_domain)
+    #         # inferred_flat_lingam = np.where(model.adjacency_matrix_ != 0, 1, 0)
+    #         # lingam_shd = np.sum(graph.flatten() != inferred_flat_lingam.flatten())
+    #         # lingam_precision = sklearn.metrics.precision_score(graph.flatten(), inferred_flat_lingam.flatten())
+    #         # lingam_recall = sklearn.metrics.recall_score(graph.flatten(), inferred_flat_lingam.flatten())
+    #         # lingam_f1 = sklearn.metrics.f1_score(graph.flatten(), inferred_flat_lingam.flatten())
+    #         # results['LiNGAM'].append((lingam_shd, lingam_precision, lingam_recall, lingam_f1))
 
-            # 1. evluation difference between cpdag and dag
-            #    pc/ges/fci/cdnod: cpdag - cpdag
-            #    lingam/notears: dag - dag
-            # 2. cdnod (fisherz) -- pc (fisherz)
-            # 3. post-processing: pc/ges/fci/cdnod -> --? -> dag -> evaluation()
-            # 4. x-y-z => x->y<-z, keep it there
-        return results
+    #         # 1. evluation difference between cpdag and dag
+    #         #    pc/ges/fci/cdnod: cpdag - cpdag
+    #         #    lingam/notears: dag - dag
+    #         # 2. cdnod (fisherz) -- pc (fisherz)
+    #         # 3. post-processing: pc/ges/fci/cdnod -> --? -> dag -> evaluation()
+    #         # 4. x-y-z => x->y<-z, keep it there
+    #     return results
 
-    # Use the base simulator to generate data
+    # # Use the base simulator to generate data
 
-    # Evaluate algorithms
-    results = evaluate_algorithms()
+    # # Evaluate algorithms
+    # results = evaluate_algorithms()
 
-    # Calculate average performance
-    avg_results = {}
-    for alg, metrics in results.items():
-        shds, precisions, recalls, f1s = zip(*metrics)
-        avg_results[alg] = {
-            'avg_shd': np.mean(shds),
-            'avg_precision': np.mean(precisions),
-            'avg_recall': np.mean(recalls),
-            'avg_f1': np.mean(f1s)
-        }
+    # # Calculate average performance
+    # avg_results = {}
+    # for alg, metrics in results.items():
+    #     shds, precisions, recalls, f1s = zip(*metrics)
+    #     avg_results[alg] = {
+    #         'avg_shd': np.mean(shds),
+    #         'avg_precision': np.mean(precisions),
+    #         'avg_recall': np.mean(recalls),
+    #         'avg_f1': np.mean(f1s)
+    #     }
 
-    print("Average performance for each algorithm over 10 simulations:")
-    for alg, avg_metrics in avg_results.items():
-        print(f"{alg}: SHD={avg_metrics['avg_shd']}, Precision={avg_metrics['avg_precision']}, Recall={avg_metrics['avg_recall']}, F1={avg_metrics['avg_f1']}")
+    # print("Average performance for each algorithm over 10 simulations:")
+    # for alg, avg_metrics in avg_results.items():
+    #     print(f"{alg}: SHD={avg_metrics['avg_shd']}, Precision={avg_metrics['avg_precision']}, Recall={avg_metrics['avg_recall']}, F1={avg_metrics['avg_f1']}")
+
+    graph, data = test_mixed_data_generation()
+    print(graph)
+    print(data)

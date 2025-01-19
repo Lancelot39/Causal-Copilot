@@ -1,7 +1,6 @@
 import json
 
 class Programming(object):
-    # Kun Zhou Implemented
     def __init__(self, args):
         self.args = args
 

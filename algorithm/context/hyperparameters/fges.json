@@ -1,0 +1,14 @@
+{
+    "algorithm_name": "FGES",
+    "sparsity": {
+      "meaning": "Acts as a penalty discount factor in the scoring function, influencing the trade-off between model complexity and fit by favoring simpler graphs with fewer edges.",
+      "suggested_values": {
+        "default": 10,
+        "small_graph": 3,
+        "medium_graph": 5,
+        "large_graph": 10
+      },
+      "reasoning": "Higher sparsity reduces the penalty on model complexity, allowing for more edges and improving computational efficiency, while lower sparsity enforces stricter penalties, leading to simpler, more parsimonious graphs at the cost of increased computation time."
+    }
+  }
+  

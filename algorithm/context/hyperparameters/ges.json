@@ -1,0 +1,25 @@
+{
+  "algorithm_name": "GES",
+  "score_func": {
+    "meaning": "Score function to be used",
+    "suggested_values": {
+      "default": "local_score_BIC",
+      "BIC": "local_score_BIC",
+      "BDeu": "local_score_BDeu",
+      "marginal_general": "local_score_marginal_general",
+      "marginal_multi": "local_score_marginal_multi"
+    },
+    "reasoning": "Use 'local_score_BIC' for a good balance of fit and complexity. 'BDeu' for discrete data. CV and marginal scores for more robust model selection, especially with limited data.",
+    "context_file": "algorithm/context/tools/score_function.txt"
+  },
+  "maxP": {
+    "meaning": "Allowed maximum number of parents when searching the graph",
+    "suggested_values": {
+      "default": null,
+      "small_graph": 3,
+      "medium_graph": 5,
+      "large_graph": 7
+    },
+    "reasoning": "Limit maxP for large graphs to reduce computational complexity. No limit (null) for small graphs to explore all possibilities."
+  }
+} 

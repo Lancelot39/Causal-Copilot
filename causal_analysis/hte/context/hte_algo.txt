@@ -1,0 +1,147 @@
+## Available Algorithms
+
+Current available algorithms implemented for usage:
+
+- DML 
+- LinearDML
+- SparseLinearDML
+- CausalForestDML
+
+- metalearners
+
+## Domain Knowledge about Algorithm Selection
+
+Based on the characteristics of your data and requirements, consider the following priority order for selecting causal discovery algorithms:
+
+Additional considerations:
+
+- For large datasets where efficiency is crucial, prioritize PC or GES
+- If you need a fully directed graph rather than a Markov equivalence class, prefer LiNGAM variants or NOTEARS
+- When dealing with non-linear relationships, consider extensions of these algorithms designed for non-linear data
+
+Default algorithm ranking for general cases (when data doesn't favor any specific characteristics):
+
+1. PC: Good balance between generality and computational efficiency
+2. GES: Efficient for larger datasets and provides a good general approach
+3. FCI: More general than PC but computationally more intensive
+4. NOTEARS: Efficient for high-dimensional data but assumes linear relationships
+5. DirectLiNGAM: Efficient but assumes linear relationships and non-Gaussian noise
+6. ICALiNGAM: More computationally intensive than DirectLiNGAM
+7. CDNOD: Specialized for nonstationary/heterogeneous data, may be overkill for stationary data
+
+## Algorithms Description 
+
+### DML
+
+- **Description**:  
+  Double Machine Learning (DML) is a framework for estimating treatment effects using a two-stage process: nuisance functions are estimated in the first stage, and treatment effects are estimated in the second stage using residual-on-residual regression.
+
+- **Assumptions**:  
+  1. The result variable Y has a linear parametric form with treatment T
+  2. Treatments can be continuous or discrete.  
+
+- **Advantages**:  
+  1. Handles multiple treatments, outcomes, and high-dimensional features.  
+  2. Supports flexible scikit-learn-compatible models for nuisance functions and final regression.  
+
+- **Limitations**:  
+  1. Relies on linear parametric assumptions, which may not capture nonlinear relationships.  
+  2. Can not provide confidence intervals
+  3. Cross-fitting increases computational complexity.  
+
+- **Suitable Cases**:  
+  1. Estimating treatment effects with linear relationships or approximations.  
+  2. Scenarios with multiple treatments or outcomes.  
+  3. High-dimensional data where regularized linear regression is applicable.  
+
+### LinearDML
+
+- **Description**:  
+  LinearDML is a Double Machine Learning estimator with a low-dimensional linear parametric final stage, implemented using a statsmodels regression.
+
+- **Assumptions**:  
+  1. The CATE is linear in the features, modeled explicitly as a low-dimensional linear regression.  
+
+- **Advantages**:  
+  1. Simple and fast 
+  2. Can provide confidence intervals
+
+- **Limitations**:  
+  1. Limited to low-dimensional feature spaces in the final stage due to the linear regression assumption.  
+  2. May underperform when the true treatment effect is nonlinear.  
+
+- **Suitable Cases**:  
+  1. When treatment effects are expected to have a linear relationship with features.  
+  2. Scenarios with low-dimensional feature spaces in the final stage.
+  3. Applications requiring confidence intervals or hypothesis testing for treatment effects.
+  
+
+### SparseLinearDML
+
+- **Description**:  
+  SparseLinearDML is a specialized version of the DML estimator designed for high-dimensional features and sparse dataset.
+
+- **Assumptions**:  
+  1. The CATE is linear in the features, with sparse coefficients.   
+  2. The high-dimensional feature space can be effectively regularized to exploit sparsity.  
+
+- **Advantages**:  
+  1. Handles high-dimensional feature spaces effectively using regularization techniques.  
+  2. Provides interpretable results by focusing on sparse, non-zero coefficients.  
+
+- **Limitations**:  
+  1. Relies on the sparsity assumption, which may not hold in all datasets.  
+  2. Requires careful tuning of regularization parameters (e.g., Lasso or other sparsity-inducing techniques).  
+
+- **Suitable Cases**:  
+  1. When the treatment effect is expected to be linear but only depends on a sparse subset of high-dimensional features.  
+  2. High-dimensional data where standard linear models may overfit without regularization.  
+  3. Applications requiring confidence intervals or hypothesis testing for treatment effects.
+
+### CausalForestDML
+
+- **Description**:  
+  CausalForestDML combines a causal forest algorithm with DML-based residualization of treatment and outcome variables to estimate flexible, non-linear models of heterogeneous treatment effects.
+
+- **Assumptions**:   
+  1. The data-generating process may have low-dimensional latent structures, even if the observed feature space is high-dimensional.  
+  2. The moment equation is satisfied locally by the causal forest.
+
+- **Advantages**:  
+  1. Captures non-linear and flexible heterogeneity in treatment effects.  
+  2. Adapts to high-dimensional features without requiring strong parametric assumptions.  
+  3. Provides valid confidence intervals, even when using data-adaptive methods.  
+  4. Performs well in scenarios with many features and complex heterogeneity structures.  
+
+- **Limitations**:  
+  1. Computationally intensive, especially with large datasets or many features.  
+  2. Requires a sufficient number of samples to perform non-parametric estimation effectively.  
+
+- **Suitable Cases**:  
+  1. High-dimensional feature spaces where the heterogeneity of the treatment effect is unknown or complex.  
+  2. Scenarios requiring flexible, non-parametric models of treatment effects.  
+  3. Applications where valid confidence intervals are critical despite data adaptivity.
+
+### metalearners
+
+- **Description**:  
+  Metalearners are highly flexible frameworks for estimating CATE, allowing users to specify any machine learning method at each stage of the estimation process, including cross-validation for model selection.
+
+- **Assumptions**:  
+  1. No strong assumptions on the form of CATE, as the method is flexible and data-adaptive.  
+  2. The quality of the CATE estimate depends on the performance of the chosen ML models for nuisance functions and the final stage.  
+
+- **Advantages**:  
+  1. Provides full flexibility to use any ML method at each stage, enabling powerful and adaptive modeling.  
+  2. Supports cross-validation for automatic model selection, reducing the risk of overfitting.  
+  3. Aims to minimize mean squared error (MSE) of the CATE estimate.  
+
+- **Limitations**:  
+  1. Does not provide valid confidence intervals due to the unrestricted flexibility and unclear trade-offs between bias and variance.  
+  2. Performance highly depends on the choice of ML models and hyperparameters.  
+  3. Computationally intensive when combining cross-validation with complex ML models.  
+
+- **Suitable Cases**:  
+  1. Scenarios where minimizing the MSE of the CATE estimate is the primary goal.  
+  2. When flexibility is needed to experiment with different ML models and perform model selection.  
+  3. Use cases where confidence intervals are not a critical requirement.

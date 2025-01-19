@@ -1,0 +1,127 @@
+## Available Classifiers
+
+Current available classifiers implemented for usage:
+
+- LogisticRegression  
+- RandomForestClassifier  
+- HistGradientBoostingClassifier  
+- SVC 
+- SGDClassifier  
+
+---
+
+## Classifiers Description  
+
+### **LogisticRegression**
+
+- **Suitable Cases**:  
+  1. Low to medium-dimensional data with a linear decision boundary.  
+  2. Baseline models for comparison with more complex classifiers.  
+  
+- **Description**:  
+  A linear classifier that models the log-odds of the binary or multiclass outcome as a linear function of the covariates.  
+
+- **Assumptions**:  
+  1. The relationship between the covariates and the log-odds of the outcome is linear.  
+  2. No multicollinearity among the covariates.  
+
+- **Advantages**:  
+  1. Simple, interpretable, and computationally efficient.  
+  2. Includes regularization options (e.g., L1, L2) for high-dimensional data.  
+
+- **Limitations**:  
+  1. Poor performance with nonlinear relationships.  
+  2. Sensitive to outliers unless regularized.  
+
+---
+
+### **RandomForestClassifier**
+
+- **Suitable Cases**:  
+  1. Medium-sized datasets with nonlinear relationships.  
+  2. Scenarios with noisy data or complex feature interactions.  
+
+- **Description**:  
+  An ensemble learning method that builds multiple decision trees and combines their predictions to improve accuracy and robustness.  
+
+- **Assumptions**:  
+  1. No specific assumptions about the functional relationship between covariates and the outcome (nonparametric).  
+
+- **Advantages**:  
+  1. Captures nonlinear relationships and complex interactions.  
+  2. Robust to overfitting due to averaging across trees.  
+  3. Provides feature importance metrics for interpretability.  
+
+- **Limitations**:  
+  1. Computationally expensive for large datasets.  
+  2. May struggle with very high-dimensional data relative to the number of samples.  
+
+---
+
+### **HistGradientBoostingClassifier**
+
+- **Suitable Cases**:  
+  1. Large-scale datasets with complex interactions.  
+  2. High-dimensional data with missing values or categorical features.  
+
+- **Description**:  
+  A highly efficient gradient boosting method that uses histogram-based binning to handle large datasets with high-dimensional features.  
+
+- **Assumptions**:  
+  1. No specific assumptions about the functional form of the relationship (nonparametric).  
+
+- **Advantages**:  
+  1. Scales well to large datasets with many features.  
+  2. Automatically handles missing values and categorical features.  
+  3. Captures complex nonlinear relationships effectively.  
+
+- **Limitations**:  
+  1. Requires careful tuning of hyperparameters (e.g., learning rate, number of bins).  
+  2. May not be as interpretable as simpler models.  
+
+---
+
+### **SVC**
+
+- **Suitable Cases**:  
+  1. Small to medium-sized datasets with nonlinear decision boundaries.  
+  2. Scenarios requiring robust and flexible classification boundaries.  
+
+- **Description**:  
+  A classifier that uses hyperplanes to separate data points, employing kernel functions (e.g., RBF, linear) to handle nonlinear decision boundaries.  
+
+- **Assumptions**:  
+  1. The data is separable (linearly or nonlinearly) in the chosen feature space.  
+
+- **Advantages**:  
+  1. Effective for small to medium datasets with clear margins between classes.  
+  2. Handles nonlinear relationships effectively with appropriate kernel functions.  
+
+- **Limitations**:  
+  1. Computationally expensive for large datasets.  
+  2. Requires careful tuning of hyperparameters (e.g., kernel type, \(C\), and \(\gamma\)).  
+
+
+---
+
+### **SGDClassifier**
+
+- **Suitable Cases**:  
+  1. Very large datasets with linear decision boundaries.  
+  2. High-dimensional data where regularization is needed.
+
+- **Description**:  
+  A linear classifier optimized using Stochastic Gradient Descent (SGD), which is highly scalable and supports various loss functions (e.g., log loss for logistic regression, hinge loss for SVM).  
+
+- **Assumptions**:  
+  1. The relationship between covariates and the outcome is (approximately) linear.  
+  2. Data size is large enough to benefit from stochastic updates.  
+
+- **Advantages**:  
+  1. Scalable to very large datasets.  
+  2. Supports regularization (e.g., L1, L2, or ElasticNet).  
+
+- **Limitations**:  
+  1. Requires careful tuning of learning rate and regularization parameters.  
+  2. May converge slowly or fail to converge without proper tuning.  
+

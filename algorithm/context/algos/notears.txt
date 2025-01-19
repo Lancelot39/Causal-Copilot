@@ -1,0 +1,21 @@
+### NOTEARS
+
+- **Description**: NOTEARS transforms the combinatorial problem of learning Directed Acyclic Graphs (DAGs) into a continuous optimization problem.
+
+- **Assumptions**:
+    - **Acyclicity**: The underlying causal structure is a DAG.
+    - **Linearity and Additivity**: Basic form assumes linear and additive relationships.
+    - **Gaussian Noise**: Assumes Gaussian noise terms.
+    - **No Hidden Confounders**: All relevant variables are observed.
+
+- **Advantages**:
+    - **Scalability**: Efficiently scales to large datasets using continuous optimization.
+    - **Flexibility**: Can be extended to various types of data relationships.
+
+- **Limitations**:
+    - **Sensitivity to Model Assumptions**: Performance depends on model and loss function choice.
+    - **Computational Complexity**: Can be demanding for very large variable sets (>1000).
+
+- **Suitable Cases**:
+    - **High-dimensional Data**: Where traditional combinatorial methods struggle.
+    - **Nonlinear Causal Relationships**: Can be adapted for nonlinear scenarios. 

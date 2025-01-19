@@ -92,12 +92,55 @@ We provide some examples of our system automatically generated reports for open-
 ### Local Deployment
 
 - **Python 3.8+**
-- Required Python libraries (specified in `requirements.txt`)
+- Required Python libraries (specified in `setup/requirements_cpu.txt` and `setup/requirements_gpu.txt`)
+- Required LaTeX packages (`tinyTex`)
 
-Ensure you have the necessary dependencies installed by running:
+Ensure you have the necessary dependencies installed by choosing the appropriate dependencies (CPU/GPU + Tex):
+
+#### CPU Dependencies
+
+If you don't have a Nvidia GPU, you can't use the GPU accelerated algorithms (e.g. AcceleratedLiNGAM). You can use the CPU version by running:
 
 ```bash
-pip install -r requirements.txt
+pip install -r setup/requirements_cpu.txt --no-deps
+```
+
+#### GPU Dependencies
+
+If you have a Nvidia GPU, you can use the GPU accelerated algorithms by running:
+
+```bash
+pip install -r setup/requirements_gpu.txt --no-deps
+```
+
+
+### Tex Dependencies
+
+Install the `tinyTex` package to generate PDF reports:
+
+For Mac:
+
+```
+$ rm -rf ~/Library/TinyTeX
+$ wget -qO- "https://yihui.org/tinytex/install-bin-unix.sh" | sh
+$ export PATH="$PATH:$HOME/Library/TinyTeX/bin/universal-darwin" 
+$ source ~/.zshrc
+
+$ tlmgr update --self
+$ tlmgr install fancyhdr caption subcaption nicefrac microtype lipsum graphics natbib doi
+
+```
+
+For Linux:
+
+```
+$ rm -rf ~/.TinyTeX
+$ wget -qO- "https://yihui.org/tinytex/install-bin-unix.sh" | sh
+$ export PATH="$PATH:$HOME/.TinyTeX/bin/x86_64-linux"
+$ source ~/.bashrc
+
+$ tlmgr update --self
+$ tlmgr install fancyhdr caption subcaption nicefrac microtype lipsum graphics natbib doi
 ```
 
 ---

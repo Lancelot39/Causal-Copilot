@@ -1,0 +1,47 @@
+Given a dataset with the following properties:
+
+1. Columns: [COLUMNS]
+2. Statistics:
+[STATISTICS_DESC] - add outlier detection
+
+We want to predict [TARGET_NODE] with a regression model.
+
+Please analyze the dataset characteristics and the task description, and recommend the most suitable one regression algorithm. Use the following context information to inform your recommendations:
+
+Based on the characteristics of your data and requirements, consider the following priority order for selecting regressors:
+1. If your data is linear:
+   - Use LinearRegressor for small dataset 
+   - Use ElasticNet for high-dimensional dataset and Scenarios where feature selection is important.  
+   - Use SGDRegressor for large dataset
+   - Use HuberRegressor for dataset with many outliers 
+   
+2. If your data is non-linear:
+   - Use RandomForestRegressor for small to medium dataset or interpretability is important
+   - Use HistGradientBoostingRegressor for Large-scale and high dimensional datasets
+
+You can only choose from these Regressors, and use exactly the same name in your response:
+[ALGO_CONTEXT]
+
+For the chosen one algorithm, provide:
+1. Regressors name (name of the available regressor in the implementation)
+2. Brief description
+3. Justification for its suitability based on the dataset characteristics
+
+Present your recommendation in a structured JSON format, provide only the most suitable one algorithm given the dataset characteristics.
+**You can only choose from these Regressors**:
+- LinearRegression
+- ElasticNet
+- RandomForestRegressor
+- HistGradientBoostingRegressor
+- HuberRegressor
+- SGDRegressor
+
+Please structure your response like this example, DO NOT include anything else:
+
+{
+  "name": "Regressor Name",
+  "description": "Brief description of the regressor.",
+  "justification": "Explanation of why this regressor is suitable for the given dataset.",
+}
+    
+

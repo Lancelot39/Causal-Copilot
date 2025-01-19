@@ -6,6 +6,7 @@ import ast
 import numpy as np
 import os
 import json
+import torch
 from datetime import datetime
 from global_setting.state import GlobalState
 from data.simulation.simulation import SimulationManager
@@ -135,7 +136,7 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
               "Options of value (str): The name of the column that represents the domain index. \n\n"
               "6. Which algorithm the user would like to use to do causal discovery:"
               "Key: 'selected_algorithm'. \n\n"
-              "Options of value (str): 'PC','FCI', 'CDNOD', 'GES', 'NOTEARS', 'DirectLiNGAM', 'ICALiNGAM'. \n\n"
+              "Options of value (str): 'PC', 'FCI', 'CDNOD', 'GES', 'FGES', 'XGES', 'NOTEARS', 'DirectLiNGAM', 'ICALiNGAM', 'AcceleratedLiNGAM'. \n\n"
               "7. How many minutes the user can wait for the causal discovery algorithm:"
               "Key: 'waiting_minutes'. \n\n"
               "Options of value (float): A numeric value that is greater than 0. \n\n"
@@ -180,12 +181,9 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
     global_state.statistics.domain_index = info_extracted["domain_index"]
     global_state.algorithm.selected_algorithm = info_extracted["selected_algorithm"]
 
-    print(f"the following are dropped variables: {info_extracted['dropped_variables']}")
-    global_state.user_data.user_drop_features = info_extracted["dropped_variables"]
+    # GPU availability
+    global_state.statistics.gpu_available = torch.cuda.is_available()
 
-    print(f"the following are initial selected_variables: {info_extracted['selected_variables']}")
-    global_state.user_data.initial_selected_features = info_extracted["selected_variables"]
-    
 
     if info_extracted["waiting_minutes"] is not None:
         global_state.algorithm.waiting_minutes = info_extracted["waiting_minutes"]
