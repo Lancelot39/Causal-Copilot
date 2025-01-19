@@ -50,37 +50,36 @@ def LLM_parse_query(format, prompt, message, args):
     return parsed_response
 
 # process functions
-def sample_size_check(n_row, n_col, chat_history, download_btn, REQUIRED_INFO):
+def sample_size_check(n_row, n_col, chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE):
     ## Few sample case: give warning
     if 1<= n_row/n_col < 5:
         chat_history.append((None, "Sample Size Check Summary: \n"\
                              "⚠️ The dataset provided do not have enough sample size and may result in unreliable analysis. \n"
                                 "Please upload a larger dataset if you mind that."))
-        REQUIRED_INFO["current_stage"] = 'reupload_dataset'
+        CURRENT_STAGE = 'reupload_dataset'
     ## Not enough sample case: must reupload
     elif n_row/n_col < 1:
         chat_history.append((None, "Sample Size Check Summary: \n"\
                              "⚠️ The sample size of dataset provided is less than its feature size. We are not able to conduct further analysis. Please provide more samples. \n"))
-        REQUIRED_INFO["current_stage"] = 'reupload_dataset'
+        CURRENT_STAGE = 'reupload_dataset'
     ## Enough sample case
     else:
         chat_history.append((None, "Sample Size Check Summary: \n"\
                              "✅ The sample size is enough for the following analysis. \n"))
-        REQUIRED_INFO["current_stage"] = 'important_feature_selection'
-    return chat_history, download_btn, REQUIRED_INFO
+        CURRENT_STAGE = 'important_feature_selection'
+    return chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE
 
-def parse_reupload_query(message, chat_history, download_btn, REQUIRED_INFO):
+def parse_reupload_query(message, chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE):
     print('reupload query:', message)
     if message == 'continue':
         chat_history.append((message, "📈 Continue the analysis..."))
-        REQUIRED_INFO["current_stage"] = 'important_feature_selection'
+        CURRENT_STAGE = 'important_feature_selection'
     else:
-        #REQUIRED_INFO['data_uploaded'] = False
-        REQUIRED_INFO['current_stage'] = 'initial_process'
-    return chat_history, download_btn, REQUIRED_INFO
+        CURRENT_STAGE = 'initial_process'
+    return chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE
 
 
-def process_initial_query(message, chat_history, download_btn, args, REQUIRED_INFO):
+def process_initial_query(message, chat_history, download_btn, args, REQUIRED_INFO, CURRENT_STAGE):
     # TODO: check if the initial query is valid or satisfies the requirements
     print('initial query:', message)
     if 'yes' in message.lower():
@@ -99,23 +98,23 @@ def process_initial_query(message, chat_history, download_btn, args, REQUIRED_IN
                              and you can also provide some information about the background/context/prior/statistical information about the dataset,
                              which would help us generate appropriate report for you.
                              """))
-    return chat_history, download_btn, REQUIRED_INFO    
+    return chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE, args    
 
-def parse_mode_query(message, chat_history, download_btn, REQUIRED_INFO):
-            chat_history.append((message, None))
-            if message.lower() == 'yes':
-                REQUIRED_INFO["interactive_mode"] = True
-                REQUIRED_INFO["current_stage"] = 'sparsity_check'
-                chat_history.append(("✅ Run with Interactive Mode...", None))
-            elif message.lower() == 'no' or message == '':
-                REQUIRED_INFO["interactive_mode"] = False
-                REQUIRED_INFO["current_stage"] = 'sparsity_check_2'
-                chat_history.append(("✅ Run with Non-Interactive Mode...", None))
-            else: 
-                chat_history.append((None, "❌ Invalid input, please try again!"))
-            return chat_history, download_btn, REQUIRED_INFO
+def parse_mode_query(message, chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE):
+    chat_history.append((message, None))
+    if message.lower() == 'yes':
+        REQUIRED_INFO["interactive_mode"] = True
+        CURRENT_STAGE = 'sparsity_check'
+        chat_history.append(("✅ Run with Interactive Mode...", None))
+    elif message.lower() == 'no' or message == '':
+        REQUIRED_INFO["interactive_mode"] = False
+        CURRENT_STAGE = 'sparsity_check_2'
+        chat_history.append(("✅ Run with Non-Interactive Mode...", None))
+    else: 
+        chat_history.append((None, "❌ Invalid input, please try again!"))
+    return chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE
 
-def parse_var_selection_query(message, chat_history, download_btn, next_step, args, global_state, REQUIRED_INFO):
+def parse_var_selection_query(message, chat_history, download_btn, next_step, args, global_state, REQUIRED_INFO, CURRENT_STAGE):
     class VarList(BaseModel):
         variables: list[str]
     prompt = "You are a helpful assistant, please extract variable names as a list. \n"
@@ -126,39 +125,39 @@ def parse_var_selection_query(message, chat_history, download_btn, next_step, ar
     if var_list == []:
         chat_history.append((message, "Your variable selection query cannot be parsed, please follow the templete below and retry. \n"
                                         "Templete: PKA, Jnk, PIP2, PIP3, Mek"))
-        return var_list, chat_history, download_btn, global_state, REQUIRED_INFO
+        return var_list, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
     else:
         print('var_list:', var_list)
         print('global_state:', global_state.user_data.raw_data.columns)
         missing_vars = [var for var in var_list if var not in global_state.user_data.raw_data.columns and var!='']
         if missing_vars != []:
             chat_history.append((message, "❌ Variables " + ", ".join(missing_vars) + " are not in the dataset, please check it and retry."))
-            return var_list, chat_history, download_btn, global_state, REQUIRED_INFO
+            return var_list, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
         elif len(var_list) > 20:
             chat_history.append((message, "❌ Number of chosen Variables should be within 20, please check it and retry."))
-            return var_list, chat_history, download_btn, global_state, REQUIRED_INFO
+            return var_list, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
         else:
             chat_history.append((message, "✅ Successfully parsed your provided variables."))
-            REQUIRED_INFO["current_stage"] = next_step
-            return var_list, chat_history, download_btn, global_state, REQUIRED_INFO
+            CURRENT_STAGE = next_step
+            return var_list, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
         
-def parse_ts_query(message, chat_history, download_btn, global_state, REQUIRED_INFO):
+def parse_ts_query(message, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE):
     if message.lower() == 'no':
         global_state.statistics.time_series = False
-        REQUIRED_INFO["current_stage"] = 'ts_check_done'
+        CURRENT_STAGE = 'ts_check_done'
     elif message == 'continue' or message == '':
-        REQUIRED_INFO["current_stage"] = 'ts_check_done'
+        CURRENT_STAGE = 'ts_check_done'
         global_state.statistics.time_series = True
     else:
         try:
             time_lag = int(message)
             global_state.statistics.time_lag = time_lag
             chat_history.append((None, f"✅ We successfully set your time lag to be {time_lag}."))
-            REQUIRED_INFO["current_stage"] = 'ts_check_done'
+            CURRENT_STAGE = 'ts_check_done'
             global_state.statistics.time_series = True
         except: 
             chat_history.append((None, f"❌ We cannot parse your query, please follow the template and retry."))
-    return chat_history, download_btn, global_state, REQUIRED_INFO
+    return chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
 
 def parse_sparsity_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO):
     # Select features based on LLM
@@ -174,7 +173,7 @@ def parse_sparsity_query(message, chat_history, download_btn, args, global_state
             chat_history.append((message, "You do not choose any variables to drop, we will drop the following variables suggested by LLM: \n"
                                             ", ".join(global_state.user_data.llm_drop_features)))
         global_state = drop_greater_miss_between_30_50_feature(global_state)
-        REQUIRED_INFO["current_stage"] = "sparsity_drop_done"
+        CURRENT_STAGE = "sparsity_drop_done"
         #var_list = [var for var in global_state.user_data.llm_drop_features if var in global_state.user_data.raw_data.columns]
     # Select features based on user query
     else:
@@ -194,10 +193,10 @@ def parse_sparsity_query(message, chat_history, download_btn, args, global_state
                 chat_history.append((message, "✅ Successfully parsed your provided variables. These sparse variables you provided will be dropped."))
                 global_state.user_data.user_drop_features = var_list
                 global_state = drop_greater_miss_between_30_50_feature(global_state)
-                REQUIRED_INFO["current_stage"] = "sparsity_drop_done"
-    return chat_history, download_btn, global_state, REQUIRED_INFO
+                CURRENT_STAGE = "sparsity_drop_done"
+    return chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
 
-def first_stage_sparsity_check(message, chat_history, download_btn, args, global_state, REQUIRED_INFO):
+def first_stage_sparsity_check(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE):
     class NA_Indicator(BaseModel):
                 indicator: bool
                 na_indicator: str
@@ -213,20 +212,20 @@ def first_stage_sparsity_check(message, chat_history, download_btn, args, global
     print(indicator, na_indicator)
     if indicator:
         global_state.user_data.nan_indicator = None
-        REQUIRED_INFO["current_stage"] = 'sparsity_check_2'
+        CURRENT_STAGE = 'sparsity_check_2'
     else:
         global_state.user_data.nan_indicator = na_indicator
         global_state, nan_detect = numeric_str_nan_detect(global_state)
         if nan_detect:
-            REQUIRED_INFO["current_stage"] = 'sparsity_check_2'
+            CURRENT_STAGE = 'sparsity_check_2'
         else:
             chat_history.append((None, "❌ We cannot find the NA value you specified in the dataset, please retry!"))
-    return chat_history, download_btn, REQUIRED_INFO
+    return chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE
 
-def parse_algo_query(message, chat_history, download_btn, global_state, REQUIRED_INFO):
+def parse_algo_query(message, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE):
     if message == '' or message.lower()=='no':
         chat_history.append((message, "💬 No algorithm is specified, will go to the next step..."))
-        REQUIRED_INFO["current_stage"] = 'report_generation_check'      
+        CURRENT_STAGE = 'report_generation_check'      
     elif message not in ['PC', 'FCI', 'CDNOD', 'GES', 'DirectLiNGAM', 'ICALiNGAM', 'NOTEARS', 'FGES', 'XGES', 'AcceleratedDirectLiNGAM']:
         chat_history.append((message, "❌ The specified algorithm is not correct, please choose from the following: \n"
                                     "PC, FCI, CDNOD, GES, DirectLiNGAM, ICALiNGAM, NOTEARS\n"
@@ -235,13 +234,13 @@ def parse_algo_query(message, chat_history, download_btn, global_state, REQUIRED
         global_state.algorithm.selected_algorithm = message
         chat_history.append((message, f"✅ We will rerun the Causal Discovery Procedure with the Selected algorithm: {global_state.algorithm.selected_algorithm}\n"
                                        "Please press 'enter' in the chatbox to start the running..." ))
-        REQUIRED_INFO["current_stage"] = 'algo_selection'
+        CURRENT_STAGE = 'algo_selection'
         #process_message(message, chat_history, download_btn)
-    return message, chat_history, download_btn, global_state, REQUIRED_INFO
+    return message, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
 
-def parse_hyperparameter_query(message, chat_history, download_btn, global_state, REQUIRED_INFO):
+def parse_hyperparameter_query(message, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE):
             if message.lower()=='no' or message=='':
-                REQUIRED_INFO["current_stage"] = 'algo_running'    
+                CURRENT_STAGE = 'algo_running'    
                 hyperparameter_text, global_state = generate_hyperparameter_text(global_state) 
                 chat_history.append((None, f"✅ We will run the Causal Discovery Procedure with the Selected parameters: \n {hyperparameter_text}\n"))
             else:
@@ -255,15 +254,15 @@ def parse_hyperparameter_query(message, chat_history, download_btn, global_state
                     print(global_state.algorithm.algorithm_arguments_json['hyperparameters'])
                     hyperparameter_text, global_state = generate_hyperparameter_text(global_state) 
                     chat_history.append((None, f"✅ We will run the Causal Discovery Procedure with the Specified parameters: {hyperparameter_text}\n"))
-                    REQUIRED_INFO["current_stage"] = 'algo_running' 
+                    CURRENT_STAGE = 'algo_running' 
                 except Exception as e:
                     print(e)
                     print(str(e))
                     traceback.print_exc()
                     chat_history.append((None, "❌ The specified parameters are not correct, please follow the template!"))
-            return chat_history, download_btn, global_state, REQUIRED_INFO
+            return chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
 
-def parse_user_postprocess(message, chat_history, download_btn, args, global_state, REQUIRED_INFO):
+def parse_user_postprocess(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE):
     edges_dict = {
         "add_edges": [],
         "forbid_edges": [],
@@ -272,9 +271,9 @@ def parse_user_postprocess(message, chat_history, download_btn, args, global_sta
     print('message:', message)
     try:
         if message == '' or not ('Add Edges' in message or 'Forbid Edges' in message or 'Orient Edges' in message):
-             REQUIRED_INFO['current_stage'] = 'retry_algo'
+             CURRENT_STAGE = 'retry_algo'
              chat_history.append((None, "💬 No valid query is provided, will go to the next step."))
-             return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO
+             return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
         else:
             class EditList(BaseModel):
                     add_edges: list[str]
@@ -308,16 +307,16 @@ def parse_user_postprocess(message, chat_history, download_btn, args, global_sta
             print(global_state.user_data.raw_data.columns)
             if missing_vars != []:
                 chat_history.append((None, "❌ Variables " + ", ".join(missing_vars) + " are not in the dataset, please check it and retry."))
-                return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO
-            REQUIRED_INFO["current_stage"] = 'postprocess_parse_done'
-            return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO
+                return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
+            CURRENT_STAGE = 'postprocess_parse_done'
+            return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
     except Exception as e:
         chat_history.append((None, "❌ Your query cannot be parsed, please follow the templete and retry"))
         print(str(e))
         traceback.print_exc()
-        return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO
+        return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
 
-def parse_report_algo_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO):
+def parse_report_algo_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE):
     class AlgoList(BaseModel):
         algorithms: list[str]
     algos = global_state.logging.global_state_logging
@@ -337,8 +336,8 @@ def parse_report_algo_query(message, chat_history, download_btn, args, global_st
     else:
         chat_history.append((message, "✅ Successfully parsed your provided algorithm."))
         global_state.results.report_selected_index = algos.index(algo_list[0])
-        REQUIRED_INFO["current_stage"] = 'report_generation'
-    return chat_history, download_btn, global_state, REQUIRED_INFO
+        CURRENT_STAGE = 'report_generation'
+    return chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
 
 def parse_inference_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO):
     chat_history.append((message, None))
@@ -428,7 +427,6 @@ def parse_inf_discuss_query(message, chat_history, download_btn, args, global_st
         else:
             REQUIRED_INFO["current_stage"] = 'inference_analysis'
             # chat_history.append((None, "Receive your question! Input 'yes' to analyze it..."))
-            # yield chat_history, download_btn
             # return process_message(message, chat_history, download_btn)  
             tasks_list, descs_list, key_node_list, reasons, chat_history, download_btn, global_state, REQUIRED_INFO = parse_inference_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO)                   
     return chat_history, download_btn, global_state, REQUIRED_INFO            
