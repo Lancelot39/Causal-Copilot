@@ -40,8 +40,8 @@ def init_latex():
 def init_causallearn():
     subprocess.run("git submodule update --recursive", shell=True, check=True)
 # Run initialization before importing plumbum
-init_latex()
-init_graphviz()
+# init_latex()
+# init_graphviz()
 init_causallearn()
 
 import gradio as gr
@@ -757,7 +757,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                     chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/{global_state.algorithm.selected_algorithm}_revised_graph.jpg',)))
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 
-                chat_history.append((None, "Rerun user prune process, press enter to begin."))
+                chat_history.append((None, "Rerun user prune process, press enter to begin!"))
                 CURRENT_STAGE = 'user_prune'
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 return process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn)
