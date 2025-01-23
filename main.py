@@ -124,7 +124,7 @@ def load_real_world_data(file_path):
     print("Real-world data loaded successfully.")
     return data
 
-def process_user_query(query, data):
+def process_user_query(global_state, query, data):
     #Baseline code
     query_dict = {}
     for part in query.split(';'):
@@ -138,9 +138,25 @@ def process_user_query(query, data):
     if 'selected_algorithm' in query_dict:
         selected_algorithm = query_dict['selected_algorithm']
         print(f"Algorithm selected: {selected_algorithm}")
+    
+    focused_variables, dropped_variables = [], []
+    if "focused_variable" in query_dict:
+        focuses = query_dict['focused_variable']
+        focused_variables = [variable.strip() for variable in focuses.split(",")]
+        global_state.user_data.selected_variables = focused_variables
+        print(f"Variables to be focused: {focused_variables}")
+
+    if "dropped_variable" in query_dict:
+        drops = query_dict['dropped_variable']
+        dropped_variables = [variable.strip() for variable in drops.split(",")]
+        print(f"Variables to be dropped: {dropped_variables}")
+        
+    # Drop the column as user intended 
+    if len(dropped_variables) > 0: 
+        data = data.drop(dropped_variables, axis = 1)
 
     print("User query processed.")
-    return data
+    return data 
 
 def main(args):
     global_state = global_state_initialization(args)
@@ -179,13 +195,13 @@ def main(args):
     print("Statistics Info: ", global_state.statistics.description)
     print("Knowledge Info: ", global_state.user_data.knowledge_docs)
 
-    #############EDA###################
-    my_eda = EDA(global_state)
+    # #############EDA###################
+    my_eda = EDA(global_state) 
     my_eda.generate_eda()
     
     # Algorithm selection and deliberation
     filter = Filter(args)
-    global_state = filter.forward(global_state)
+    rese = filter.forward(global_state)
 
     reranker = Reranker(args)
     global_state = reranker.forward(global_state)

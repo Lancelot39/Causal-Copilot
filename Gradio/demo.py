@@ -175,6 +175,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 for key, value in config.__dict__.items():
                     setattr(args, key, value)
                 print('check initial query')
+
                 config.initial_query = message
                 chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE, args = process_initial_query(message, chat_history, download_btn, args, REQUIRED_INFO, CURRENT_STAGE)
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
@@ -385,6 +386,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 if REQUIRED_INFO["interactive_mode"]:
                     CURRENT_STAGE = 'stat_analysis'
+                    CURRENT_STAGE = 'stat_analysis'
                 else:
                     CURRENT_STAGE = 'ts_check_done'
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
@@ -550,12 +552,12 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 CURRENT_STAGE = 'hyperparameter_selection'  
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
-        if CURRENT_STAGE == 'user_algo_selection':  
+        if REQUIRED_INFO["current_stage"] == 'user_algo_selection':  
             if REQUIRED_INFO["interactive_mode"]:
                 chat_history.append((message, None))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             if message.lower()=='no' or message=='':
-                CURRENT_STAGE = 'hyperparameter_selection'     
+                REQUIRED_INFO["current_stage"] = 'hyperparameter_selection'     
                 chat_history.append((None, f"✅ We will run the Causal Discovery Procedure with the Selected algorithm: {global_state.algorithm.selected_algorithm}\n"))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             elif message in ['PC', 'FCI', 'CDNOD', 'GES', 'DirectLiNGAM', 'ICALiNGAM', 'NOTEARS', 'FGES', 'XGES', 'AcceleratedDirectLiNGAM']:
@@ -597,9 +599,9 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             else:           
-                CURRENT_STAGE = 'algo_running'  
+                REQUIRED_INFO["current_stage"] = 'algo_running'  
 
-        if CURRENT_STAGE == 'user_param_selection':  
+        if REQUIRED_INFO["current_stage"] == 'user_param_selection':  
             
             if REQUIRED_INFO["interactive_mode"]:
                 chat_history.append((message, None))
@@ -610,14 +612,14 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                     return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
         
         # Causal Discovery
-        if CURRENT_STAGE == 'algo_running':   
+        if REQUIRED_INFO["current_stage"] == 'algo_running':   
             chat_history.append(("🔄 Run causal discovery algorithm...", None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             programmer = Programming(args)
             global_state = programmer.forward(global_state)
-            CURRENT_STAGE = 'initial_graph'
+            REQUIRED_INFO["current_stage"] = 'initial_graph'
         # Visualization for Initial Graph
-        if CURRENT_STAGE == 'initial_graph':  
+        if REQUIRED_INFO["current_stage"] == 'initial_graph':  
             chat_history.append(("📊 Generate causal graph visualization...", None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             my_visual_initial = Visualization(global_state)
@@ -626,13 +628,13 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 pos = my_visual_initial.get_pos(global_state.results.converted_graph[data_idx, :][:, data_idx])
                 global_state.results.raw_pos = pos
             if global_state.user_data.ground_truth is not None:
-                my_visual_initial.plot_pdag(global_state.user_data.ground_truth, f'{global_state.algorithm.selected_algorithm}_true_graph.jpg', global_state.results.raw_pos)
-                my_visual_initial.plot_pdag(global_state.user_data.ground_truth, f'{global_state.algorithm.selected_algorithm}_true_graph.pdf', global_state.results.raw_pos)
+                my_visual_initial.plot_pdag(global_state.user_data.ground_truth, f'{global_state.algorithm.selected_algorithm}_true_graph.jpg', global_state.results.row_pos)
+                my_visual_initial.plot_pdag(global_state.user_data.ground_truth, f'{global_state.algorithm.selected_algorithm}_true_graph.pdf', global_state.results.row_pos)
                 chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/{global_state.algorithm.selected_algorithm}_true_graph.jpg',)))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             if global_state.results.converted_graph is not None:
-                my_visual_initial.plot_pdag(global_state.results.converted_graph, f'{global_state.algorithm.selected_algorithm}_initial_graph.jpg', global_state.results.raw_pos)
-                my_visual_initial.plot_pdag(global_state.results.converted_graph, f'{global_state.algorithm.selected_algorithm}_initial_graph.pdf', global_state.results.raw_pos)
+                my_visual_initial.plot_pdag(global_state.results.converted_graph, f'{global_state.algorithm.selected_algorithm}_initial_graph.jpg', global_state.results.row_pos)
+                my_visual_initial.plot_pdag(global_state.results.converted_graph, f'{global_state.algorithm.selected_algorithm}_initial_graph.pdf', global_state.results.row_pos)
                 chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/{global_state.algorithm.selected_algorithm}_initial_graph.jpg',)))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 my_report = Report_generation(global_state, args)
@@ -649,9 +651,9 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                     return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 else:
-                    CURRENT_STAGE = 'revise_graph'
+                    REQUIRED_INFO["current_stage"] = 'revise_graph'
 
-        if CURRENT_STAGE == 'LLM_prune':
+        if REQUIRED_INFO["current_stage"] == 'LLM_prune':
             chat_history.append((message, None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             
@@ -661,14 +663,14 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             parsed_response = LLM_parse_query(Indicator, prompt, message, args)
             indicator = parsed_response.indicator
             if indicator:
-                CURRENT_STAGE = 'revise_graph'
+                REQUIRED_INFO["current_stage"] = 'revise_graph'
             else: 
                 global_state.results.revised_graph = global_state.results.converted_graph
                 global_state.results.llm_errors = {'direct_record':None, 'forbid_record': None}
-                CURRENT_STAGE = 'user_prune'
+                REQUIRED_INFO["current_stage"] = 'user_prune'
 
         # Evaluation for Initial Graph
-        if CURRENT_STAGE == 'revise_graph':  
+        if REQUIRED_INFO["current_stage"] == 'revise_graph':  
             chat_history.append(("📝 Evaluate and Revise the initial result...", None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             try:
@@ -691,8 +693,8 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             if args.data_mode=='real':
                 # Plot Revised Graph
                 if global_state.results.revised_graph is not None:
-                    my_visual_revise.plot_pdag(global_state.results.revised_graph, f'{global_state.algorithm.selected_algorithm}_revised_graph.pdf', global_state.results.raw_pos)
-                    my_visual_revise.plot_pdag(global_state.results.revised_graph, f'{global_state.algorithm.selected_algorithm}_revised_graph.jpg', global_state.results.raw_pos)
+                    my_visual_revise.plot_pdag(global_state.results.revised_graph, f'{global_state.algorithm.selected_algorithm}_revised_graph.pdf', global_state.results.row_pos)
+                    my_visual_revise.plot_pdag(global_state.results.revised_graph, f'{global_state.algorithm.selected_algorithm}_revised_graph.jpg', global_state.results.row_pos)
                     chat_history.append((None, f"This is the revised graph with Bootstrap and LLM techniques"))
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                     chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/{global_state.algorithm.selected_algorithm}_revised_graph.jpg',)))
@@ -710,9 +712,9 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             CURRENT_STAGE = 'user_prune'
         
-        if CURRENT_STAGE == 'user_prune':
+        if REQUIRED_INFO["current_stage"] == 'user_prune':
             if REQUIRED_INFO["interactive_mode"]:
-                CURRENT_STAGE = 'user_postprocess'
+                REQUIRED_INFO['current_stage'] = 'user_postprocess'
                 chat_history.append((None, "If you are not satisfied with the causal graph, please tell us which edges you want to forbid or add, and we will revise the graph according to your instruction. \n"
                                             "Please follow the templete below, otherwise your input cannot be parsed. \n"
                                             "Add Edges: A1->A2; A3->A4; ... \n"
@@ -750,8 +752,8 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 global_state = judge.user_postprocess(user_revise_dict)
                 my_visual_revise = Visualization(global_state)
                 if global_state.results.revised_graph is not None:
-                    my_visual_revise.plot_pdag(global_state.results.revised_graph, f'{global_state.algorithm.selected_algorithm}_revised_graph.pdf', global_state.results.raw_pos)
-                    my_visual_revise.plot_pdag(global_state.results.revised_graph, f'{global_state.algorithm.selected_algorithm}_revised_graph.jpg', global_state.results.raw_pos)
+                    my_visual_revise.plot_pdag(global_state.results.revised_graph, f'{global_state.algorithm.selected_algorithm}_revised_graph.pdf', global_state.results.row_pos)
+                    my_visual_revise.plot_pdag(global_state.results.revised_graph, f'{global_state.algorithm.selected_algorithm}_revised_graph.jpg', global_state.results.row_pos)
                     chat_history.append((None, f"This is the revised graph according to your instruction."))
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                     chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/{global_state.algorithm.selected_algorithm}_revised_graph.jpg',)))
@@ -766,7 +768,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             else:
                 return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn 
             
-            if CURRENT_STAGE == 'retry_algo':
+            if REQUIRED_INFO["current_stage"] == 'retry_algo':
                 with open(f'{global_state.user_data.output_graph_dir}/{global_state.algorithm.selected_algorithm}_global_state.pkl', 'wb') as f:
                     pickle.dump(global_state, f)
                 #global_state.logging.global_state_logging.append(global_state.algorithm.selected_algorithm)
@@ -791,7 +793,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 print(global_state.algorithm.selected_algorithm)
                 return process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn)
         
-        if CURRENT_STAGE == 'inference_analysis_check':
+        if REQUIRED_INFO["current_stage"] == 'inference_analysis_check':
             chat_history.append((None, "Do you want to conduct downstream analysis based on the causal discovery result? You can descripbe your needs.\n"
                                         "Otherwise please input 'NO'.\n"
                                            "We support the following tasks: \n"
@@ -832,12 +834,12 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                     CURRENT_STAGE = 'analysis_discussion'
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn            
         
-        if CURRENT_STAGE == 'analysis_discussion':
+        if REQUIRED_INFO["current_stage"] == 'analysis_discussion':
             chat_history, download_btn, global_state, REQUIRED_INFO =  parse_inf_discuss_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO)
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
         # Report Generation
-        if CURRENT_STAGE == 'report_generation_check': # empty query or postprocess query parsed successfully
+        if REQUIRED_INFO["current_stage"] == 'report_generation_check': # empty query or postprocess query parsed successfully
             import glob
             global_state_files = glob.glob(f"{global_state.user_data.output_graph_dir}/*_global_state.pkl")
             global_state.logging.global_state_logging = []
@@ -854,7 +856,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             else:
-                CURRENT_STAGE = 'report_generation'
+                REQUIRED_INFO["current_stage"] = 'report_generation'
 
         if CURRENT_STAGE == 'report_algo_selection':
             chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE = parse_report_algo_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE)
@@ -864,7 +866,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             else:
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             
-        if CURRENT_STAGE == 'report_generation':    
+        if REQUIRED_INFO["current_stage"] == 'report_generation':    
             chat_history.append(("📝 Generate comprehensive report and it may take a few minutes, stay tuned...", None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             try_num = 1
@@ -891,7 +893,12 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             
         # User Discussion Rounds
-        if CURRENT_STAGE == 'processing_discussion':
+        if REQUIRED_INFO["current_stage"] == 'processing_discussion':
+            report = open(os.path.join(output_dir, 'output_report', 'report.tex')).read()
+            discussion = Discussion(args, report)
+            global_state.logging.final_discuss = [{"role": "system",
+                                     "content": "You are a helpful assistant. Please always refer to the following Causal Analysis information to discuss with the user and answer the user's question\n\n%s" % discussion.report_content}]
+            # Answer User Query based on Previous Info
             chat_history.append((message, None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             message = message.strip()
@@ -974,16 +981,15 @@ def load_demo_dataset(dataset_name, REQUIRED_INFO, CURRENT_STAGE, chatbot, demo_
     REQUIRED_INFO = update(REQUIRED_INFO, 'output_dir', output_dir)
     shutil.copy(source_path, target_path)
 
-    REQUIRED_INFO = update(REQUIRED_INFO, 'data_uploaded', True)
-    REQUIRED_INFO = update(REQUIRED_INFO, 'initial_query', True)
-    CURRENT_STAGE = 'initial_process'
+    REQUIRED_INFO['data_uploaded'] = True
+    REQUIRED_INFO['initial_query'] = True
 
     df = pd.read_csv(target_path)
     #chatbot.append((f"{dataset['query']}", None))
     bot_message = f"✅ Loaded demo dataset '{dataset_name}' with {len(df)} rows and {len(df.columns)} columns."
     chatbot = chatbot.copy()
     chatbot.append((None, bot_message))
-    return REQUIRED_INFO, CURRENT_STAGE, chatbot, demo_btn, download_btn, dataset['query']
+    return chatbot, demo_btn, download_btn, dataset['query']
 
 
 js = """

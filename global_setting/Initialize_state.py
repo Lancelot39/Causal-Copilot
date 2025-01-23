@@ -140,6 +140,12 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
               "7. How many minutes the user can wait for the causal discovery algorithm:"
               "Key: 'waiting_minutes'. \n\n"
               "Options of value (float): A numeric value that is greater than 0. \n\n"
+              "8. What are the selected/focused variables user indicated:"
+              "Key: 'selected_variables'. \n\n"
+              "Options of value ([str]): A list of strings of variables. \n\n"
+              "9. What are the dropped variables or variables to be dropped that user indicated:"
+              "Key: 'dropped_variables'. \n\n"
+              "Options of value ([str]): A list of strings of variables. \n\n"
               "However, for each key, if the value extracted from queries does not match provided options, or if the queries do not provide enough information and you cannot summarize them,"
               "the value for such key should be set to None! \n\n"
               "Just give me the output in a json format, do not provide other information! \n\n")
@@ -163,9 +169,10 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
         global_state.user_data.output_report_dir = f'{run_dir}/output_report'
         global_state.user_data.output_graph_dir = f'{run_dir}/output_graph'
     else:
+        # Oh, so if not demo mode graph it gets stored in a new output folder
         date_time = datetime.now().strftime("%Y%m%d_%H%M%S")
         global_state.user_data.output_report_dir = f'output/{args.data_file.split("/")[-1]}/{date_time}/output_report'
-        global_state.user_data.output_graph_dir = f'output/{args.data_file.split("/")[-1]}/{date_time}/output_graph'
+        global_state.user_data.output_graph_dir = f'output/{args.data_file.split("/")[-1]}/{date_time}/output_graph' 
 
     # Assign extracted information from user queries to global_stat
     global_state.statistics.linearity = info_extracted["linearity"]
@@ -176,6 +183,7 @@ def global_state_initialization(args: argparse.Namespace = None) -> GlobalState:
 
     # GPU availability
     global_state.statistics.gpu_available = torch.cuda.is_available()
+
 
     if info_extracted["waiting_minutes"] is not None:
         global_state.algorithm.waiting_minutes = info_extracted["waiting_minutes"]

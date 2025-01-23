@@ -28,6 +28,7 @@ from scipy.interpolate import UnivariateSpline
 from sympy.codegen.ast import Return
 
 
+
 # Missingness Detect #################################################################################################
 def np_nan_detect(global_state):
     has_nan = global_state.user_data.raw_data.isnull().values.any()
@@ -268,6 +269,7 @@ def data_preprocess (clean_df: pd.DataFrame, ts: bool = False):
                 column_type[column] = "Category"
             else:
                 column_type[column] = "Continuous"
+
         else:
             # Non-numeric data types
             column_type[column] = "Category"
@@ -660,7 +662,6 @@ def stat_info_collection(global_state):
     # stat_info_json = json.dumps(vars(global_state.statistics), indent=4)
 
     return global_state
-
 
 
 def convert_stat_info_to_text(statistics):
