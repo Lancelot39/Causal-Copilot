@@ -40,8 +40,8 @@ def init_latex():
 def init_causallearn():
     subprocess.run("git submodule update --recursive", shell=True, check=True)
 # Run initialization before importing plumbum
-init_latex()
-init_graphviz()
+# init_latex()
+# init_graphviz()
 init_causallearn()
 
 import gradio as gr
@@ -717,8 +717,9 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                                             "Please follow the templete below, otherwise your input cannot be parsed. \n"
                                             "Add Edges: A1->A2; A3->A4; ... \n"
                                             "Forbid Edges: F1->F2; F3->F4; ... \n"
-                                            "Orient Edges: O1->O2; O3->O4; ... \n"))
-                yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+                                            "Orient Edges: O1->O2; O3->O4; ... \n"
+                                            "Or Enter NO to move on to next step\n"))
+                yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn                
                 return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             else:
                 with open(f'{global_state.user_data.output_graph_dir}/{global_state.algorithm.selected_algorithm}_global_state.pkl', 'wb') as f:
@@ -755,7 +756,11 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                     chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/{global_state.algorithm.selected_algorithm}_revised_graph.jpg',)))
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-                CURRENT_STAGE = 'retry_algo'
+                
+                chat_history.append((None, "Rerun user prune process, press enter to begin!"))
+                CURRENT_STAGE = 'user_prune'
+                yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+                return process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn)
             elif CURRENT_STAGE == 'retry_algo':
                 pass                
             else:

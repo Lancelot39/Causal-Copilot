@@ -293,9 +293,11 @@ def parse_user_postprocess(message, chat_history, download_btn, args, global_sta
     print('message:', message)
     try:
         if message == '' or not ('Add Edges' in message or 'Forbid Edges' in message or 'Orient Edges' in message):
-             CURRENT_STAGE = 'retry_algo'
-             chat_history.append((None, "💬 No valid query is provided, will go to the next step."))
-             return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
+            if message in ("NO", "No", "no"):
+                CURRENT_STAGE = 'retry_algo'
+                return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
+            else:
+                raise Exception("Invalid user query in graph revision")
         else:
             class EditList(BaseModel):
                     add_edges: list[str]
@@ -333,7 +335,7 @@ def parse_user_postprocess(message, chat_history, download_btn, args, global_sta
             CURRENT_STAGE = 'postprocess_parse_done'
             return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
     except Exception as e:
-        chat_history.append((None, "❌ Your query cannot be parsed, please follow the templete and retry"))
+        chat_history.append((None, "❌ Your query cannot be parsed, please follow the templete and retry or enter No to move on"))
         print(str(e))
         traceback.print_exc()
         return edges_dict, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
