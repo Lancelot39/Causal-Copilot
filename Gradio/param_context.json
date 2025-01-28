@@ -1,0 +1,5 @@
+{"PC":{
+    "Alpha": "Alpha represents the desired significance level which has a range of anything **from 0 to 1**. A lower significance level will reduce the chances of type 1 error (false positive), while a higher significance level reduces the chances of type 2 error (false negative)",
+    "Indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, and for a combination of both, **gsq** is recommended.",
+    "Depth": "The depth parameter relies on how in depth you want the results to be, along with how large the graphs are. Setting a maximum depth of **-1** can help with uncovering more complex relationships among your variables, but **6(small graphs), 4, 2, 1(extra large graphs)** are also possible inputs depending on how large your graph is."
+}}

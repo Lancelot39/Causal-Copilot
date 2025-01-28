@@ -591,11 +591,18 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
 
             if REQUIRED_INFO["interactive_mode"]:
                 CURRENT_STAGE = 'user_param_selection'
-                chat_history.append((None, "Do you want to specify values for parameters instead of the selected one? If so, please specify your parameter following the template below: \n"
-                                        "parameter name1: value\n"
-                                        "parameter name2: value\n"
-                                        "......\n"
-                                        "Otherwise please reply NO."))
+                with open('Gradio/param_context.json', 'r') as f:
+                    param_hint = json.load(f)[global_state.algorithm.selected_algorithm]
+                instruction = "Do you want to specify values for parameters instead of the selected one? If so, please specify your parameter following the template below: \n"
+                for key in param_hint.keys():
+                    instruction += f"{key}: value\n"
+                instruction += "Otherwise please reply NO."
+                chat_history.append((None, instruction))
+                yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+                hint = "Here are instructions for hyper-parameter tuning:\n"
+                for key, value in param_hint.items():
+                    hint += f"- {key}: \n{value};\n "
+                chat_history.append((None, hint))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             else:           
