@@ -1,0 +1,52 @@
+{"PC":{
+    "Alpha": "Alpha represents the desired significance level which has a range of anything **from 0 to 1**. A lower significance level will reduce the chances of type 1 error (false positive), while a higher significance level reduces the chances of type 2 error (false negative)",
+    "Indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, and for a combination of both, **gsq** is recommended.",
+    "Depth": "The depth parameter relies on how in depth you want the results to be, along with how large the graphs are. Setting a maximum depth of **-1** can help with uncovering more complex relationships among your variables, but **6(small graphs), 4, 2, 1(extra large graphs)** are also possible inputs depending on how large your graph is.",
+    "uc_rule": "The uc rule checks for possible colliders between variables. For example, if we’re looking at variables x and y, a uc rule of **0**, means there are no other variables interacting with x and y. A uc rule of **1** means one variable is interacting with x and y, and a uc rule of **2** means 2 variables are interacting.",
+    "uc_priority": "The uc priority parameter defines the direction of the causality between the colliding variables. A uc priority of **2** will prioritize the existing unshielded colliders(UC) while **3(strong) and 4(stronger)** will prioritize the strength of the relationship. A uc priority of **0** means the UC is pushed towards the end, while **1** gives slightly higher priority."
+},
+
+"FCI":{
+    "Alpha": "Alpha represents the desired significance level which has a range of anything **from 0 to 1**. A lower significance level will reduce the chances of type 1 error (false positive), while a higher significance level reduces the chances of type 2 error (false negative)",
+    "Independence_test_method": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, and for a combination of both, **gsq** is recommended.",
+    "Depth": "The depth parameter relies on how in depth you want the results to be, along with how large the graphs are. Setting a maximum depth of **-1** can help with uncovering more complex relationships among your variables, but **6(small graphs), 4, 2, 1(extra large graphs)** are also possible inputs depending on how large your graph is.",
+    "Max_path_length": "A low max path length parameter limits the complexity of relationships between different variables. For instance, the default parameter is **-1**, meaning the algorithm will mainly focus on direct relationships, while for **small(3), medium(5), and large(7) graphs**, the parameter will be larger."
+},
+
+"GES":{
+    "Score_func": "The score function parameter represents the quality and type of data in the graph. For example, a score function parameter of **local_score_BIC** is for a good fit and complexity while **BDeu** is for discrete data and finally **CV and marginal scores** are used for robust data.",
+    "maxP": "The maxP parameter represents the maximum number of parent variables allowed. For small graphs, a null parameter is good. However, for bigger graphs you can use **3, 5, or 7(large graphs)** depending on how big the graph is."
+},
+
+"NOTEARS": {
+    "max_iter": "The max_iter parameter changes depending on how complex the data set is i.e how many variables there are. The default parameter is **100**, while for more complex graphs, it’s **250**.",
+    "h_tol": "This parameter represents the tolerance for h(W). For more accurate results, a h_tol parameter of **1e-10** is ideal while for faster convergence, an h_tol parameter of **1e-6** is recommended.",
+    "w_threshold": "This parameter represents the minimum requirement for edge cases to be included in the results. Larger values lead to sparser graphs. For a sparse graph, a value of **0.3** is recommended, while for dense graphs, a value of **0.1** is ideal.",
+    "sparse": "This parameter will either use sparse optimization or not depending on if you type **true or false**. Sparse optimization has better identification for true graphs.",
+    "beta": "This parameter helps find the mix of complexity and data fit through the given sparsity level. For very sparse graphs, a parameter value of **0.1** would be appropriate, but for moderately **sparse(0.02) and dense graphs(0.001)** a smaller value would be good."
+},
+
+"CDNOD": {
+    "Alpha": "Alpha represents the desired significance level which has a range of anything from **0 to 1**. A lower significance level will reduce the chances of type 1 error (false positive), while a higher significance level reduces the chances of type 2 error (false negative)",
+    "Indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, for a combination of both, **gsq** is recommended, and for nonlinear data sets, **kci** is recommended.",
+    "Depth": "The depth parameter relies on how in depth you want the results to be, along with how large the graphs are. Setting a maximum depth of **-1** can help with uncovering more complex relationships among your variables, but **6(small graphs), 4, 2, 1(extra large graphs)** are also possible inputs depending on how large your graph is.",
+    "stable": "This parameter represents using the stable version of the algorithm. For stable results we recommend using the stable **true** version, but for the unstable version for faster results enter **false**.",
+    "uc_rule":"The uc rule checks for possible colliders between variables. For example, if we’re looking at variables x and y, a uc rule of **0**, means there are no other variables interacting with x and y. A uc rule of **1** means one variable is interacting with x and y, and a uc rule of **2** means 2 variables are interacting.",
+    "uc_priority": "The uc priority parameter defines the direction of the causality between the colliding variables. A uc priority of **2** will prioritize the existing unshielded colliders(UC) while **3(strong) and 4(stronger)** will prioritize the strength of the relationship. A uc priority of **0** means the UC is pushed towards the end, while **1** gives slightly higher priority.",
+    "mvcdnod": "Setting this parameter to **true** turns on the MVCDNOD algorithm which can handle any missing values. Otherwise enter **false**",
+    "correction_name": "This represents the correction method for the independence test. The default parameter **MV_Crtn_Fisher_Z** is used for Fisher’s test with missing value corrections."
+},
+
+"DirectLiNGAM": {
+    "Measure": "This parameter is used to evaluate the independence of the data. The default is **pwling** which is used for pairwise likelihood-based measure or it can be changed to **kernel** for a kernel based measure.",
+    "random_state": "Used for the random number generator. Type in **null** for random behaviors, or type in a **specific value** for a constant, reproducible answer.",
+    "prior_knowledge": "This parameter allows you to input any existing paths for causal discovery. A matrix of **0** means there’s no path, **1** means there’s a directed path, and **-1** means there’s no prior knowledge",
+    "apply_prior_knowledge_softly": "This is a true or false parameter, asking if you want to apply the prior knowledge softly **true** or strictly **false**."
+},
+
+"ICALiNGAM": {
+    "random_state": "Used for the random number generator. Type in **null** for random behaviors, or type in a **specific value** for a constant, reproducible answer.",
+    "max_iter": "The max_iter parameter changes depending on how complex the data set is i.e how many variables there are. The default parameter is **100**, while for more complex graphs, use **250**."
+}}
+
+
