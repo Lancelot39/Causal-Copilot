@@ -47,6 +47,21 @@
 "ICALiNGAM": {
     "random_state": "Used for the random number generator. Type in **null** for random behaviors, or type in a **specific value** for a constant, reproducible answer.",
     "max_iter": "The max_iter parameter changes depending on how complex the data set is i.e how many variables there are. The default parameter is **100**, while for more complex graphs, use **250**."
+},
+
+"AcceleratedDirectLiNGAM": {
+    "Measure": "This parameter is used to evaluate the independence of the data. The default is **pwling** which is used for pairwise likelihood-based measure or it can be changed to **kernel** for a kernel based measure.",
+    "random_state": "Used for the random number generator. Type in **null** for random behaviors, or type in a **specific value** for a constant, reproducible answer.",
+    "prior_knowledge": "This parameter allows you to input any existing paths for causal discovery. A matrix of **0** means there’s no path, **1** means there’s a directed path, and **-1** means there’s no prior knowledge",
+    "apply_prior_knowledge_softly": "This is a true or false parameter, asking if you want to apply the prior knowledge softly **true** or strictly **false**."
+},
+
+"FGES": {
+    "Sparsity": "This parameter represents the tradeoff between complexity and computation time. For larger graphs a parameter of **10** allows for more edges and more efficient computation. For medium graphs a parameter of **6** is ideal. For small graphs, a parameter of **3** is ideal as it leads to stricter penalties and creates a simpler graph; however, that leads to longer computation times."
+}, 
+
+"XGES": {
+    "Alpha": "This represents the penalty BIC score. A score of 1 means standard BIC, less than 1 is for more complex models, while a BIC of more than 1 is for simple graphs."
 }}
 
 
