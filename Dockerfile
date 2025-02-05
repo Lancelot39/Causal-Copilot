@@ -29,6 +29,8 @@ RUN apt-get update && apt-get install -y \
     texlive-latex-extra \
     && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get udpate && apt-get install latexmk
+
 # Copy requirements file
 # COPY requirements.txt .
 COPY requirements_fastapi.txt .
