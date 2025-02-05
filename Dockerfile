@@ -1,28 +1,64 @@
-FROM python:3.10.10-slim
+FROM --platform=linux/amd64 pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+USER root
 
 WORKDIR /app
 
-# 安装系统依赖
+# Install system dependencies
+RUN apt-get update && apt-get install -y tzdata
 RUN apt-get update && apt-get install -y \
     build-essential \
-    postgresql-client \
+    wget \
+    perl \
+    graphviz \
+    git \
+    vim \
     && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get install latexmk
+# Install TinyTeX
+RUN rm -rf ~/.TinyTeX && \
+    wget -qO- "https://yihui.org/tinytex/install-bin-unix.sh" | sh && \
+    echo 'export PATH="$PATH:$HOME/.TinyTeX/bin/x86_64-linux"' >> ~/.bashrc && \
+    . ~/.bashrc
 
-# 复制项目文件
+# Install TeX packages
+RUN apt-get update && apt-get install -y \
+    texlive-latex-base \
+    texlive-latex-extra \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy requirements file
 # COPY requirements.txt .
-COPY requirements_fastapi.txt ./requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+COPY requirements_fastapi.txt .
 
+# Install Python dependencies
+# RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r requirements_fastapi.txt
+
+# Copy application code
 COPY . .
 
-# 设置环境变量
+# Set Python path
 ENV PYTHONPATH=/app
 ENV PORT=8000
 
-# 暴露端口
+# Create a non-root user
+RUN useradd -m -s /bin/bash developer
+RUN chown -R developer:developer /app
+
+# Switch to non-root user
+USER developer
+
+# Set up bash as default shell with useful aliases
+RUN echo 'alias ll="ls -la"' >> ~/.bashrc && \
+    echo 'alias python="python3"' >> ~/.bashrc
+
+# Port
 EXPOSE 8000
 
-# 启动命令
+# Start interactive bash shell by default
+# CMD ["/bin/bash"]
 CMD ["uvicorn", "run_workflow_v1:app", "--host", "0.0.0.0", "--port", "8000"] 
+
