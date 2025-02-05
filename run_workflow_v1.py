@@ -721,12 +721,11 @@ async def ws_connect(s_id):
     #         data = json.loads(msg)
 
 
-async def main():
-    await ws_connect("server001")
+# async def main():
+#     await ws_connect("server001")
 
-if __name__ == "__main__":
-
-    asyncio.run(main())
+# if __name__ == "__main__":
+#     asyncio.run(main())
 #     pass
 
 import os
@@ -1710,6 +1709,10 @@ def download_file(data: DownloadFilePostData):
         return Response(content=contents, media_type="text/plain", headers={"Content-Disposition": f"attachment; filename=example.txt"})
     return {"message": "文件未找到"}
 
-# if __name__ == "__main__":
-#     import uvicorn
-#     uvicorn.run("run_workflow_v1:app", reload=True)
+@app.get("/test/")
+def test():
+    return {"msg": "hello world. ^_^"}
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("run_workflow_v1:app", reload=True, port=8000)
