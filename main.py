@@ -200,24 +200,35 @@ def main(args):
 
     #############Visualization for Initial Graph###################
     my_visual_initial = Visualization(global_state)
-    # Get the position of the nodes
-    pos_est = my_visual_initial.get_pos(global_state.results.converted_graph)
-    # Plot True Graph
-    if global_state.user_data.ground_truth is not None:
-        _ = my_visual_initial.plot_pdag(global_state.user_data.ground_truth, 'true_graph.pdf', pos=pos_est)
-    # Plot Initial Graph
-    _ = my_visual_initial.plot_pdag(global_state.results.converted_graph, f'{global_state.algorithm.selected_algorithm}_initial_graph.pdf', pos=pos_est)
-    my_report = Report_generation(global_state, args)
-    global_state.results.raw_edges = convert_to_edges(global_state.algorithm.selected_algorithm, global_state.user_data.processed_data.columns, global_state.results.converted_graph)
-    global_state.logging.graph_conversion['initial_graph_analysis'] = my_report.graph_effect_prompts()
-    judge = Judge(global_state, args)
-    if global_state.user_data.ground_truth is not None:
-        print("Original Graph: ", global_state.results.converted_graph)
-        print("Mat Ground Truth: ", global_state.user_data.ground_truth)
-        global_state.results.metrics = judge.evaluation(global_state)
-        print(global_state.results.metrics)
-    
-    global_state = judge.forward(global_state, 'cot_all_relation', 1)
+    if global_state.statistics.time_series:
+        # print("Converted Graph: ", global_state.results.converted_graph.shape)
+        converted_graph = global_state.results.converted_graph
+        pos_est = my_visual_initial.get_pos(converted_graph[0])
+        for i in range(converted_graph.shape[0]):
+            _ = my_visual_initial.plot_pdag(converted_graph[i], f'{global_state.algorithm.selected_algorithm}_initial_graph_{i}.pdf', pos=pos_est)
+        summary_graph = np.any(converted_graph, axis=0).astype(int)
+        # pos_est = my_visual_initial.get_pos(summary_graph)
+        _ = my_visual_initial.plot_pdag(summary_graph, f'{global_state.algorithm.selected_algorithm}_initial_graph_summary.pdf', pos=pos_est)
+        my_report = Report_generation(global_state, args)
+    else:
+        # Get the position of the nodes
+        pos_est = my_visual_initial.get_pos(global_state.results.converted_graph)
+        # Plot True Graph
+        if global_state.user_data.ground_truth is not None:
+            _ = my_visual_initial.plot_pdag(global_state.user_data.ground_truth, 'true_graph.pdf', pos=pos_est)
+        # Plot Initial Graph
+        _ = my_visual_initial.plot_pdag(global_state.results.converted_graph, f'{global_state.algorithm.selected_algorithm}_initial_graph.pdf', pos=pos_est)
+        my_report = Report_generation(global_state, args)
+        global_state.results.raw_edges = convert_to_edges(global_state.algorithm.selected_algorithm, global_state.user_data.processed_data.columns, global_state.results.converted_graph)
+        global_state.logging.graph_conversion['initial_graph_analysis'] = my_report.graph_effect_prompts()
+        judge = Judge(global_state, args)
+        if global_state.user_data.ground_truth is not None:
+            print("Original Graph: ", global_state.results.converted_graph)
+            print("Mat Ground Truth: ", global_state.user_data.ground_truth)
+            global_state.results.metrics = judge.evaluation(global_state)
+            print(global_state.results.metrics)
+        
+        global_state = judge.forward(global_state, 'cot_all_relation', 1)
     
     #############Visualization for Revised Graph###################
     # Plot Revised Graph
