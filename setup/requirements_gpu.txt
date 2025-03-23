@@ -108,3 +108,6 @@ xges==0.1.6
 zipp==3.20.2
 graphviz==0.20.3
 dowhy==0.12
+
+momentchi2==0.1.8
+gcastle==1.0.3

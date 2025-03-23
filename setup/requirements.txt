@@ -109,3 +109,6 @@ xges==0.1.6
 causalnex==0.12.1
 econml==0.15.1
 CEM-LinearInf==0.0.1
+
+momentchi2==0.1.8
+gcastle==1.0.3
