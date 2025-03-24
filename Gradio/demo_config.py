@@ -11,8 +11,10 @@ class DemoConfig:
     output_graph_dir: str = 'output_graph'
 
     # OpenAI Settings
-    organization: str = "org-gw7mBMydjDsOnDlTvNQWXqPL"
-    project: str = "proj_SIDtemBJMHUWG7CPdU7yRjsn" 
+    # organization: str = "org-gw7mBMydjDsOnDlTvNQWXqPL"
+    organization: str = "org-Xa9VGT8plP28JBRKtqBRjG5l"
+    # project: str = "proj_SIDtemBJMHUWG7CPdU7yRjsn"
+    project: str = "proj_t78xpJomilJJu5qtuOK4vWfR"
     apikey: str = None
     
     # Analysis Settings
