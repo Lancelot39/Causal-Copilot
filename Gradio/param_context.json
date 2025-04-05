@@ -1,0 +1,143 @@
+{"PC":{ 
+    "Alpha": "Alpha represents the desired significance level which has a range of anything **from 0 to 1**. For small graphs (<500) use **0.1**, for large graphs (>10000) use **0.01**",
+    "Indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both and it depends on the hardware of your device. CPU TESTS: **fisherz_cpu** for linear continuous data; **chisq_cpu** for discrete data (only applied for pure discrete data); **kci_cpu** for nonlinear data (very slow, use only with variable size < 15 and sample size < 1500); **fastkci_cpu** is faster than kci (use with < 20 variables and sample size < 3000); **rcit_cpu** is the fastest approximation of kci (use with < 30 variables and sample size < 5000). GPU TESTS: **fisherz_gpu** and **chisq_gpu** (only applied for pure discrete data) work similarly but are extremely fast because of GPU's super parallel computing; **cmiknn_gpu** is a GPU-accelerated nonparametric test that provides 1000x speedup compared to CPU-based 'kci' with comparable accuracy. GPU acceleration is strongly recommended for large datasets.",
+    "Depth": "The depth parameter relies on how in depth you want the results to be, along with how large the graphs are. Setting a maximum depth of **-1** can help with uncovering more complex relationships among your variables, but **6(small graphs), 4, 2, 1(extra large graphs)** are also possible inputs depending on how large your graph is."
+},
+"FCI":{
+    "Alpha": "Alpha represents the desired significance level which has a range of anything **from 0 to 1**. For small graphs (<500) use **0.1**, for large graphs (>10000) use **0.01**",
+    "indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, and for a combination of both, **gsq** is recommended. For nonlinear data, **kci** is recommended, and for faster results, **fastkci** is recommended. Finally **rcit** is a fast version of kci approximation for nonlinear datasets.",
+    "Depth": "The depth parameter relies on how in depth you want the results to be, along with how large the graphs are. Setting a maximum depth of **-1** can help with uncovering more complex relationships among your variables, but **6(small graphs), 4, 2, 1(extra large graphs)** are also possible inputs depending on how large your graph is."
+},
+"GES":{
+    "Score_func": "The score function parameter represents the quality and type of data in the graph. For example, a score function parameter of **local_score_BIC** is for a good fit and complexity while **local_score_BDeu** is for discrete data. **local_score_marginal_general** and **local_score_marginal_multi** are useful for complex data, but are slow. local_score_marginal_general leverages non-parametric generalized score and cross-validation to select the best model while local_score_marginal_multi leverages non-parametric generalized score and marginal likelihood to select the best model.",
+    "maxP": "The maxP parameter represents the maximum number of parent variables allowed. For small graphs, a null parameter is good. However, for bigger graphs you can use **3, 5, or 7(large graphs)** depending on how big the graph is."
+},
+"AcceleratedLiNGAM":{
+    "measure": "Measure used to evaluate independence between variables. Use **pwling** (default) for pairwise likelihood-based measure, or **kernel** for kernel-based measure which may perform better with complex nonlinear relationships."
+},
+"AcceleratedPC":{
+    "alpha": "Significance level between **0 and 1** that should be adjusted based on sample size: **0.1** for small samples (<500), **0.05** for medium samples (500-10000), and **0.01** for large samples (>10000).",
+    "indep_test": "Independence test selection based on data characteristics: **fisherz** for continuous data, **chisq** for discrete data, and **kci** for nonlinear relationships.",
+    "depth": "Maximum conditioning set size, where **-1** means unlimited. Use **1** for very large graphs (>50 nodes), **2** for large graphs (25-50 nodes), **4** for medium graphs (10-25 nodes), and **6** for small graphs (<10 nodes)."
+},
+"BAMB":{
+    "Alpha": "Alpha represents the desired significance level which has a range of anything **from 0 to 1**. For small graphs (<500) use **0.1**, for large graphs (>10000) use **0.01**",
+    "indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, and for a combination of both, **gsq** is recommended. **kci** for nonlinear data (very slow, use only with variable size < 15 and sample size < 1500); **fastkci** is faster than kci (use with < 20 variables and sample size < 3000); **rcit** is the fastest approximation of kci (use with < 30 variables and sample size < 5000)."
+},
+"GRaSP":{
+    "Score_func": "The score function parameter represents the quality and type of data in the graph. For example, a score function parameter of **local_score_BIC** is for a good fit and complexity while **local_score_BDeu** is for discrete data. **local_score_marginal_general** and **local_score_marginal_multi** are useful for complex data, but are slow. local_score_marginal_general leverages non-parametric generalized score and cross-validation to select the best model while local_score_marginal_multi leverages non-parametric generalized score and marginal likelihood to select the best model.",
+    "depth": "This parameter controls how indepth the algorithm searches the permutation space. Higher values allow more thorough search but increase computational cost. For graphs with <10 nodes, use depth 5; for graphs with 10-25 nodes, use depth 3; for graphs with >25 nodes, use depth 2 to maintain reasonable runtime. Each unit increase in depth can increase runtime exponentially."
+},
+"CDNOD":{
+    "alpha": "Significance level (typically **0.05**) that controls the trade-off between false positives and false negatives in the independence tests.",
+    "Indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both and it depends on the hardware of your device. CPU TESTS: **fisherz_cpu** for linear continuous data; **chisq_cpu** for discrete data (only applied for pure discrete data); **kci_cpu** for nonlinear data (very slow, use only with variable size < 15 and sample size < 1500); **fastkci_cpu** is faster than kci (use with < 20 variables and sample size < 3000); **rcit_cpu** is the fastest approximation of kci (use with < 30 variables and sample size < 5000). GPU TESTS: **fisherz_gpu** and **chisq_gpu** (only applied for pure discrete data) work similarly but are extremely fast because of GPU's super parallel computing; **cmiknn_gpu** is a GPU-accelerated nonparametric test that provides 1000x speedup compared to CPU-based 'kci' with comparable accuracy. GPU acceleration is strongly recommended for large datasets.",
+    "depth": "Maximum conditioning set size, where **-1** means unlimited. Use **1-2** for large graphs (>50 nodes), **4** for medium graphs, and **6** for small graphs (<10 nodes)."
+},
+"HITONMB":{
+    "alpha": "Significance threshold between **0 and 1**. Use **0.01** for large samples, **0.05** for medium, and **0.1** for small samples to control false discovery rate.",
+    "indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, and for a combination of both, **gsq** is recommended. **kci** for nonlinear data (very slow, use only with variable size < 15 and sample size < 1500); **fastkci** is faster than kci (use with < 20 variables and sample size < 3000); **rcit** is the fastest approximation of kci (use with < 30 variables and sample size < 5000)."
+},
+"IAMBnPC":{
+    "alpha": "Significance level between **0 and 1** that controls the sensitivity of the algorithm. Lower values (e.g., **0.01**) are more conservative, while higher values (e.g., **0.1**) may identify more potential causal relationships.",
+    "indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, and for a combination of both, **gsq** is recommended. **kci** for nonlinear data (very slow, use only with variable size < 15 and sample size < 1500); **fastkci** is faster than kci (use with < 20 variables and sample size < 3000); **rcit** is the fastest approximation of kci (use with < 30 variables and sample size < 5000)."
+},
+"InterIAMB":{
+    "alpha": "Significance threshold ranging **from 0 to 1**. Use **0.01** for large samples, **0.05** for medium samples, and **0.1** for small samples to balance false positives and negatives.",
+    "indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, and for a combination of both, **gsq** is recommended. **kci** for nonlinear data (very slow, use only with variable size < 15 and sample size < 1500); **fastkci** is faster than kci (use with < 20 variables and sample size < 3000); **rcit** is the fastest approximation of kci (use with < 30 variables and sample size < 5000)."
+},
+"MBOR":{
+    "alpha": "Significance level that ranges **from 0 to 1**. Choose **0.01** for conservative results (large samples), **0.05** for balanced results, or **0.1** for higher sensitivity (small samples).",
+    "indep_test": "This parameter relies on whether your dataset is continuous, discrete, or both. For continuous data sets, **Fisherz** is recommended, for discrete sets, **chisg** is recommended, and for a combination of both, **gsq** is recommended. **kci** for nonlinear data (very slow, use only with variable size < 15 and sample size < 1500); **fastkci** is faster than kci (use with < 20 variables and sample size < 3000); **rcit** is the fastest approximation of kci (use with < 30 variables and sample size < 5000)."
+},
+"DirectLiNGAM":{
+    "measure": "Determines how independence is evaluated. Use **pwling** (default) for pairwise likelihood-based measure or **kernel** for kernel-based measure, which may perform better with complex nonlinear relationships.",
+    "gpu": "This parameter is **true** if GPU is available and **false** otherwise"
+},
+"ICALiNGAM":{
+    "random_state": "This is the seed used by the random number generator. Set to **null** for random behavior, set to a **fixed variable** for reproducible results",
+    "max_iter": "Maximum number of iterations for the ICA algorithm. Default is **1000**, for low iterations, lower to **500** and for high iterations, increase to **2000**"
+},
+"NOTEARSLinear":{
+    "lambda1": "Regularization parameter for sparsity that ranges typically **from 0.001 to 0.1**. Higher values (**0.1**) promote sparser graphs, while lower values (**0.001**) allow more connections.",
+    "loss_type": "Type of sparsity regularization where **l2** (default) is more implicit and smooth, while **l1** is more explicit but may lead to over-penalized graphs.",
+    "w_threshold": "Threshold for edge weights ranging typically **from 0.1 to 0.5**. Higher values (**0.5**) lead to sparser graphs by pruning weak connections, while lower values (**0.1**) retain more potential causal links."
+},
+"NOTEARSNolinear":{
+    "lambda1": "Regularization parameter for sparsity ranging **from 0.001 to 0.1**. Higher values create sparser graphs, lower values allow more connections.",
+    "lambda2": "Regularization parameter for DAG constraint where higher values (**0.1**) enforce stricter acyclicity constraints.",
+    "max_iter": "The max number of dual ascent steps during optimization. Increase this parameter for more thorough and complex graphs. Medium should be **500** and for thorough graphs use **1000**",
+    "w_threshold": "Threshold for edge weights where higher values (**0.5**) lead to more conservative graphs by removing weak connections."
+},
+"PCMCI":{
+    "cond_ind_test": "Independence test method based on data characteristics: **parcorr** for linear relationships, **gpdc** for nonlinear causal relations, **gsq** for categorical data, and **cmi** for highest accuracy (but slower runtime).",
+    "tau_min": "Minimum time lag to consider. Defualt is **0** and lagged is **1**",
+    "tau_max": "Maximum time lag to consider in causal analysis: use **1** (default) for immediate effects, **5** for short-term effects, or **10** for long-term effects.",
+    "pc_alpha": "Significance level for the PC algorithm phase: use **0.01** for large samples (>10000), **0.05** for medium samples (500-10000), and **0.1** for small samples (<500).",
+    "alpha_level": "Significance threshold for the final graph: use **0.01** for large/dense graphs, **0.05** for medium graphs, and **0.1** for small/sparse graphs.",
+    "fdr_method": "This implement a false discovery rate correction over the PCMCI result, can be required for larger and denser graphs. For correction, use **fdr_bh**",
+    "link_assumptions": "This adds some links as dictionary of form {j:{(i, -tau): link_type, ...}, ...} specifying assumptions about links. This initializes the graph with entries graph[i,j,tau] = link_type. For example, graph[i,j,0] = '-->' implies that a directed link from i to j at lag 0 must exist. Valid link types are 'o-o', '-->', '<--'.",
+    "max_conds_dim": "This represents the maximum number of conditions to test. Default none value means unrestricted testing, can be assigned a value for large datasets with sparse graphs to speed up the discovery.",
+    "max_combinations": "Maximum number of combinations of conditions of current cardinality to test in PC1 step. Adjust to increase accuracy by trading off processing speed.",
+    "max_conds_py": "This restricts the number of parent nodes to consider in the MCI step. Adjust to increase accuracy by trading off processing speed, **none** value means unrestricted.",
+    "max_conds_px": "This represents the maximum number of variables to condition. Adjust to increase accuracy by trading off processing speed, none value means unrestricted."
+},
+"PCParallel":{
+    "alpha": "Significance level between **0 and 1** where lower values (**0.01**) produce more conservative results and higher values (**0.1**) may identify more potential causal relationships.",
+    "indep_test": "Choose independence test based on data type: **fisherz** for continuous data, **chi2** for discrete data, and **g2** for mixed data.",
+    "cores": "The number of available cores to run the algorithm on. For small samples use **4** and for large samples use **16**"
+},
+"VARLiNGAM":{
+    "lags": "Number of time lags to include in the model, where higher values (e.g., **3** or **5**) capture longer-term effects at the cost of increased model complexity.",
+    "criterion": "Model selection criterion where **aic** typically identifies more relationships, while **bic** produces more conservative models.",
+    "prune": "Threshold for pruning weak connections, where higher values produce sparser temporal causal graphs.",
+    "ar_coefs": "This is the coefficient for the AR model. If there's previous knowledge about autoregressive relationships, set the ar_coefs manually to enforce said constraints.",
+    "lingam_model": "This is the LiNGAM model, if there are no changes, DirectLiNGAM algorithm is already selected.",
+    "gpu": "This parameter represents whether to use GPU acceleration. If GPU is available, set use_gpu=True to use GPU acceleration. It is recommended to use GPU acceleration for large datasets."
+},
+"CALM":{
+    "lambda1": "L1 regularization parameter for sparsity. Higher values promote sparser graphs, lower values allow more connections. For sparse graphs, use **0.1** for dense graphs, use **0.001**",
+    "Alpha": "Alpha represents the desired significance level which has a range of anything **from 0 to 1**. For small graphs (<500) use **0.1**, for large graphs (>10000) use **0.01**",
+    "subproblem_iter": "Maximum number of sub-optimization steps during optimization. Increase for more complex graphs and functional relationships, while more iterations is much more time-consuming. For light iterations, use **5000** and for thorough iterations, sue **40000**"
+},
+"CORL":{
+    "iteration": "Maximum number of dual ascent steps during optimization. Increase for more complex graphs and functional relationships, while more iterations is much more time-consuming. For medium iterations, use **1000** and for thorough iterations, use **5000**"
+},
+"DYNOTEARS":{
+    "p": "Lookback window length for time-lagged causal relations, typically **2** for short-term effects and up to **10** for long-term effects.",
+    "lambda_w": "L1 regularization parameter for intra-slice edges, where higher values (**0.1**) produce sparser contemporaneous connections.",
+    "lambda_a": "L1 regularization parameter for inter-slice edges, where higher values (**0.1**) produce sparser time-lagged connections.",
+    "max_iter": "Maximum number of dual ascent steps during optimization. For quick optimization, use **50** and for thorough optimization, use **200**",
+    "h_tol": "Exit tolerance for h(W) during optimization. The lower values are stricter and produce more accurate results. For strict results, use **1e-10** and for relaxed results, use **1e-6**",
+    "w_threshold": "Threshold for edge weights, where higher values (e.g., **0.1**) lead to sparser graphs by removing weak connections."
+},
+"FGES":{
+    "sparsity": "Higher sparsity reduces the penalty on model complexity, allowing for more edges and improving computational efficiency, while lower sparsity enforces stricter penalties, leading to simpler, more parsimonious graphs at the cost of increased computation time."
+},
+"GOLEM":{
+    "lambda_1": "L1 regularization parameter for sparsity, typically ranging **from 0.001 to 0.1**. Higher values produce sparser graphs, while lower values allow more connections.",
+    "num_iter": "Maximum number of optimization iterations, where **10000** is default, **50000** for medium complexity, and **100000** for thorough optimization of complex graphs.",
+    "graph_thres": "Threshold for edge weights ranging **from 0.1 to 0.5**. Higher values lead to sparser graphs by pruning weak connections."
+},
+"Hybrid":{
+    "first_stage_algo": "This is the algorithm used in the first stage for learning the initial CPDAG. Use **pc** for general cases and high-dimensional data due to its efficiency. Use **ges** for slower but better empirical performance.",
+    "second_stage_method": "This is the functional model-based method to use for orienting remaining edges. Use **pnl** for complex nonlinear relationships. Use **anm** for simpler, mostly linear relationships. Set to **null** to skip second stage orientation.",
+    "alpha": "Significance level for independence tests, with values typically **from 0.01 to 0.1**. Lower values produce more conservative results with fewer false positives.",
+    "m_max": "This represents the maximum number of potential confounders to consider in functional model-based tests. Lower values **1** for high-dimensional data or efficiency. Higher values **5** for complex graphs with many confounders. Default **3** balances accuracy and computation."
+},
+"XGES":{
+    "alpha": "Use alpha = 1 for standard BIC, adjust lower <1 for complex models, or higher >1 to favor simplicity, depending on dataset size and goals."
+},
+"GrangerCausality":{
+    "p": "This represents the lookback window length for the time-lagged causal relations. For short length, use **2** and for long length, use **10**",
+    "gc_type": "This is the type of granger causality testing. Use Pairwise (**pw**) for low dimensional data and Multivariate (**mv**) for high dimensional large datasets.",
+    "alpha": "This represents the significance level for F test. Higher values promote sparser graphs, lower values allow more connections. For conservative graphs, use **0.5** and for liberal graphs, use **0.01**",
+    "criterion": "This is additional information for MV or PW testing. **bic** heavily penalizes complexity, use for a for spase graph, **aic** is less restrictive and promotes a bit dense graph. Default none value is recommended unless true lag is not known. Finally, for pairwiase, use **ssr_ftest**"
+},
+"NTSNOTEARS":{
+    "p": "This represents the lookback window length for the time-lagged causal relations. For short length, use **2** and for long length, use **10**",
+    "lambda1": "Lambda is used for convolutional parameters. Higher values promote sparser graphs, lower values allow more connections. For sparse graphs, use **1e-4** and for dense graphs, use **1e-2**",
+    "lambda2": "This represents smoothness over time for causal relations. A higher value (**1e-2**) results in more stable causal graphs over time, while a lower value(**1e-5**) allows more dynamic changes in causal relationships.",
+    "max_iter": "The max number of dual ascent steps during optimization. Increase this parameter for more thorough and complex graphs. For quick optimization, use **50** and for thorough results, use **150**",
+    "h_tol": "Exit tolerance for h(W) during optimization. The lower values are stricter and produce more accurate results. For strict results, use **1e-10** and for relaxed results, use **1e-6**",
+    "w_threshold": "This represents the list of w_thresholds for convolutional parameters. Higher values (**7**) lead to sparser graphs by pruning weak connections - higher value for less no of nodes and short lag. For liberal results, use **2**."
+}}
