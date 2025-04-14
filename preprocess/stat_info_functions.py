@@ -867,7 +867,7 @@ def convert_stat_info_to_text(statistics):
     text += f"Data Quality: {'There are' if statistics.missingness else 'There are no'} missing values in the dataset.\n\n"
     
     text += "Statistical Properties:\n"
-    text += f"- Linearity: The relationships between variables {'are' if statistics.linearity else 'are not'} predominantly linear.\n"
+    text += f"- Linearity: The relationships between variables {'are' if statistics.linearity else 'are not'} linear.\n"
     text += f"- Gaussian Errors: The errors in the data {'do' if statistics.gaussian_error else 'do not'} follow a Gaussian distribution.\n"
     
     if statistics.time_series:

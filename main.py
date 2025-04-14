@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument(
         '--data-file',
         type=str,
-        default="dataset/sim_ts/data.csv",
+        default="simulated_data/ts_evaluation/default/n_nodes_20_lag_5_degree_inter_4.0_degree_intra_3.0_seed_0/ts_20250410_172135_data.csv",
         help='Path to the input dataset file (e.g., CSV format or directory location)'
     )
 

@@ -1,5 +1,8 @@
 User original query (TOP PRIORITY):
 [USER_QUERY]
+
+The computation has to be finished in the runtime of [WAIT_TIME] minutes.
+
 -----------------------------------------------
 
 ## ⚠️ CRITICAL USER PRIORITY DIRECTIVE ⚠️
@@ -44,8 +47,8 @@ I need you to carefully analyze and select the most suitable causal discovery al
    - Variable count (p): How many variables need to be considered? Consider these thresholds:
      * Small scale (<25 variables): Most algorithms perform well
      * Medium scale (25-50 variables): Requires "High" or better scalability rating
-     * Large scale (50-100 variables): Requires "Very High" or better scalability rating
-     * Very large scale (>100 variables): Requires "Extreme" scalability rating
+     * Large scale (50-110 variables): Requires "Very High" or better scalability rating
+     * Very large scale (>110 variables): Requires "Extreme" scalability rating
    - Data structure: Tabular or time-series? Are there temporal dependencies?
    - Missing data: What percentage of values are missing? How are they distributed?
    - Variable types: Continuous, discrete, categorical, mixed? What proportion of each?

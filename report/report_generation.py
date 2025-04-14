@@ -104,7 +104,7 @@ class Report_generation(object):
         self.inference_global_state = inference_global_state
         self.args = args 
         self.statistics_desc = global_state.statistics.description
-        self.knowledge_docs = global_state.user_data.knowledge_docs[0]
+        self.knowledge_docs = global_state.user_data.knowledge_docs_for_user[0]
         # Data info
         self.data = global_state.user_data.processed_data.copy()
         self.data.columns = [var.replace('_', ' ') for var in self.data.columns]
@@ -1033,8 +1033,14 @@ Help me to write a comparison of the following causal discovery results of diffe
             
             # Causal Inference info
             if self.inference_global_state.inference.task_index != -1:
-                inf_report_generator = Inference_Report_generation(self.inference_global_state, self.args)
-                self.inf_report = inf_report_generator.generation()
+                print('self.inference_global_state.inference.task_index: ', self.inference_global_state.inference.task_index)
+                self.inf_report = ""
+                for task_index in range(self.inference_global_state.inference.task_index+1):
+                    print('task_index: ', task_index)
+                    self.inf_report += f"\section{{Causal Inference Results for Task {task_index+1}}}\n"
+                    inf_report_generator = Inference_Report_generation(self.inference_global_state, self.args, task_index)
+                    task_result = inf_report_generator.generation()
+                    self.inf_report += f"{task_result}\n"
             else:
                 self.inf_report = ''
 
@@ -1238,7 +1244,7 @@ if __name__ == '__main__':
     # with open('/Users/wwy/Documents/Project/Causal-Copilot/demo_data/20250408_105532/DailyDelhiClimate/output_graph/PCMCI_global_state.pkl', 'rb') as file:
     #     global_state = pickle.load(file)
     # test(args, global_state)
-    save_path = '/Users/wwy/Documents/Project/Causal-Copilot/demo_data/20250407_010855/Cleaned_Students_Performance/output_report'
+    save_path = '/Users/wwy/Documents/Project/Causal-Copilot/demo_data/20250408_145536/sachs/output_report'
     compile_tex_to_pdf_with_refs(f'{save_path}/report.tex', save_path)
     
 

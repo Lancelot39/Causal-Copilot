@@ -49,15 +49,6 @@ def bootstrap_iteration(data, ts, algorithm, hyperparameters):
     # Execute the algorithm with data and hyperparameters
     converted_graph, info, raw_result = algo_func(hyperparameters).fit(boot_sample)
 
-    # if algorithm == 'PC':
-    #     boot_graph = raw_result.G.graph
-    # elif algorithm == 'FCI':
-    #     boot_graph = raw_result[0].graph
-    # elif algorithm == "GES":
-    #     boot_graph = raw_result['G'].graph
-    # elif algorithm == 'CDNOD':
-    #     boot_graph = raw_result.G.graph
-    # else:
     boot_graph = converted_graph
 
     return boot_graph
@@ -96,26 +87,6 @@ def bootstrap_probability(boot_result, algorithm):
                 # i o-o j
                 none_edges_prob[i, j] = np.mean((elements_ij == 6) | (elements_ji == 6))
 
-                # if algorithm in ['PC','GES','CDNOD','FCI']:
-                #     # j -> i
-                #     certain_edges_prob[i, j] = np.mean((elements_ij == 1) & (elements_ji == -1))
-                #     # i - j
-                #     uncertain_edges_prob[i, j] = np.mean((elements_ij == -1) & (elements_ji == -1))
-                #     # i <-> j
-                #     bi_edges_prob[i, j] = np.mean((elements_ij == 1) & (elements_ji == 1))
-                # else:
-                #     # j -> i
-                #     certain_edges_prob[i, j] = np.mean(elements_ij == 1)
-
-                # # no existence of edge
-                # none_exist_prob[i, j] = np.mean(elements_ij == 0)
-
-                # if algorithm == 'FCI':
-                #     # j o-> i
-                #     half_edges_prob[i, j] = np.mean((elements_ij == 1) & (elements_ji == 2))
-                #     # i o-o j
-                #     none_edges_prob[i, j] = np.mean((elements_ij == 2) & (elements_ji == 2))
-
 
     edges_prob = np.stack((certain_edges_prob, uncertain_edges_prob, bi_edges_prob, half_certain_edges_prob, half_uncertain_edges_prob, none_edges_prob, none_exist_prob), axis=0)
 
@@ -144,29 +115,6 @@ def bootstrap(data, full_graph, algorithm, hyperparameters, boot_num, ts, parall
     m = data.shape[1]
     errors = {}
     raw_graph = full_graph
-
-    # try:
-    #     if algorithm == 'PC':
-    #         raw_graph = full_graph.raw_result.G.graph
-    #     elif algorithm == 'FCI':
-    #         raw_graph = full_graph.raw_result[0].graph
-    #     elif algorithm == "GES":
-    #         raw_graph = full_graph.raw_result['G'].graph
-    #     elif algorithm == 'CDNOD':
-    #         raw_graph = full_graph.raw_result.G.graph
-    #     else:
-    #         raw_graph = full_graph.converted_graph
-    # except:
-    #     if algorithm == 'PC':
-    #         raw_graph = full_graph.G.graph
-    #     elif algorithm == 'FCI':
-    #         raw_graph = full_graph[0].graph
-    #     elif algorithm == "GES":
-    #         raw_graph = full_graph['G'].graph
-    #     elif algorithm == 'CDNOD':
-    #         raw_graph = full_graph.G.graph
-    #     else:
-    #         raw_graph = full_graph
 
     boot_effect_save = []  # Save graphs based on bootstrapping
 
@@ -249,61 +197,6 @@ def bootstrap(data, full_graph, algorithm, hyperparameters, boot_num, ts, parall
                 elif (not non_exist_raw) and (edges_prob[6, i, j] > 0.95):
                     boot_recommend[str(j) + '-' + str(i)] = 'Forbid' + '(' + str(edges_prob[6, i, j]) + ')'
 
-                # if algorithm in ['PC','GES','CDNOD','FCI']:
-                #     certain_edge_raw = (element_ij == 1 and element_ji == 0)
-                #     uncertain_edge_raw = (element_ij == 2 or element_ji == 2)
-                #     bi_edge_raw = (element_ij == 3 or element_ji == 3)
-                #     non_exist_raw = (element_ij == 0 and element_ji == 0)
-                #
-                #     cond0 = certain_edge_raw and (edges_prob[0, i, j] < 0.05)  # j -> i
-                #     cond1 = uncertain_edge_raw and (edges_prob[1, i, j] < 0.05)  # j - i
-                #     cond2 = bi_edge_raw and (edges_prob[2, i, j] < 0.05)  # j <-> i
-                #     cond5 = non_exist_raw and (edges_prob[5, i, j] < 0.05)  # j x i
-                #
-                #     if algorithm == 'FCI':
-                #         half_edge_raw = (element_ij == 1 and element_ji == 2)
-                #         none_edge_raw = (element_ij == 2 and element_ji == 1)
-                #
-                #         cond3 = half_edge_raw and (edges_prob[3, i, j] < 0.05)  # j o-> i
-                #         cond4 = none_edge_raw and (edges_prob[4, i, j] < 0.05)  # j o-o i
-                #         cond6 = none_edge_raw and (edges_prob[6, i, j] < 0.05)  # j x i
-                # else:
-                #     certain_edge_raw = (element_ij == 1)
-                #     non_exist_raw = (element_ij == 0)
-                #
-                #     cond0 = certain_edge_raw and (edges_prob[0, i, j] < 0.05)  # j -> i
-                #     cond5 = non_exist_raw and (edges_prob[5, i, j] < 0.05)  # j x i
-
-
-                # # Bootstrap probability is less than 0.05
-                # if algorithm in ['PC', 'GES', 'CDNOD']:
-                #     if cond0 or cond1 or cond2 or cond5:
-                #         boot_recommend[str(j) + '-' + str(i)] = recommend[np.argmax(prob_ij)] + '(' + str(np.max(prob_ij)) + ')'
-                # elif algorithm == 'FCI':
-                #     if cond0 or cond1 or cond2 or cond3 or cond4 or cond5 or cond6:
-                #         boot_recommend[str(j) + '-' + str(i)] = recommend[np.argmax(prob_ij)] + '(' + str(np.max(prob_ij)) + ')'
-                # else:
-                #     if cond0 or cond5:
-                #         boot_recommend[str(j) + '-' + str(i)] = recommend[np.argmax(prob_ij)] + '(' + str(np.max(prob_ij)) + ')'
-                #
-                # # Bootstrap probability is greater than 0.95
-                # if (not certain_edge_raw) and (edges_prob[0, i, j] > 0.95):
-                #     boot_recommend[str(j) + '-' + str(i)] = '->' + '(' + str(edges_prob[0, i, j]) + ')'
-                # elif (not non_exist_raw) and (edges_prob[5, i, j] > 0.95):
-                #     boot_recommend[str(j) + '-' + str(i)] = 'Forbid' + '(' + str(edges_prob[5, i, j]) + ')'
-                #
-                # if algorithm in ['PC', 'GES', 'CDNOD','FCI']:
-                #     if (not uncertain_edge_raw) and (edges_prob[1, i, j] > 0.95):
-                #         boot_recommend[str(j) + '-' + str(i)] = '-' + '(' + str(edges_prob[1, i, j]) + ')'
-                #     elif (not bi_edge_raw) and (edges_prob[2, i, j] > 0.95):
-                #         boot_recommend[str(j) + '-' + str(i)] = '<->' + '(' + str(edges_prob[2, i, j]) + ')'
-                #
-                #     if algorithm == 'FCI':
-                #         if (not half_edge_raw) and (edges_prob[3, i, j] > 0.95):
-                #             boot_recommend[str(j) + '-' + str(i)] = 'o->' + '(' + str(edges_prob[3, i, j]) + ')'
-                #         elif (not none_edge_raw) and (edges_prob[4, i, j] > 0.95):
-                #             boot_recommend[str(j) + '-' + str(i)] = 'o-o' + '(' + str(edges_prob[4, i, j]) + ')'
-
     # Convert edges_prob to a dict
     boot_edges_prob = {'certain_edges': edges_prob[0,:,:],
                        'uncertain_edges': edges_prob[1,:,:],
@@ -332,7 +225,7 @@ def bootstrap_recommend(raw_graph, boot_edges_prob):
     middle_prob_idx_undirect = np.where((undirect_prob_mat < 0.9) & (undirect_prob_mat > 0.1))
     middle_prob_edges_undirect = list(zip(middle_prob_idx_undirect[0], middle_prob_idx_undirect[1]))
     
-    middle_prob_edges = list(set(high_prob_edges_direct+high_prob_edges_undirect+\
+    middle_prob_edges = list(set(low_prob_edges_direct+high_prob_edges_undirect+\
                                  middle_prob_edges_direct+middle_prob_edges_undirect))
     
     #print('middle_prob_edges',middle_prob_edges)
@@ -389,18 +282,18 @@ def call_llm_new(args, prompt, prompt_type):
     # initiate a client
     client = OpenAI()
     client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": "You are an expert in Causal Discovery."}])
     if 'cot' in prompt_type:
         client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": cot_context}])
 
     # get response          
     response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {"role": "user", "content": prompt}])
     contents = response.choices[0].message.content
@@ -483,11 +376,19 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
             """
             # Relationships for related node
             # Extract tuples containing main node
-            tuples_with_mainnode = [t for t in edges_dict['uncertain_edges']+edges_dict['certain_edges'] if main_node in t]
+            certain_edges = edges_dict.get('certain_edges', [])
+            uncertain_edges = edges_dict.get('uncertain_edges', [])
+            tuples_with_mainnode = [t for t in certain_edges + uncertain_edges if main_node in t]
             related_nodes = [item for t in tuples_with_mainnode for item in t if item != main_node]
             for node in related_nodes:
-                directed_exist_texts_related = ', '.join([text for text in relation_text_dict['certain_edges'] if node in text])
-                undirected_exist_texts_related = ', '.join([text for text in relation_text_dict['uncertain_edges'] if node in text])
+                if 'certain_edges' in relation_text_dict:
+                    directed_exist_texts_related = ', '.join([text for text in relation_text_dict['certain_edges'] if node in text])
+                else:
+                    directed_exist_texts_related = 'None'
+                if 'uncertain_edges' in relation_text_dict:
+                    undirected_exist_texts_related = ', '.join([text for text in relation_text_dict['uncertain_edges'] if node in text])
+                else:
+                    undirected_exist_texts_related = 'None'
                 relationship += f"""
                 Edges of node {node}:
                 {directed_exist_texts_related} and {undirected_exist_texts_related}

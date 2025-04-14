@@ -11,7 +11,7 @@ load_dotenv('/Users/wwy/Documents/Project/Causal-Copilot/.env')
 def convert_adj_mat(mat):
     # In downstream analysis, we only keep direct edges and ignore all undirected edges
     mat = np.array(mat)
-    mat = (mat == 1).astype(int)
+    mat = (mat > 0).astype(int)
     G = mat.T
     return G
 
@@ -29,7 +29,11 @@ def coarsen_continuous_variables(data, cont_confounders, bins=5):
             coarsened_col = f'coarsen_{col}'
             #data[coarsened_col] = pd.cut(data[col], bins=bins, labels=False)
             bin_edges = pd.cut(data[col], bins=bins)
-            data[coarsened_col] = bin_edges.apply(lambda interval: f"{int(interval.left)}-{int(interval.right)}")
+            if (data[col].max()-data[col].min()) <= 1:
+                data[coarsened_col] = bin_edges.apply(lambda interval: f"{interval.left:.1f}-{interval.right:.1f}")
+            else:
+                data[coarsened_col] = bin_edges.apply(lambda interval: f"{int(interval.left)}-{int(interval.right)}")
+            
     return data
 
 def plot_hte_dist(hte, fig_path):

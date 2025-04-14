@@ -56,6 +56,7 @@ def fix_latex_itemize_LLM(client, text):
     The following text is a LaTeX code. Please check if there are any \item entries that are not properly enclosed in an itemize environment. 
     If there are, please add the necessary \begin{{itemize}} and \end{{itemize}} commands to fix the document. If the document is already correct, please return it unchanged.
     Only return the corrected LaTeX code without any additional text or explanation.
+    Do not include any titles, subsections, \begin{{document}}, or \end{{document}} commands.
     """
     response = LLM_parse_query(client, None, prompt, text)
     return response

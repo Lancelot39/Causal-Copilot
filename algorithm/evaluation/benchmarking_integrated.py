@@ -36,24 +36,6 @@ from dotenv import load_dotenv
 
 load_dotenv(root_dir + '/.env')
 
-def process_user_query(query, data):
-    #Baseline code
-    query_dict = {}
-    # for part in query.split(';'):
-    #     key, value = part.strip().split(':')
-    #     query_dict[key.strip()] = value.strip()
-
-    # if 'filter' in query_dict and query_dict['filter'] == 'continuous':
-    #     # Filtering continuous columns, just for target practice right now
-    #     data = data.select_dtypes(include=['float64', 'int64'])
-    
-    # if 'selected_algorithm' in query_dict:
-    #     selected_algorithm = query_dict['selected_algorithm']
-    #     print(f"Algorithm selected: {selected_algorithm}")
-
-    print("User query processed.")
-    return data
-
 def augment_query_with_data_properties(query: str, config: Dict) -> str:
     """Augment the user query with data properties in a natural tone"""
     augmentations = []
@@ -87,19 +69,19 @@ def augment_query_with_data_properties(query: str, config: Dict) -> str:
     #     elif config["noise_type"] == "uniform":
     #         augmentations.append("The noise in the data seems to be uniformly distributed.")
     
-    # # Discrete variables
-    # if "discrete_ratio" in config and config["discrete_ratio"] > 0:
-    #     augmentations.append(f"About {int(config['discrete_ratio']*100)}% of the variables appear to be discrete or categorical.")
+    # Discrete variables
+    if "discrete_ratio" in config and config["discrete_ratio"] > 0:
+        augmentations.append(f"There are discrete variables in the dataset.")
     
     # Measurement error
     if "add_measurement_error" in config and config["add_measurement_error"]:
         augmentations.append("The data might contain some observational errors or noise.")
     
-    # # Missing values
-    # if "add_missing_values" in config and config["add_missing_values"]:
-    #     missing_rate = config.get("missing_rate", 0.0)
-    #     if missing_rate > 0:
-    #         augmentations.append(f"There are approximately {int(missing_rate*100)}% missing values in the dataset.")
+    # Missing values
+    if "add_missing_values" in config and config["add_missing_values"]:
+        missing_rate = config.get("missing_rate", 0.0)
+        if missing_rate > 0:
+            augmentations.append(f"There are some missing data in the dataset, the value 0 is used to represent the missing data.")
     
     # # Number of domains
     # if "n_domains" in config and config["n_domains"] > 1:
@@ -315,7 +297,7 @@ class BenchmarkRunner:
         #     global_state.statistics.heterogeneous = True
         #     global_state.statistics.domain_index = 'domain_index'
 
-        global_state.user_data.processed_data = process_user_query(args.initial_query, global_state.user_data.raw_data)
+        global_state.user_data.processed_data = global_state.user_data.raw_data
         global_state.user_data.visual_selected_features = global_state.user_data.processed_data.columns
         global_state.user_data.selected_features = global_state.user_data.processed_data.columns
     

@@ -76,3 +76,20 @@ def generate_stationary_linear(
     df.columns = [el.split('_')[0] for el in df.columns]
     
     return df, gt_graph, summary, graph_net
+
+def is_discrete(series, threshold=0.05):
+    if series.dtype == 'object' or pd.api.types.is_categorical_dtype(series):
+        return 1
+    unique_ratio = series.nunique() / len(series)
+    if pd.api.types.is_integer_dtype(series):
+        return int(unique_ratio < threshold)
+    if pd.api.types.is_float_dtype(series):
+        return int(unique_ratio < threshold)
+    return 1
+
+def column_type(df, threshold=0.05):
+    data_types = np.zeros(df.shape, dtype='int')
+    type_array = np.array([is_discrete(df[col], threshold) for col in df.columns])
+    for d in range(len(type_array)):
+        data_types[:,d] = type_array[d]
+    return data_types

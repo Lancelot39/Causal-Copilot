@@ -85,32 +85,7 @@ class Judge(object):
         #####old version#####
         fixed_pairs = []
         bootstrap_pruning_record = []
-        # for k in edge_recom.keys():
-        #     (i, j) = tuple(map(int, k.split('-')))
-        #     edge = edge_recom[k].split('(')[0]
-        #     prob = float(edge_recom[k].split('(')[1].strip(')'))
-        #     # Change edges according to recommendation if bootstrap probability>0.95
-        #     if prob > 0.95:
-        #         fixed_pairs.append((i,j))
-        #         fixed_pairs.append((j,i))
-        #         text = f'{data.columns[j]} {edge} {data.columns[i]}'
-        #         bootstrap_pruning_record.append(text)
-        #         if edge == '->':
-        #             revised_graph[i, j] = 1
-        #             revised_graph[j, i] = -1
-        #         elif edge == '-':
-        #             revised_graph[i, j] = revised_graph[j, i] = -1
-        #         elif edge == '<->':
-        #             revised_graph[i, j] = revised_graph[j, i] = 1
-        #         elif edge == 'o->':
-        #             revised_graph[i, j] = 1
-        #             revised_graph[j, i] = 2
-        #         elif edge == 'o-o':
-        #             revised_graph[i, j] = revised_graph[j, i] = 2
-        #         else:
-        #             revised_graph[i, j] = revised_graph[j, i] = 0
-        ########################
-
+        
         ############ Edge Pruning with LLM ############
         from postprocess.visualization import convert_to_edges
         revised_edges_dict = convert_to_edges(self.global_state.algorithm.selected_algorithm, self.global_state.user_data.processed_data.columns, revised_graph)
@@ -263,7 +238,6 @@ The results of falsify_graph show the output of two tests. The first measures wh
             elif global_state.algorithm.selected_algorithm == 'GES':
                 est_graph = global_state.results.raw_result['G']
             elif global_state.algorithm.selected_algorithm == 'FCI':
-                # TODO: improve for better handling edge o-o, o->, o-, currently ignore this part
                 est_graph = global_state.results.raw_result[0]
 
             if global_state.statistics.domain_index is not None:
@@ -276,7 +250,6 @@ The results of falsify_graph show the output of two tests. The first measures wh
             recall = adj.get_adj_recall()
         else:
             if global_state.statistics.domain_index is not None:
-                # TODO: handle the weird case where the domain index is not the last column
                 global_state.results.converted_graph = global_state.results.converted_graph[:-1, :-1]
             ground_truth_flat = global_state.user_data.ground_truth.flatten() 
             if revise:

@@ -15,7 +15,7 @@ class Programming(object):
                 global_state.user_data.processed_data, 
                 threshold=threshold
             )
-            
+                        
             # Only proceed with reduced dataset if we found correlated features
             if len(original_indices) < global_state.user_data.processed_data.shape[1]:
                 # Run algorithm on reduced dataset

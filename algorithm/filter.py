@@ -66,6 +66,7 @@ class Filter(object):
         replacements = {
             "[USER_QUERY]": global_state.user_data.initial_query,
             # "[TABLE_NAME]": self.args.data_file,
+            "[WAIT_TIME]": str(global_state.algorithm.waiting_minutes),
             "[COLUMNS]": ', '.join(global_state.user_data.processed_data.columns),
             "[STATISTICS_DESC]": global_state.statistics.description,
             "[ALGO_CONTEXT]": algo_context,

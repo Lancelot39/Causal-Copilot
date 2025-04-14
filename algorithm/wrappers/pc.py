@@ -25,9 +25,10 @@ import torch
 cuda_available = torch.cuda.is_available()
 try:
     from externals.acceleration.pc.pc import accelerated_pc
-except ImportError:
+except Exception as e: 
     if not cuda_available:
         print("CUDA is not available, will not use GPU acceleration")
+    print(e)
 
 
 # KCI: 5 nodes, 1000 samples: 66s
@@ -196,9 +197,9 @@ class PC(CausalDiscoveryAlgorithm):
         #     {"name": "Fixed Depth 4", "alpha": 0.05, "depth": 4}
         # ]
         configurations = [
-            {"name": "Fixed Alpha 0.05", "alpha": 0.01, "depth": 10, 'indep_test': 'cmiknn_gpu'},
+            {"name": "Fixed Alpha 0.05", "alpha": 0.01, "depth": 1, 'indep_test': 'fisherz_gpu'},
         ]
-        
+
         results = {}
         
         print("Testing hypothesis: larger node size needs larger sample size")

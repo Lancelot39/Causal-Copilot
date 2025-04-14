@@ -3,7 +3,7 @@
     "indep_test": {
         "meaning": "Independence tests",
         "available_values": ["parcorr", "robustparcorr", "gpdc", "gsq", "regression", "cmi"],
-        "expert_suggestion": "Use parcorr as default. parcorr, gpdc for non-linear causal relations, cmi for better accuracy but slow runtime, gsq for categorical, regression for mixed data"
+        "expert_suggestion": "Use parcorr as default. Choose based on data type.\n\nLINEAR/DISCRETE (PARAMETRIC) TESTS:\n- 'parcorr': For linear continuous data (default choice)\n- 'robustparcorr': Robust partial correlation for linear data with outliers\n- 'gsq': For categorical/discrete data only\n\nNONLINEAR/NON-PARAMETRIC TESTS:\n- 'gpdc': For nonlinear continuous data\n- 'cmi': Conditional mutual information for nonlinear data (more accurate but much slower)\n- 'regression': For mixed data types (continuous and discrete)"
     },
     "tau_min": {
         "meaning": "Minimum time lag to consider",

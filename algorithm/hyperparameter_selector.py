@@ -2,6 +2,7 @@ import json
 import torch
 import algorithm.wrappers as wrappers
 from algorithm.llm_client import LLMClient
+from .context.algos.utils.json2txt import create_filtered_benchmarking_results
 
 class HyperparameterSelector:
     def __init__(self, args):
@@ -48,6 +49,10 @@ class HyperparameterSelector:
         return convert_to_natural_language(hp_context)
 
     def create_prompt(self, global_state, selected_algo, hp_context, algorithm_optimum_reason):
+        with open(f"algorithm/context/benchmarking/algorithm_performance_analysis.json", "r", encoding="utf-8") as f:
+            algorithm_benchmarking_results = json.load(f)
+            algorithm_benchmarking_results = create_filtered_benchmarking_results(algorithm_benchmarking_results, [selected_algo])
+
         with open("algorithm/context/hyperparameter_select_prompt.txt", "r", encoding="utf-8") as f:
             hp_prompt = f.read()
         
@@ -58,12 +63,14 @@ class HyperparameterSelector:
         knowledge_info = '\n'.join(global_state.user_data.knowledge_docs)
         
         hp_prompt = hp_prompt.replace("[USER_QUERY]", global_state.user_data.initial_query)
-        hp_prompt = hp_prompt.replace("[ALGORITHM_DESCRIPTION]", algorithm_optimum_reason)
+        hp_prompt = hp_prompt.replace("[WAIT_TIME]", str(global_state.algorithm.waiting_minutes))
+        hp_prompt = hp_prompt.replace("[ALGORITHM_NAME]", selected_algo)
+        # hp_prompt = hp_prompt.replace("[ALGORITHM_DESCRIPTION]", algorithm_optimum_reason)
+        hp_prompt = hp_prompt.replace("[ALGORITHM_PERFORMANCE]", algorithm_benchmarking_results)
         hp_prompt = hp_prompt.replace("[COLUMNS]", table_columns)
         hp_prompt = hp_prompt.replace("[KNOWLEDGE_INFO]", knowledge_info)
         hp_prompt = hp_prompt.replace("[STATISTICS INFO]", global_state.statistics.description)
         hp_prompt = hp_prompt.replace("[CUDA_WARNING]", "Current machine supports CUDA, some algorithms can be accelerated by GPU if needed." if torch.cuda.is_available() else "\nCurrent machine doesn't support CUDA, do not choose any GPU-powered algorithms.")
-        hp_prompt = hp_prompt.replace("[ALGORITHM_NAME]", selected_algo)
         # hp_prompt = hp_prompt.replace("[ALGORITHM_DESCRIPTION]", algorithm_optimum_reason)
         hp_prompt = hp_prompt.replace("[PRIMARY_HYPERPARAMETERS]", ', '.join(primary_params))
         hp_prompt = hp_prompt.replace("[HYPERPARAMETER_INFO]", hp_info_str)

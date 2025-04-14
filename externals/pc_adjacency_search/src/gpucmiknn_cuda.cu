@@ -15,7 +15,7 @@
 #define THREADS_PER_BLOCK 64
 // Default to support at least 1000 observations with factor 0.2
 #ifndef MAX_K_RUNGE
-    #define MAX_K_RUNGE 50001
+    #define MAX_K_RUNGE 20001
 #endif
 #define THREAD_BLOCK_SIZE 32
 #define THREAD_BLOCK_SIZE_SHUFFLE 32

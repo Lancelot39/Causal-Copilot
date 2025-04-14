@@ -69,13 +69,12 @@
 
 9. **Output Format**: DAG, CPDAG, PAG
 
-10. **Graph Density Preference**:
-   - Sparse-Preferring: Algorithm performs significantly better on sparse graphs
-   - Dense-Preferring: Algorithm performs significantly better on dense graphs
-   - Density-Robust: Algorithm maintains consistent performance across different graph densities
+10. **Graph Density**:
+   - Sparse: Algorithm performs significantly better on sparse graphs
+   - Dense: Algorithm performs significantly better on dense graphs
+   - Robust: Algorithm maintains consistent performance across different graph densities
 
 ## Algorithm Listings (key are the algorithm names)
-
 
 XGES: {
     Full Name: "eXtremely Greedy Equivalence Search",
@@ -88,7 +87,7 @@ XGES: {
     Scalability & Efficiency: 50-100 vars,
     Empirical Performance (when data properties matched): 80-100%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }
 
 GRaSP: {
@@ -102,7 +101,7 @@ GRaSP: {
     Scalability & Efficiency: 20-50 vars,
     Empirical Performance (when data properties matched): 80-100%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }
 
 
@@ -117,7 +116,7 @@ GOLEM: {
     Scalability & Efficiency: 10-20 vars,
     Empirical Performance (when data properties matched): 80-100%,
     Output Format: DAG,
-    Graph Density Preference: Density-Robust
+    Graph Density: Robust
 }
 
 FCI: {
@@ -131,7 +130,7 @@ FCI: {
     Scalability & Efficiency: 20-50 vars,
     Empirical Performance (when data properties matched): 80-100%,
     Output Format: PAG,
-    Graph Density Preference: Sparse-Preferring,
+    Graph Density: Sparse,
     Critical Notes: "Best choice when latent confounders are suspected"
 }
 
@@ -146,7 +145,7 @@ IAMBnPC: {
     Scalability & Efficiency: 20-50 vars,
     Empirical Performance (when data properties matched): 80-100%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }
 
 PC: {
@@ -160,7 +159,7 @@ PC: {
     Scalability & Efficiency: >100 vars,
     Empirical Performance (when data properties matched): 60-80%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }
 
 CDNOD: {
@@ -173,7 +172,7 @@ CDNOD: {
     Scalability & Efficiency: >100 vars,
     Empirical Performance (when data properties matched): 60-80%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring,
+    Graph Density: Sparse,
     Distribution Shift: Heterogeneous,
     Critical Notes: "Requires EXPLICIT 'domain_index' column in the data indicating different environments/domains to analyze, NEVER use it when there is no 'domain_index' column or it is None even when the data is heterogeneous"
 }
@@ -189,7 +188,7 @@ FGES: {
     Scalability & Efficiency: >100 vars,
     Empirical Performance (when data properties matched): 60-80%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring,
+    Graph Density: Sparse,
     Critical Notes: "Fastest algorithm for large-scale linear sparse graphs problems"
 }
 
@@ -204,7 +203,7 @@ GES: {
     Scalability & Efficiency: 20-50 vars,
     Empirical Performance (when data properties matched): 60-80%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }
 
 NOTEARSLinear: {
@@ -218,7 +217,7 @@ NOTEARSLinear: {
     Scalability & Efficiency: 20-50 vars,
     Empirical Performance (when data properties matched): 80-100%,
     Output Format: DAG,
-    Graph Density Preference: Density-Robust
+    Graph Density: Robust
 }
 
 DirectLiNGAM: {
@@ -232,7 +231,7 @@ DirectLiNGAM: {
     Scalability & Efficiency: 50-100 vars,
     Empirical Performance (when data properties matched): 40-60%,
     Output Format: DAG,
-    Graph Density Preference: Density-Robust,
+    Graph Density: Robust,
     Critical Notes: "Exceptional on linear non-Gaussian data, but poor otherwise"
 }
 
@@ -247,7 +246,7 @@ InterIAMB: {
     Scalability & Efficiency: 20-50 vars,
     Empirical Performance (when data properties matched): 20-40%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }
 
 BAMB: {
@@ -261,7 +260,7 @@ BAMB: {
     Scalability & Efficiency: 20-50 vars,
     Empirical Performance (when data properties matched): 20-40%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }
 
 MBOR: {
@@ -275,7 +274,7 @@ MBOR: {
     Scalability & Efficiency: 20-50 vars,
     Empirical Performance (when data properties matched): 20-40%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }
 
 HITONMB: {
@@ -289,7 +288,7 @@ HITONMB: {
     Scalability & Efficiency: 10-20 vars,
     Empirical Performance (when data properties matched): 20-40%,
     Output Format: CPDAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }
 
 CALM: {
@@ -303,7 +302,7 @@ CALM: {
     Scalability & Efficiency: <10 vars,
     Empirical Performance (when data properties matched): 40-60%,
     Output Format: DAG,
-    Graph Density Preference: Density-Robust
+    Graph Density: Robust
 }
 
 CORL: {
@@ -317,7 +316,7 @@ CORL: {
     Scalability & Efficiency: <10 vars,
     Empirical Performance (when data properties matched): 40-60%,
     Output Format: DAG,
-    Graph Density Preference: Density-Robust
+    Graph Density: Robust
 }
 
 NOTEARSNonlinear: {
@@ -331,7 +330,7 @@ NOTEARSNonlinear: {
     Scalability & Efficiency: 10-20 vars,
     Empirical Performance (when data properties matched): 40-60%,
     Output Format: DAG,
-    Graph Density Preference: Density-Robust
+    Graph Density: Robust
 }
 
 ICALiNGAM: {
@@ -345,7 +344,7 @@ ICALiNGAM: {
     Scalability & Efficiency: <10 vars,
     Empirical Performance (when data properties matched): 20-40%,
     Output Format: DAG,
-    Graph Density Preference: Density-Robust
+    Graph Density: Robust
 }
 
 Hybrid: {
@@ -359,5 +358,5 @@ Hybrid: {
     Scalability & Efficiency: <10 vars,
     Empirical Performance (when data properties matched): 40-60%,
     Output Format: DAG,
-    Graph Density Preference: Sparse-Preferring
+    Graph Density: Sparse
 }

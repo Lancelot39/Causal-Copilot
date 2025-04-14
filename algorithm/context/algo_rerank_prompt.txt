@@ -8,14 +8,15 @@ You are an expert causal discovery algorithm advisor. Your task is to analyze da
 
 ## User original query (TOP PRIORITY)
 
-[USER_QUERY]
+[USER_QUERY] 
+
+The computation has to be finished in the runtime of [WAIT_TIME] minutes.
 
 [ACCEPT_CPDAG]
 -----------------------------------------------
 ## Dataset Profile
 - Characteristics: [STATISTICS_INFO]
 - Domain context: [KNOWLEDGE_INFO]
-- Computational constraints: Maximum runtime of [WAIT_TIME] minutes
 - Hardware capabilities: [CUDA_WARNING]
 - Columns: [COLUMNS]
 
@@ -33,9 +34,9 @@ For each algorithm candidate, evaluate compatibility across these dimensions BAS
 
   * For small-scale problems (p < 25): Focus on accuracy over efficiency
   * For medium-scale problems (25 ≤ p < 50): Balance accuracy and efficiency
-  * For large-scale problems (50 ≤ p < 100): Prioritize algorithms with "High" or better scalability ratings
-  * For very large-scale problems (p ≥ 100): Strictly limit to algorithms with "Very High" or "Extreme" scalability ratings
-  * When variable count exceeds 100, eliminate algorithms with poor scaling properties regardless of other strengths
+  * For large-scale problems (50 ≤ p < 150): Prioritize algorithms with "High" or better scalability ratings
+  * For very large-scale problems (p ≥ 150): Strictly limit to algorithms with "Very High" or "Extreme" scalability ratings
+  * When variable count exceeds 150, eliminate algorithms with poor scaling properties regardless of other strengths
 - Sample size adequacy: Is THIS dataset's sample size (N=[SAMPLES]) sufficient for the algorithm's requirements? When algorithms receive equal ratings for sample size adequacy, prioritize the algorithm with the highest empirical performance rating
 - Nonlinearity handling: Can the algorithm capture THIS dataset's relationship complexity?
 - Missing data tolerance: How well can the algorithm process THIS dataset's missing value patterns?

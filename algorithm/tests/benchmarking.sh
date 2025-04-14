@@ -4,10 +4,10 @@
 SCRIPT_DIR="algorithm/tests"
 
 # Set number of parallel jobs
-N_JOBS=6
+N_JOBS=2
 
 # Define GPU devices to use in rotation
-GPU_DEVICES=(0 1 2 7) # Modify this array with your available GPU IDs
+GPU_DEVICES=(2 7) # Modify this array with your available GPU IDs
 
 # Check if GPU_DEVICES array is empty and provide a default if needed
 if [ ${#GPU_DEVICES[@]} -eq 0 ]; then
@@ -97,8 +97,8 @@ ALGORITHM_HYPERPARAMS=(
     
     # # # DirectLiNGAM algorithm - linear non-Gaussian method
     # "DirectLiNGAM:{\"measure\":\"pwling\",\"gpu\":false}"
-    "DirectLiNGAM:{\"measure\":\"pwling\",\"gpu\":true}"
-    "DirectLiNGAM:{\"measure\":\"kernel\",\"gpu\":true}"
+    # "DirectLiNGAM:{\"measure\":\"pwling\",\"gpu\":true}"
+    # "DirectLiNGAM:{\"measure\":\"kernel\",\"gpu\":true}"
     
     # # NOTEARSLinear algorithm - gradient-based optimization
     # "NOTEARSLinear:{\"lambda1\":0.01,\"loss_type\":\"l2\"}"

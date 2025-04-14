@@ -4,9 +4,9 @@ from typing import List, Dict, Any, Optional
 @dataclass
 class BenchmarkConfig:
     # Data directory
-    data_dir: str = "simulated_data/ts_benchmark" # /20250207_030932_uniform_noise_seed_0_nodes25_samples5000"
+    data_dir: str = "simulated_data/copilot_benchmark_v4" # /20250207_030932_uniform_noise_seed_0_nodes25_samples5000"
     # Output directory
-    output_dir: str = "simulated_data/ts_benchmark_results"
+    output_dir: str = "simulated_data/copilot_benchmark_v4_results"
     
     # # Default experiment settings
     # n_vars: int = 25

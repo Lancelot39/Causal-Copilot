@@ -28,7 +28,6 @@ class Reranker:
         return global_state
     
     def create_prompt(self, global_state, algo_info, time_info):
-        # Read algorithm guidelines with proper encoding to handle Unicode characters
         with open(f"algorithm/context/benchmarking/algorithm_performance_analysis.json", "r", encoding="utf-8") as f:
             algorithm_benchmarking_results = json.load(f)
             algorithm_benchmarking_results = create_filtered_benchmarking_results(algorithm_benchmarking_results, list(global_state.algorithm.algorithm_candidates.keys()))

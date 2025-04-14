@@ -15,15 +15,21 @@ GPU_DEVICES=(0 1) # Modify this array with your available GPU IDs
 # #             #Hybrid CALM NOTEARSNonlinear CORL
 # # )
 
-# ALGORITHMS=(PCMCI VARLiNGAM GrangerCausality )
+ALGORITHMS=(PCMCI)
 
 ALGORITHM_HYPERPARAMS=(
-    # "PCMCI:{}"
-    # "VARLiNGAM:{}"
+    # "PCMCI:{\"indep_test\":\"parcorr\"}"
+    # "PCMCI:{\"indep_test\":\"robustparcorr\"}"
+    "PCMCI:{\"indep_test\":\"gpdc\"}"
+    # "PCMCI:{\"indep_test\":\"gsq\"}"
+    # "PCMCI:{\"indep_test\":\"cmi\"}"
+    # "PCMCI:{\"indep_test\":\"regression\"}"
+    # "PCMCI:{\"indep_test\":\"parcorr\"}"
+    # "VARLiNGAM:{\"gpu\":true}"
     # "GrangerCausality:{\"gc_type\":\"pw\"}"
-    "GrangerCausality:{\"gc_type\":\"mv\"}"
+    # "GrangerCausality:{\"gc_type\":\"mv\"}"
     # "DYNOTEARS:{}"
-    "NTSNOTEARS:{}"
+    # "NTSNOTEARS:{}"
 )
 
 # # Define algorithm hyperparameter combinations for linear and nonlinear settings

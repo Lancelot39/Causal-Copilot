@@ -13,10 +13,11 @@ from tigramite.pcmci import PCMCI as PCMCI_model
 from tigramite import data_processing as pp
 from tigramite.independence_tests.parcorr import ParCorr
 from tigramite.independence_tests.robust_parcorr import RobustParCorr
-
+import torch
+cuda_available = torch.cuda.is_available()
 from algorithm.wrappers.base import CausalDiscoveryAlgorithm
 from algorithm.evaluation.evaluator import GraphEvaluator
-from algorithm.wrappers.utils.ts_utils import generate_stationary_linear
+from algorithm.wrappers.utils.ts_utils import generate_stationary_linear, column_type
 
 class PCMCI(CausalDiscoveryAlgorithm):
     def __init__(self, params: Dict = {}):
@@ -60,26 +61,31 @@ class PCMCI(CausalDiscoveryAlgorithm):
             
         # PCMCI
         node_names = list(data.columns)
-        data_t = pp.DataFrame(data.values, var_names=node_names)
-        
+        data_types = None 
         if self._params['indep_test'] == 'parcorr':
             cond_ind_test = ParCorr()
         elif self._params['indep_test'] == 'robustparcorr':
             cond_ind_test = RobustParCorr()
         elif self._params['indep_test'] == 'gpdc':
-            from tigramite.independence_tests.gpdc import GPDC
-            cond_ind_test = GPDC(significance='analytic', gp_params=None)
+            if cuda_available:
+                from tigramite.independence_tests.gpdc_torch import GPDCtorch as GPDC
+                cond_ind_test = GPDC()
+            if not cuda_available:
+                from tigramite.independence_tests.gpdc import GPDC
+                print("CUDA is not available, will not use GPU acceleration")
+                cond_ind_test = GPDC(significance='analytic', gp_params=None)
         elif self._params['indep_test'] == 'gsq':
             from tigramite.independence_tests.gsquared import Gsquared
             cond_ind_test = Gsquared(significance='analytic')
         elif self._params['indep_test'] == 'regression':
             from tigramite.independence_tests.regressionCI import RegressionCI
             cond_ind_test = RegressionCI(significance='analytic')
+            data_types = column_type(data)
         elif self._params['indep_test'] == 'cmi':
             from tigramite.independence_tests.cmiknn import CMIknn
             cond_ind_test = CMIknn(significance='shuffle_test', knn=0.1, shuffle_neighbors=5, transform='ranks', sig_samples=5)
 
-        
+        data_t = pp.DataFrame(data.values, var_names=node_names, data_type=data_types)
         pcmci = PCMCI_model(dataframe=data_t, cond_ind_test=cond_ind_test)
         params = {**self.get_primary_params(), **self.get_secondary_params()}
         # pop indep_test from params since it's already used to initialize cond_ind_test
@@ -114,7 +120,7 @@ class PCMCI(CausalDiscoveryAlgorithm):
         n_nodes = 3
         lag = 2
         
-        df, gt_graph, summary, graph_net = generate_stationary_linear(
+        df, gt_graph, gt_summary, graph_net = generate_stationary_linear(
             n_nodes,
             n_samples,
             lag,

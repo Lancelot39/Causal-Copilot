@@ -1,7 +1,7 @@
 User original query (TOP PRIORITY):
 Discover causal relationships between protein signaling molecules. The data contains flow cytometry measurements of proteins and phospholipids.
-<<<<<<< HEAD
-=======
+
+The computation has to be finished in the runtime of 1440.0 minutes.
 
 ## ⚠️ ESSENTIAL QUERY PRIORITY ⚠️
 - User query SUPERSEDES all standard hyperparameter guidelines
@@ -9,7 +9,6 @@ Discover causal relationships between protein signaling molecules. The data cont
 - Parameters MUST be adjusted to meet user's explicit requirements 
 - ALL recommendations MUST directly align with the user's stated objectives
 - User domain knowledge overrides general optimization guidelines
->>>>>>> 3d512bc0b65d26d76f244de6e104cd5d07efa0cd
 
 -----------------------------------------------
 Given a dataset with the following properties:
@@ -27,7 +26,7 @@ This dataset is not time-series data.
 Data Quality: There are no missing values in the dataset.
 
 Statistical Properties:
-- Linearity: The relationships between variables are not predominantly linear.
+- Linearity: The relationships between variables are not linear.
 - Gaussian Errors: The errors in the data do not follow a Gaussian distribution.
 - Heterogeneity: The dataset is not heterogeneous. 
 
@@ -35,126 +34,63 @@ Statistical Properties:
 
 
 3. Background Knowledge:
-<<<<<<< HEAD
-Based on the variable names provided, the dataset appears to relate to biological pathways, specifically signaling pathways involved in cell communication and function. Here’s a detailed breakdown:
-=======
-The provided variable names appear to be meaningful in the context of biological signaling pathways, particularly those involved in cellular processes like cell growth, proliferation, differentiation, and survival. Below is a detailed explanation of the variables, possible causal relations among them, and relevant background domain knowledge.
->>>>>>> 3d512bc0b65d26d76f244de6e104cd5d07efa0cd
-
-### 1. Detailed Explanation about the Variables:
-
-<<<<<<< HEAD
-- **Raf**: A protein kinase that acts as a key player in the MAPK/ERK signaling pathway. It is involved in the phosphorylation of its downstream targets and plays a role in cell proliferation, differentiation, and survival.
-
-- **Mek**: Also known as MAPK/ERK kinase, it is a dual-specificity kinase that is activated by Raf and in turn phosphorylates and activates ERK. It acts as an intermediary in the MAPK pathway.
-
-- **Plcg**: Phospholipase C gamma, an enzyme that can cleave phosphatidylinositol 4,5-bisphosphate to produce inositol trisphosphate (IP3) and diacylglycerol (DAG), thereby playing a critical role in intracellular signaling.
-
-- **PIP2**: Phosphatidylinositol 4,5-bisphosphate, a phospholipid component of the cell membrane that serves as a substrate for phospholipase C, thus influencing various signaling pathways.
-
-- **PIP3**: Phosphatidylinositol (3,4,5)-trisphosphate, a product of PIP2 phosphorylation by phosphoinositide 3-kinase (PI3K) that is critical for the activation of Akt and other downstream signaling mediators.
-
-- **Erk**: Extracellular signal-regulated kinase, a protein kinase that is activated by MEK and is involved in mediating cellular responses to growth signals.
-
-- **Akt**: Also known as protein kinase B (PKB), it is a serine/threonine kinase that is activated by PIP3 and plays a key role in promoting cell survival and growth.
-
-- **PKA**: Protein kinase A, a major regulatory enzyme that is activated by cyclic AMP (cAMP) signaling and regulates multiple cellular processes, including metabolism and gene expression.
-
-- **PKC**: Protein kinase C, a family of serine/threonine kinases that are activated by diacylglycerol and involved in various signaling pathways regulating cell growth, differentiation, and apoptosis.
-
-- **P38**: P38 MAPK, a type of MAP kinase that is activated by stress stimuli and involved in inflammatory responses and cell differentiation.
-
-- **Jnk**: c-Jun N-terminal kinase, another member of the MAPK family, which is activated in response to stress and inflammatory cytokines, playing roles in apoptosis and cellular responses to stress.
-
-### 2. Possible Causal Relations among these variables:
-
-- **Raf → Mek**: Raf activates Mek by phosphorylation.
-  
-- **Mek → Erk**: Mek activates Erk by phosphorylation.
-  
-- **Plcg → PIP2 → PIP3**: Phospholipase C gamma (Plcg) breaks down PIP2 to generate PIP3.
-  
-- **PIP3 → Akt**: PIP3 recruits and activates Akt at the membrane.
-  
-- **Raf → PIP2**: While indirect, signals that activate Raf can lead to changes in PIP2 levels through the activation of downstream pathways.
-  
-- **Erk → PKA**: Erk can phosphorylate and activate PKA, linking the MAPK pathway to cAMP signaling.
-  
-- **PKC → P38/Jnk**: PKC can activate parallel signaling pathways, including P38 and Jnk.
-  
-- **P38/Jnk can also interact with many of these pathways**; e.g., they can influence the outcomes of Erk activation and cellular stress responses.
-
-### 3. Other Background Domain Knowledge that may be helpful for experts to design causal discovery algorithms:
-
-- **Cell Signaling Mechanisms**: Understanding cell signaling pathways and the role of various kinases and phospholipids in mediating cellular responses is crucial. Experts should be familiar with concepts like activation and inhibition, feedback loops, and cross-talk between pathways.
-
-- **Biological Experiments**: Information regarding experimental conditions, such as treatment with specific inhibitors (e.g., MEK inhibitors, PI3K inhibitors) can provide insight into causal relations as certain variables may be manipulated.
-
-- **Sequential Events**: Most signaling pathways are characterized by a time sequence of events, where one event can lead to another. Temporal data might enhance causal discovery analysis.
-
-- **Graphical Models**: Understanding of how to build and interpret directed graphical models (like Bayesian networks) can help in representing causal relationships among the variables.
-
-- **Assumptions**: Causal discovery algorithms typically rely on certain assumptions, such as the causal Markov condition and the faithfulness assumption, which need to be critically assessed in biological contexts.
-
-With this detailed understanding of the variables, possible causal relations, and additional background knowledge, one can proceed with causal discovery on the provided dataset.
-=======
-- **Raf**: A serine/threonine kinase that acts as a key component in the MAPK/ERK signaling pathway. It is activated by RAS and subsequently phosphorylates MEK.
-  
-- **Mek (MAP2K)**: MAP kinase/ERK kinase, which is activated by Raf. Mek phosphorylates and activates ERK, playing a crucial role in the signaling cascade.
-
-- **Plcg (Phospholipase C-gamma)**: An enzyme that hydrolyzes PIP2 to produce inositol trisphosphate (IP3) and diacylglycerol (DAG). It is involved in various signaling pathways, including those regulating calcium release and protein kinase activation.
-
-- **PIP2 (Phosphatidylinositol 4,5-bisphosphate)**: A phospholipid found in the inner leaflet of the plasma membrane that serves as a substrate for phospholipases and is involved in cellular signaling processes.
-
-- **PIP3 (Phosphatidylinositol (3,4,5)-trisphosphate)**: A product of the phosphorylation of PIP2 by PI3-kinase. It acts as a secondary messenger in signaling pathways, particularly in promoting cell survival and growth.
-
-- **Erk (Extracellular signal-regulated kinase)**: A downstream target of MEK. It is a key player in the MAPK signaling pathway affecting cell division, survival, and differentiation.
-
-- **Akt (Protein kinase B)**: A central node in many signaling pathways. It is activated by PIP3 and plays crucial roles in regulating metabolism, cell survival, and growth.
-
-- **PKA (Protein kinase A)**: A serine/threonine kinase activated by cyclic AMP (cAMP) that mediates various signaling effects in response to hormones and other stimuli.
-
-- **PKC (Protein kinase C)**: A family of serine/threonine kinases activated by diacylglycerol (DAG) and calcium ions, involved in a variety of cellular processes including cell proliferation and differentiation.
-
-- **P38 (MAPK)**: A member of the MAPK family activated by stress signals and involved in inflammation responses, apoptosis, and differentiation.
-
-- **Jnk (c-Jun N-terminal kinase)**: Another MAPK that responds to stress and is involved in cell differentiation and apoptosis.
-
-### 2. Possible Causal Relations among These Variables
-
-Based on established biological pathways, the following causal relationships may exist:
-
-- **Raf → Mek**: Raf activates Mek by phosphorylation.
-- **Mek → Erk**: Mek activates Erk by phosphorylation.
-- **Plcg → PIP2**: Phospholipase C-gamma hydrolyzes PIP2 from membranes.
-- **PIP2 → PIP3**: PIP2 is phosphorylated to form PIP3, often by the action of PI3-kinase.
-- **PIP3 → Akt**: PIP3 recruits Akt to the membrane, leading to its activation.
-- **DAG → PKC**: DAG activates Protein Kinase C, promoting signaling.
-- **Stress Signals → P38/Jnk**: Various stress signals can activate both P38 and JNK through upstream kinases.
-- **Erk → Cell Cycle progression**: Erk influences the transcription of genes involved in the cell cycle and proliferation.
-
-### 3. Other Background Domain Knowledge
-
-To better design causal discovery algorithms, the following background knowledge can be useful:
-
-- **Signaling Pathways**: Familiarity with the signaling pathways can inform assumptions about the directions and existence of causal links.
-  
-- **Temporal Dependencies**: Understanding time-series data or temporal dynamics in signaling can enhance causal inference since many interactions are time-dependent.
-
-- **Feedback Mechanisms**: Many signaling pathways involve feedback loops that can complicate causal inference; these should be carefully modeled.
-
-- **Experimental Validation**: Prior knowledge from experiments (e.g., knockdown studies) can inform causal relationships and help validate results from causal discovery algorithms.
-
-- **Pathway Databases**: Tools like KEGG, Reactome, or BioCyc provide curated pathways that can help hypothesize potential interactions and causality in biological networks.
-
-This information should serve well for causal discovery analysis in biological datasets.
->>>>>>> 3d512bc0b65d26d76f244de6e104cd5d07efa0cd
+T
+h
+i
+s
+ 
+i
+s
+ 
+f
+a
+k
+e
+ 
+d
+o
+m
+a
+i
+n
+ 
+k
+n
+o
+w
+l
+e
+d
+g
+e
+ 
+f
+o
+r
+ 
+d
+e
+b
+u
+g
+g
+i
+n
+g
+ 
+p
+u
+r
+p
+o
+s
+e
+s
+.
 
 We have selected the following algorithm for causal discovery:
 
 Algorithm: FCI
-Description: Fast Causal Inference (FCI) is a constraint-based algorithm that is robust to latent confounders and can handle flexible functional forms and noise distributions. It outputs a Partial Ancestral Graph (PAG), which represents causal relationships with potential latent variables.
-FCI is the best choice for this dataset due to its ability to handle latent confounders, which are likely present in biological signaling pathways. It also manages non-linear relationships effectively with the rcit test, aligning with the dataset's non-linear characteristics. Additionally, FCI's performance in sparse graphs and its robustness to measurement error make it well-suited for the dataset's properties. The algorithm's output format (PAG) is also acceptable to the user, providing a comprehensive view of potential causal structures.
 
 Now, we need to determine the optimal hyperparameters for this algorithm. I'll guide you through a systematic approach to select values that prioritize accuracy while maintaining computational efficiency for moderate graph sizes.
 
@@ -173,7 +109,7 @@ Step 2: Assess computational resources
    
 Current machine doesn't support CUDA, do not choose any GPU-powered algorithms.
 
-   - Prioritize to GPU implemented hyperparameter when dealing with large graph (variable size > 100) to achieve more efficient speedup
+   - Prioritize to GPU implemented hyperparameter when dealing with large graph (variable size > 150) to achieve more efficient speedup
 
 Step 3: Evaluate each hyperparameter's impact on accuracy vs. efficiency
    - Critical parameters affecting accuracy (e.g., significance levels, independence tests)
@@ -182,9 +118,343 @@ Step 3: Evaluate each hyperparameter's impact on accuracy vs. efficiency
 
 Step 4: Analyze algorithm-specific recommendations
    - Review expert suggestions for each parameter:
-   "**Parameter:** alpha\n- **Meaning:** Desired significance level in (0, 1)\n- **Available Values:**\n  - 0.05\n  - 0.1\n  - 0.01\n- **Expert Suggestion:** Use 0.05 as default. Adjust based on sample size, more conservative (lower) values for larger samples. If < 500, use 0.1; Else if 500-10000 (<10000 but >500), use 0.05; Else if > 10000, using 0.01.\n\n**Parameter:** indep_test\n- **Meaning:** Independence test method\n- **Available Values:**\n  - fisherz\n  - chisq\n  - kci\n  - fastkci\n  - rcit\n- **Expert Suggestion:** Use fisherz as default (for linear data). Choose based on data type, DON'T use nonlinear/nonparametric tests for linear/discrete data. 'Fisherz' for linear data; 'chisq' for discrete data (only applied for pure discrete data); 'kci' for nonlinear data (very slow, use only when both condition fulfilled: variable size < 10 and sample size < 1500); 'rcit' is for non-linear data and the fastest approximation of kci (use only when both condition fulfilled: < 100 variables and sample size < 10000); 'fastkci' is for non-linear data and a divide-and-conquer version of kci, faster than kci in large sample size scenarios but less accurate (use only when both condition fulfilled: < 20 variables and sample size < 3000). For nonlinear data, as long as variable and sample size constraints are fulfilled, choose KCI > RCIT > FastKCI in order of accuracy.\n\n**Parameter:** depth\n- **Meaning:** Maximum depth for skeleton search\n- **Available Values:**\n  - -1\n  - 6\n  - 4\n  - 2\n  - 1\n- **Expert Suggestion:** Use -1 as default. Use -1 for unlimited depth. For large graphs, limiting depth (e.g., 1-3) can significantly speed up the algorithm at the cost of some accuracy. A graph with node number < 10, use depth 6; A graph with node number 10 - 25, use depth 4; A graph with node number 25-50, use depth 2; A graph with node number > 50, use depth 1.\n\n"
+   "**Parameter:** alpha\n- **Meaning:** Desired significance level in (0, 1)\n- **Available Values:**\n  - 0.05\n  - 0.1\n  - 0.01\n- **Expert Suggestion:** Use 0.05 as default. Adjust based on sample size, more conservative (lower) values for larger samples. If < 500, use 0.1; Else if 500-10000 (<10000 but >500), use 0.05; Else if > 10000, using 0.01.\n\n**Parameter:** indep_test\n- **Meaning:** Independence test method\n- **Available Values:**\n  - fisherz\n  - chisq\n  - kci\n  - fastkci\n  - rcit\n- **Expert Suggestion:** Use fisherz as default (for linear data). Choose based on data type, DON'T use nonlinear/non-parametric tests for linear/discrete data.\n\nLINEAR/DISCRETE (PARAMETRIC) TESTS:\n- 'fisherz': For linear continuous data (default choice for linear data)\n- 'chisq': For discrete data only (applied only for pure discrete data)\n\nNONLINEAR/NON-PARAMETRIC TESTS:\n- 'kci': For nonlinear data (very slow, use only if variable size < 10 and sample size < 1500)\n- 'rcit': Fastest approximation of kci for non-linear data (use only if variable size < 100 and sample size < 10000)\n- 'fastkci': Divide-and-conquer version of kci for non-linear data, faster than kci but less accurate (use only if variable size < 20 and sample size < 3000)\n\nFor nonlinear data, as long as variable and sample size constraints are fulfilled, choose in order of accuracy: KCI > RCIT > FastKCI.\n\n**Parameter:** depth\n- **Meaning:** Maximum depth for skeleton search\n- **Available Values:**\n  - -1\n  - 6\n  - 4\n  - 2\n  - 1\n- **Expert Suggestion:** Use -1 as default. Use -1 for unlimited depth. For large graphs, limiting depth (e.g., 1-3) can significantly speed up the algorithm at the cost of some accuracy. A graph with node number < 10, use depth 6; A graph with node number 10 - 25, use depth 4; A graph with node number 25-50, use depth 2; A graph with node number > 50, use depth 1.\n\n"
 
-Step 5: Make final decisions based on:
+Step 5: Analyze algorithm performance with different hyperparameter configurations (If existed)
+   - Review benchmarking results for this algorithm with various hyperparameter settings
+   - Identify which configurations perform best on datasets with similar characteristics
+   - Consider how different hyperparameter values affect performance metrics
+   - Analyze the trade-offs between accuracy and computational efficiency
+
+# ALGORITHM BENCHMARKING RESULTS
+
+• CAUTIONARY NOTE
+  – These benchmarking results should be used as guidelines, not definitive judgments
+  – Performance may vary significantly with real-world data compared to simulations
+  – Consider your specific domain knowledge and data characteristics when selecting algorithms
+• Simulation Settings
+  – Network sizes: 5 to 1000 nodes
+  – Sample sizes: 500 to 10000 data points
+  – Edge density: 0.11 to 0.78 probability (avg. degree 1 to 7)
+  – Data types: Continuous and mixed (0-20% discrete variables)
+  – Function types: Linear and non-linear (MLP) relationships
+  – Noise types: Gaussian and uniform distributions
+
+• Challenge Scenarios
+  – Measurement error: 10%, 30%, 50% noise in observations
+  – Missing data: 10%, 20%, 30% missing values
+  – Multi-domain data: 1, 2, 5, or 10 heterogeneous domains
+  – Each configuration tested with 3 different random seeds
+
+• Key Terms
+  – (linear): Scenarios where relationships between variables follow linear functions
+  – (mlp): Scenarios where relationships are non-linear (using multilayer perceptron models)
+
+• Scenario Types
+  – Robustness scenarios (e.g., Variable Scaling, Edge Probability): Test algorithm performance across varying levels of a property
+  – Specific scenarios (e.g., Gaussian Noise, Dense Graph): Test performance at a fixed specific setting
+
+• Performance Metrics
+  – Performance level (1-10): Based on F1 score, higher is better
+  – Efficiency level (0-5): Based on runtime, higher is better (only relevant for scaling scenarios)
+  – Stability: Standard deviation of performance, lower values indicate more consistent results
+
+• Important Note on Efficiency Scoring
+  – Benchmarks include large-scale systems with up to 1000 nodes and may timeout for some algorithms
+  – For large-scale systems (node size > 200), prioritize algorithms that can utilize available GPUs
+  – GPU-accelerated methods provide significant efficiency advantages in large-scale scenarios
+
+────────────────────────────────────────────────────────
+Filtered Benchmarking Results
+────────────────────────────────────────────────────────
+
+Algorithms included: FCI
+
+────────────────────────────────────────────────────────
+Overall Algorithm Performance
+────────────────────────────────────────────────────────
+
+Overall ranking based on average performance across all scenarios:
+
+1. FCI_indep_test=fisherz: 7.4
+2. FCI_indep_test=rcit: 7.3
+3. FCI_indep_test=kci: 6.2
+4. FCI_indep_test=fastkci: 6.2
+
+
+────────────────────────────────────────────────────────
+Efficiency Comparison
+────────────────────────────────────────────────────────
+
+Note: Efficiency scores are primarily measured in Variable Scaling and Sample Scaling scenarios.
+
+| Algorithm | Variable Scaling (linear) | Sample Scaling (linear) | Variable Scaling (mlp) | Sample Scaling (mlp) | Average |
+|-----------|---------------------------|--------------------------|------------------------|----------------------|--------|
+| FCI_indep_test=fisherz | 4.7 | N/A | 4.7 | N/A | 4.7 |
+| FCI_indep_test=kci | 3.7 | N/A | 4.1 | N/A | 3.9 |
+| FCI_indep_test=fastkci | 3.4 | N/A | 4.1 | N/A | 3.8 |
+| FCI_indep_test=rcit | 3.3 | N/A | 4.0 | N/A | 3.6 |
+
+
+────────────────────────────────────────────────────────
+Algorithm Recommendations by Scenario Type
+────────────────────────────────────────────────────────
+
+• Linear Relationships
+  1. FCI_indep_test=fisherz: Performance 7.8
+  2. FCI_indep_test=rcit: Performance 7.7
+  3. FCI_indep_test=kci: Performance 6.8
+
+• Non-Linear Relationships
+  1. FCI_indep_test=fisherz: Performance 6.9
+  2. FCI_indep_test=rcit: Performance 6.6
+  3. FCI_indep_test=kci: Performance 5.4
+
+• Data with Missing Values
+  1. FCI_indep_test=rcit: Performance 7.6
+  2. FCI_indep_test=fisherz: Performance 7.3
+  3. FCI_indep_test=kci: Performance 6.3
+
+• Data with Measurement Error
+  1. FCI_indep_test=rcit: Performance 8.1
+  2. FCI_indep_test=fisherz: Performance 8.0
+  3. FCI_indep_test=fastkci: Performance 7.8
+
+• Dense vs Sparse Graphs
+  1. FCI_indep_test=rcit: Performance 6.7
+  2. FCI_indep_test=fisherz: Performance 6.4
+  3. FCI_indep_test=fastkci: Performance 5.3
+
+• Heterogeneous Data
+  1. FCI_indep_test=fisherz: Performance 6.7
+  2. FCI_indep_test=rcit: Performance 6.2
+  3. FCI_indep_test=kci: Performance 5.4
+
+
+────────────────────────────────────────────────────────
+Performance by Scenario
+────────────────────────────────────────────────────────
+
+### ROBUSTNESS SCENARIOS
+These scenarios test algorithm performance across varying levels of a property.
+
+
+• Variable Scaling (linear)
+| Algorithm | Performance | Stability | Efficiency | Overall Score |
+|-----------|------------|-----------|------------|-------------|
+| FCI_indep_test=rcit | 8.3 | 6.3 | 3.3 | 7.8 |
+| FCI_indep_test=fisherz | 8.1 | 3.3 | 4.7 | 7.6 |
+| FCI_indep_test=kci | 7.3 | 7.9 | 3.7 | 7.1 |
+| FCI_indep_test=fastkci | 7.2 | 5.8 | 3.4 | 7.0 |
+
+• Sample Scaling (linear)
+| Algorithm | Performance | Stability | Efficiency | Overall Score |
+|-----------|------------|-----------|------------|-------------|
+| FCI_indep_test=fisherz | 9.2 | 7.2 | N/A | 9.2 |
+| FCI_indep_test=rcit | 9.0 | 7.8 | N/A | 9.0 |
+| FCI_indep_test=fastkci | 8.6 | 7.7 | N/A | 8.6 |
+| FCI_indep_test=kci | 8.5 | 9.5 | N/A | 8.5 |
+
+• Heterogeneity (linear)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 8.5 | 1.6 |
+| FCI_indep_test=rcit | 8.0 | 2.1 |
+| FCI_indep_test=kci | 7.2 | 3.6 |
+| FCI_indep_test=fastkci | 7.2 | 0.5 |
+
+• Measurement Error (linear)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 9.1 | 10.2 |
+| FCI_indep_test=rcit | 8.9 | 5.3 |
+| FCI_indep_test=fastkci | 8.8 | 5.3 |
+| FCI_indep_test=kci | 8.5 | 8.1 |
+
+• Noise Type (linear)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 9.6 | 4.5 |
+| FCI_indep_test=rcit | 8.9 | 1.5 |
+| FCI_indep_test=kci | 7.1 | 9.5 |
+| FCI_indep_test=fastkci | 7.0 | 5.5 |
+
+• Missing Data (linear)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 8.0 | 3.4 |
+| FCI_indep_test=rcit | 7.9 | 4.4 |
+| FCI_indep_test=kci | 6.3 | 9.5 |
+| FCI_indep_test=fastkci | 6.2 | 5.9 |
+
+• Edge Probability (linear)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=rcit | 6.9 | 9.4 |
+| FCI_indep_test=fisherz | 6.7 | 6.4 |
+| FCI_indep_test=fastkci | 5.8 | 6.9 |
+| FCI_indep_test=kci | 5.7 | 6.9 |
+
+• Discrete Ratio (linear)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 7.6 | 2.9 |
+| FCI_indep_test=kci | 6.9 | 3.1 |
+| FCI_indep_test=rcit | 6.8 | 1.6 |
+| FCI_indep_test=fastkci | 6.8 | 7.8 |
+
+• Variable Scaling (mlp)
+| Algorithm | Performance | Stability | Efficiency | Overall Score |
+|-----------|------------|-----------|------------|-------------|
+| FCI_indep_test=rcit | 6.7 | 9.0 | 4.0 | 6.4 |
+| FCI_indep_test=fisherz | 6.0 | 6.0 | 4.7 | 5.8 |
+| FCI_indep_test=kci | 5.1 | 10.5 | 4.1 | 5.0 |
+| FCI_indep_test=fastkci | 4.8 | 3.0 | 4.1 | 4.8 |
+
+• Sample Scaling (mlp)
+| Algorithm | Performance | Stability | Efficiency | Overall Score |
+|-----------|------------|-----------|------------|-------------|
+| FCI_indep_test=rcit | 8.1 | 3.2 | N/A | 8.1 |
+| FCI_indep_test=fisherz | 7.3 | 9.0 | N/A | 7.3 |
+| FCI_indep_test=kci | 5.5 | 11.1 | N/A | 5.5 |
+| FCI_indep_test=fastkci | 5.3 | 4.0 | N/A | 5.3 |
+
+• Heterogeneity (mlp)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 6.2 | 5.4 |
+| FCI_indep_test=rcit | 6.0 | 3.3 |
+| FCI_indep_test=kci | 4.6 | 5.3 |
+| FCI_indep_test=fastkci | 4.6 | 5.3 |
+
+• Measurement Error (mlp)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 6.9 | 9.4 |
+| FCI_indep_test=rcit | 6.6 | 2.8 |
+| FCI_indep_test=fastkci | 5.2 | 4.3 |
+| FCI_indep_test=kci | 5.1 | 3.5 |
+
+• Noise Type (mlp)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 8.1 | 1.5 |
+| FCI_indep_test=rcit | 6.5 | 2.5 |
+| FCI_indep_test=fastkci | 6.1 | 9.0 |
+| FCI_indep_test=kci | 6.1 | 8.5 |
+
+• Missing Data (mlp)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 6.8 | 4.5 |
+| FCI_indep_test=kci | 6.8 | 10.4 |
+| FCI_indep_test=fastkci | 6.3 | 7.8 |
+| FCI_indep_test=rcit | 6.2 | 4.4 |
+
+• Edge Probability (mlp)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=rcit | 7.0 | 4.6 |
+| FCI_indep_test=fisherz | 6.9 | 6.8 |
+| FCI_indep_test=kci | 5.2 | 8.1 |
+| FCI_indep_test=fastkci | 5.1 | 5.7 |
+
+• Discrete Ratio (mlp)
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 8.4 | 0.0 |
+| FCI_indep_test=rcit | 6.2 | 0.0 |
+| FCI_indep_test=kci | 5.8 | 0.0 |
+| FCI_indep_test=fastkci | 5.8 | 0.0 |
+
+### SPECIFIC SCENARIOS
+These scenarios test algorithm performance at specific settings rather than variable levels.
+
+
+• Linear Function
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=rcit | 6.2 | 0.0 |
+| FCI_indep_test=fisherz | 6.2 | 0.0 |
+| FCI_indep_test=fastkci | 6.0 | 0.0 |
+| FCI_indep_test=kci | 6.0 | 0.0 |
+
+• Non-Linear Function
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=rcit | 6.0 | 0.0 |
+| FCI_indep_test=fisherz | 5.1 | 0.0 |
+| FCI_indep_test=kci | 4.8 | 0.0 |
+| FCI_indep_test=fastkci | 4.0 | 0.0 |
+
+• Gaussian Noise
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 9.6 | 0.0 |
+| FCI_indep_test=kci | 8.4 | 0.0 |
+| FCI_indep_test=rcit | 8.3 | 0.0 |
+| FCI_indep_test=fastkci | 8.2 | 0.0 |
+
+• Non-Gaussian Noise
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=rcit | 9.5 | 0.0 |
+| FCI_indep_test=fisherz | 9.5 | 0.0 |
+| FCI_indep_test=kci | 5.8 | 0.0 |
+| FCI_indep_test=fastkci | 5.8 | 0.0 |
+
+• Dense Graph
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=rcit | 4.7 | 0.0 |
+| FCI_indep_test=fisherz | 4.6 | 0.0 |
+| FCI_indep_test=kci | 2.6 | 0.0 |
+| FCI_indep_test=fastkci | 2.6 | 0.0 |
+
+• Sparse Graph
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=rcit | 8.3 | 0.0 |
+| FCI_indep_test=fastkci | 7.7 | 0.0 |
+| FCI_indep_test=fisherz | 7.6 | 0.0 |
+| FCI_indep_test=kci | 7.4 | 0.0 |
+
+• High Missing Data
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=rcit | 8.8 | 0.0 |
+| FCI_indep_test=fisherz | 7.2 | 0.0 |
+| FCI_indep_test=kci | 5.9 | 0.0 |
+| FCI_indep_test=fastkci | 5.6 | 0.0 |
+
+• High Measurement Error
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=kci | 9.5 | 0.0 |
+| FCI_indep_test=fastkci | 9.5 | 0.0 |
+| FCI_indep_test=rcit | 8.6 | 0.0 |
+| FCI_indep_test=fisherz | 8.0 | 0.0 |
+
+• Highly Mixed Data
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 5.0 | 0.0 |
+| FCI_indep_test=rcit | 3.9 | 0.0 |
+| FCI_indep_test=kci | 3.8 | 0.0 |
+| FCI_indep_test=fastkci | 3.8 | 0.0 |
+
+• Highly Heterogeneous
+| Algorithm | Performance | Stability |
+|-----------|------------|----------|
+| FCI_indep_test=fisherz | 7.3 | 0.0 |
+| FCI_indep_test=rcit | 6.8 | 0.0 |
+| FCI_indep_test=kci | 6.2 | 0.0 |
+| FCI_indep_test=fastkci | 6.2 | 0.0 |
+
+
+-------------------------------------------
+
+Step 6: Make final decisions based on:
    - For moderate graph sizes (<50 variables), prioritize accuracy over speed
    - For large graphs (>50 variables), balance accuracy with feasibility and EFFICIENCY
    - For time-series data, carefully consider temporal parameters
@@ -192,7 +462,7 @@ Step 5: Make final decisions based on:
 Please provide your suggestions in a structured JSON format, with detailed reasoning for each hyperparameter. Your response should look like this:
 
 {
-  "algorithm": "FCI",
+  "algorithm": "PC",
   "hyperparameters": {
     "[HYPERPARAMETER_1_NAME]": {
       "full_name": "[HYPERPARAMETER_1_FULL_NAME]",

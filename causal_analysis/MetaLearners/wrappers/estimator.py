@@ -75,7 +75,6 @@ class TLearner(Estimator):
             'allow_missing': self._params.get('allow_missing', False)  # Default: False
             }
         base_learner = params.get('model', LinearRegression()) 
-        print("Columns in processed_data:", self.user_data.processed_data.columns)
         print("Expected Treatment Column:", self.T_col)
         self.model = TLearnerEstimator(models=base_learner, **tlearner_params)
 

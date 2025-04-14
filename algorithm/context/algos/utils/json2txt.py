@@ -454,7 +454,7 @@ def create_filtered_benchmarking_results(benchmarking_json, algorithm_list=None,
     # Mapping table for algorithms that don't have benchmarking results
     # Maps missing algorithms to similar ones with available benchmarking data
     algorithm_mapping = {
-        "GOLEM": "NOTEARSLinear",
+        # "GOLEM": "NOTEARSLinear",
         # "PC_stable": "PC",
         # "PC_max": "PC",
         # "GES_BIC": "GES",
@@ -484,7 +484,7 @@ def create_filtered_benchmarking_results(benchmarking_json, algorithm_list=None,
     # Expert bias adjustments for mapped algorithms
     # Adjusts performance and efficiency scores based on expert knowledge
     algorithm_bias = {
-        "GOLEM": {"performance": 0.2, "efficiency": -2},  # GOLEM performs slightly better but is less efficient than NOTEARSLinear
+        # "GOLEM": {"performance": 0.2, "efficiency": -2},  # GOLEM performs slightly better but is less efficient than NOTEARSLinear
         # "PC_stable": {"performance": 0.3, "efficiency": -0.1},
         # "PC_max": {"performance": 0.2, "efficiency": -0.2},
         # "GES_BIC": {"performance": 0.4, "efficiency": 0.0},
@@ -620,6 +620,9 @@ def create_filtered_benchmarking_results(benchmarking_json, algorithm_list=None,
     output_text += "────────────────────────────────────────────────────────\n"
     output_text += "Overall Algorithm Performance\n"
     output_text += "────────────────────────────────────────────────────────\n\n"
+    output_text += "⚠️ IMPORTANT: Overall rankings can be misleading! ⚠️\n"
+    output_text += "- An algorithm with high average performance may perform poorly on specific scenarios\n"
+    output_text += "- Always check scenario-specific performance for your use case\n\n"
     
     # Get all unique algorithm names across all scenarios
     all_algos = set()
@@ -1158,8 +1161,8 @@ def test_create_filtered_benchmarking_results():
         benchmarking_json = json.load(f)
     
     # Select two algorithms to test
-    algorithm_list = ["PC", "GES", "FCI", "CDNOD", "XGES", "FGES", "GRaSP", "NOTEARSLinear", "GOLEM",
-                      "DirectLiNGAM", "InterIAMB", "BAMB", "HITONMB", "IAMBnPC", "MBOR"]
+    algorithm_list = ["GOLEM", "XGES"] #["PC", "GES", "FCI", "CDNOD", "XGES", "FGES", "GRaSP", "NOTEARSLinear", "GOLEM",
+                    #   "DirectLiNGAM", "InterIAMB", "BAMB", "HITONMB", "IAMBnPC", "MBOR"]
     print(benchmarking_json['Sample Scaling (linear)']['PC_indep_test=fisherz_gpu'])
 
 

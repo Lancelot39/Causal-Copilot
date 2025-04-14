@@ -4,7 +4,7 @@
 
 XGES (Extremely Greedy Equivalence Search) is an enhanced version of the popular GES algorithm, optimized for:
 
-- **Dense Causal Networks**: Excels with denser graph structures where other algorithms struggle
+- **Sparse Causal Networks**: Excels with sparser graph structures
 - **Moderate to Large Sample Sizes**: Performs well with datasets of 500+ samples
 - **Time-Sensitive Applications**: When computational efficiency is critical without sacrificing accuracy
 - **Causal Discovery in Clean Data**: Especially effective with continuous variables and minimal missing values
@@ -117,4 +117,4 @@ The interpretability of XGES results varies by user expertise:
   - No built-in confidence or uncertainty measures for individual edges
   - No native explanation for why specific causal relationships were inferred
   
-XGES demonstrates particularly strong overall performance when causal relationships are moderately dense and primarily linear, with clean, continuous data of sufficient sample size. However, users should carefully consider computational constraints when working with datasets containing more than 100 variables, as the algorithm's efficiency decreases dramatically at larger scales.
+XGES demonstrates particularly strong overall performance when causal relationships are moderately sparse and primarily linear, with clean, continuous data of sufficient sample size. However, users should carefully consider computational constraints when working with datasets containing more than 100 variables, as the algorithm's efficiency decreases dramatically at larger scales.

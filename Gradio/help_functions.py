@@ -194,7 +194,7 @@ def parse_preliminary_feedback(chat_history, download_btn, global_state, REQUIRE
         print('1', meaningful_feature, '1', heterogeneity, '1', accept_CPDAG, '1', domin_index, '1', missing_value)
         # text += f"✅ Successfully parsed your provided information. \n"
         if 'meaningful_feature' in selected_variables:
-            global_state.user_data.meaningful_feature
+            global_state.user_data.meaningful_feature = meaningful_feature
             text += f"- ✅ Adjusted Meaningful Feature: {meaningful_feature}\n"
         if 'heterogeneity' in selected_variables:
             global_state.statistics.heterogeneous = heterogeneity
@@ -483,23 +483,118 @@ def parse_algo_query(message, chat_history, download_btn, global_state, REQUIRED
                             'GES', 'FGES', 'XGES', 'GRaSP',
                             'GOLEM', 'CALM', 'CORL', 'NOTEARSLinear', 'NOTEARSNonlinear',
                             'DirectLiNGAM', 'ICALiNGAM']
-    if message == '' or message.lower()=='no':
+    class algo_selection(BaseModel):
+        indicator: bool
+        algo: str
+    prompt = f"""You are a helpful assistant, please identify whether user select a causal discovery algorithm. 
+    I ask user whether they want to select a causal discovery algorithm from the following:
+    Algorithm List: {permitted_algo_list}
+    If user do not provide a algorithm, or the algorithm name doesn't belong to the Algorithm List, please save False in indicator.
+    If user provide a algorithm name that belongs to the Algorithm List, please save True in indicator and the algorithm name in algo.
+    Note: The algorithm name should be exactly the same as the one in the Algorithm List.
+    """
+    response = LLM_parse_query(algo_selection, prompt, message)
+    indicator, algo = response.indicator, response.algo
+    if indicator:
+        if algo in permitted_algo_list:
+            global_state.algorithm.selected_algorithm = algo
+            chat_history.append((message, f"✅ We will rerun the Causal Discovery Procedure with the Selected algorithm: {global_state.algorithm.selected_algorithm}\n"
+                                        "Please press 'enter' in the chatbox to start the running..." ))
+            CURRENT_STAGE = 'algo_selection'
+        else:
+            chat_history.append((None, "❌ The specified algorithm is not correct, please choose from the following: \n"
+                            f"{', '.join(permitted_algo_list)}\n"
+                            "Otherwise please reply NO."))
+    else:
         chat_history.append((message, "💬 No algorithm is specified, will go to the next step..."))
         if global_state.user_data.meaningful_feature and not global_state.statistics.time_series:
             CURRENT_STAGE = 'inference_analysis_check'     
         else:
             CURRENT_STAGE = 'report_generation_check'
-    elif message not in permitted_algo_list:
-        chat_history.append((message, "❌ The specified algorithm is not correct, please choose from the following: \n"
-                                    f"{', '.join(permitted_algo_list)}\n"))   
-    else:  
-        global_state.algorithm.selected_algorithm = message
-        chat_history.append((message, f"✅ We will rerun the Causal Discovery Procedure with the Selected algorithm: {global_state.algorithm.selected_algorithm}\n"
-                                       "Please press 'enter' in the chatbox to start the running..." ))
-        CURRENT_STAGE = 'algo_selection'
-        #process_message(message, chat_history, download_btn)
     return message, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
 
+def parse_algo_selection(message, global_state, chat_history):
+    if global_state.statistics.time_series:
+        permitted_algo_list = ['PCMCI', 'DYNOTEARS', 'NTSNOTEARS', 'VARLiNGAM'] 
+    else:
+        if torch.cuda.is_available():
+            permitted_algo_list= ['PC', 'PCParallel', 'AcceleratedPC', 'FCI', 'CDNOD', 'AcceleratedCDNOD',
+                            'InterIAMB', 'BAMB', 'HITONMB', 'IAMBnPC', 'MBOR',
+                            'GES', 'FGES', 'XGES', 'GRaSP',
+                            'GOLEM', 'CALM', 'CORL', 'NOTEARSLinear', 'NOTEARSNonlinear',
+                            'DirectLiNGAM', 'AcceleratedLiNGAM', 'ICALiNGAM']
+        else:
+            permitted_algo_list= ['PC', 'PCParallel', 'FCI', 'CDNOD',
+                            'InterIAMB', 'BAMB', 'HITONMB', 'IAMBnPC', 'MBOR',
+                            'GES', 'FGES', 'XGES', 'GRaSP',
+                            'GOLEM', 'CALM', 'CORL', 'NOTEARSLinear', 'NOTEARSNonlinear',
+                            'DirectLiNGAM', 'ICALiNGAM']
+    class algo_selection(BaseModel):
+        indicator: bool
+        algo: str
+    prompt = f"""You are a helpful assistant, please identify whether user select a causal discovery algorithm. 
+    I ask user whether they want to select a causal discovery algorithm from the following:
+    Algorithm List: {permitted_algo_list}
+    If user do not provide a algorithm, or the algorithm name doesn't belong to the Algorithm List, please save False in indicator.
+    If user provide a algorithm name that belongs to the Algorithm List, please save True in indicator and the algorithm name in algo.
+    Note: The algorithm name should be exactly the same as the one in the Algorithm List.
+    """
+    response = LLM_parse_query(algo_selection, prompt, message)
+    indicator, algo = response.indicator, response.algo
+    if indicator:
+        if algo in permitted_algo_list:
+            global_state.algorithm.selected_algorithm = algo
+            global_state.algorithm.algorithm_arguments = None 
+            CURRENT_STAGE = 'hyperparameter_selection'     
+            chat_history.append((None, f"✅ We will run the Causal Discovery Procedure with the Selected algorithm: {global_state.algorithm.selected_algorithm}\n"))
+        else:
+            chat_history.append((None, "❌ The specified algorithm is not correct, please choose from the following: \n"
+                            f"{', '.join(permitted_algo_list)}\n"
+                            "Otherwise please reply NO."))
+    else:
+        CURRENT_STAGE = 'hyperparameter_selection'     
+        chat_history.append((None, f"✅ We will run the Causal Discovery Procedure with the Selected algorithm: {global_state.algorithm.selected_algorithm}\n"))
+    return global_state, chat_history, CURRENT_STAGE
+     
+def parse_method_selection_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE):               
+    permitted_algo_list= ['cem', 'propensity_score', 'dml', 'drl', 'iv']
+    class algo_selection(BaseModel):
+        indicator: bool
+        algo: str 
+    prompt = f"""You are a helpful assistant, please identify whether user select a causal discovery algorithm. 
+    I ask user whether they want to select a causal discovery algorithm from the following:
+    Algorithm List: {permitted_algo_list}
+    Question for user: "Do you want to change the method? If so, please choose one from the following: "
+                                    "1️⃣ PSM (Propensity Score Matching)"
+                                    "2️⃣ CEM (Coarsen Exact Matching)"
+                                    "3️⃣ DRL (Doubly Robust Learning)"
+                                    "4️⃣ DML (Doubly Machine Learning)"
+                                    "5️⃣ IV (Instrumental Variable Method)"
+                                    "Otherwise please reply NO."
+    If user do not provide a algorithm, or the algorithm name doesn't belong to the Algorithm List, please save False in indicator.
+    If user provide a algorithm name that belongs to the Algorithm List, please save True in indicator and the algorithm name in algo.
+    Note: The algorithm name should be exactly the same as the one in the Algorithm List.
+    """               
+    response = LLM_parse_query(algo_selection, prompt, message)
+    indicator, algo = response.indicator, response.algo
+    if indicator:
+        if algo in permitted_algo_list:
+            if algo == 'iv':
+                chat_history.append((None, "⚠️ The instrumental variable doesn't exist in this causal graph, please choose other algorithms. \n"
+                                     "💡 An instrumental variable is a variable that affects the treatment but does not directly affect the outcome, except through the treatment."))
+            else:
+                global_state.inference.task_info[global_state.inference.task_index]['hte_method'] = algo
+                CURRENT_STAGE = "analyze_causal_task"    
+                chat_history.append((None, f"✅ We will run the Treatment Effect Estimation Procedure with the Selected algorithm: {algo}\n"))
+        else:
+            chat_history.append((None, "❌ The specified algorithm is not correct, please choose from the following: \n"
+                            f"{', '.join(permitted_algo_list)}\n"
+                            "Otherwise please reply NO."))
+    else:
+        CURRENT_STAGE = "analyze_causal_task"
+        chat_history.append((None, f"✅ We will run the Treatment Effect Estimation Procedure with the Selected algorithm: {algo}\n"))
+    return global_state, chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE
+        
 def prepare_hyperparameter_text(global_state, chat_history):
     algorithm = global_state.algorithm.selected_algorithm
     with open(f"algorithm/context/hyperparameters/{algorithm}.json", "r") as f:
@@ -535,6 +630,7 @@ def parse_hyperparameter_query(args, message, chat_history, download_btn, global
     else:
         try:
             class Param_Selector(BaseModel):
+                indicaror: bool
                 param_keys: list[str]
                 param_values: list[Union[str, int, float]]
                 valid_params: bool
@@ -544,6 +640,18 @@ def parse_hyperparameter_query(args, message, chat_history, download_btn, global
             algorithm = global_state.algorithm.selected_algorithm
             with open(f"algorithm/context/hyperparameters/{algorithm}.json", "r") as f:
                 algorithm_specs = json.load(f)
+            for param, param_info in algorithm_specs.items():
+                # Skip if this is not a parameter dictionary or doesn't have available_values
+                if not isinstance(param_info, dict) or 'available_values' not in param_info:
+                    continue
+                available_values = param_info['available_values']
+                # Check if all values in available_values are of the same numeric type
+                if available_values and all(isinstance(val, (int, float)) for val in available_values):
+                    # Determine if they're all integers or floats
+                    if all(isinstance(val, int) for val in available_values):
+                        param_info['available_values'] = "integer"
+                    else:
+                        param_info['available_values'] = "float"
             prompt = f"""You are a parameter validation assistant. Please parse and validate the user's parameter inputs based on the provided context:
             **Context**
             We asked the user: "Do you want to specify values for parameters instead of the selected ones? If so, please specify your parameters."
@@ -552,6 +660,8 @@ def parse_hyperparameter_query(args, message, chat_history, download_btn, global
             {algorithm_specs}
 
             **Task**
+            1. Check if the user has provided any parameters. If not, save indicator as False, and your reason in error message.
+            If the user has provided parameters, save indicator as True, and do the following tasks:
             1. Parse the user's input to identify parameter keys and their corresponding values.
             2. Save parameter keys in the list `param_keys` and values in the list `param_values`. The order should match between the two lists.
             3. Check each parameter one by one:
@@ -565,15 +675,19 @@ def parse_hyperparameter_query(args, message, chat_history, download_btn, global
             4. If the parameter value is invalid, set `valid_params` to False and add an appropriate error message to `error_messages` explaining why the value is invalid, and instruct user what values they should input.
             5. If the user does not specify any parameters, return empty lists for both param_keys and param_values.
 
-            Examples of validation:
-            - For alpha parameters with type "float" and range [0, 1], check if the value is a float between 0 and 1
+            Examples of validation: 
+            - For alpha parameters with type "float", only check whtether it's a float
             - For indep_test parameters with type "string" and specific allowed values, verify the input matches one of those values
-            - For depth parameters with type "integer" and specific allowed values, ensure the value is an integer in the allowed set
+            - For depth parameters with type "integer", only check if it's an integer
 
             Only validate parameters that exist for the current algorithm. Ignore parameters that aren't defined in the specifications.
-            """
+            """ 
             parsed_response = LLM_parse_query(Param_Selector, prompt, message)
-            param_keys, param_values, valid_params, error_messages = parsed_response.param_keys, parsed_response.param_values, parsed_response.valid_params, parsed_response.error_messages
+            indicator, param_keys, param_values, valid_params, error_messages = parsed_response.indicaror, parsed_response.param_keys, parsed_response.param_values, parsed_response.valid_params, parsed_response.error_messages
+            if not indicator:
+                CURRENT_STAGE = 'algo_running'
+                chat_history.append((None, "💬 Continue to the next step..."))
+                return chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE
             specified_params = {param_keys[i].lower(): param_values[i] for i in range(len(param_keys))}
             print('specified_params',specified_params)
             print('valid_params', valid_params)
@@ -629,7 +743,7 @@ def parse_user_postprocess(message, chat_history, download_btn, args, global_sta
             2. For each relationship, save the node pairs as a list of tuples in add_edges, forbid_edges, and orient_edges respectively.
             For example, Add Edges: Age->Height; Age->Shell Weight; should be save as [(Age, Height), (Age, Shell Weight)] in add_edges.
             3. Add Edges, Forbid Edges, and Orient Edges may not all exist. If there's no relationship, just return an empty list.
-            4. All node names must be among this list! {global_state.user_data.raw_data.columns}
+            4. All node names must be among this list! {[col.replace('_', '') for col in global_state.user_data.raw_data.columns]}
             **Example**
             Add Edges: Age->Height
             Forbid Edges: Length->Height
@@ -704,15 +818,6 @@ def parse_inference_query(message, chat_history, download_btn, args, global_stat
                 descriptions: list[str]
                 key_node: list[str]
         columns = global_state.user_data.processed_data.columns
-        # binary = False
-        # for col in columns:
-        #     unique_values = global_state.user_data.processed_data[col].unique()
-        #     if len(unique_values) == 2:
-        #         binary = True
-        #         break
-        # if not binary:
-        #     binary_condition = "The dataset does not contain binary variables, DO NOT choose Treatment Effect Estimation!"
-        # else:
         binary_condition = ""
         with open('causal_analysis/context/query_prompt.txt', 'r') as file:
             query_prompt = file.read()
@@ -734,8 +839,8 @@ def parse_inf_discuss_query(message, chat_history, download_btn, args, global_st
     message = message.strip()
     if message.lower() == 'no' or message == '':
         print('go to report_generation')
-        chat_history.append((None, "✅ No need for downstream analysis, continue to the next section..."))
-        CURRENT_STAGE = 'report_generation_check'
+        chat_history.append((None, "✅ Discussion is finished, continue to the next section..."))
+        CURRENT_STAGE = 'try_other_inference_check'
     else:
         class DiscussList(BaseModel):
                     answer: str
@@ -775,3 +880,180 @@ def parse_shift_value(desc, args):
     parsed_response = LLM_parse_query(ShiftValue, "Extract the numerical value from the query and save it in shift_value", desc)
     shift_value = parsed_response.shift_value
     return shift_value
+
+
+import numpy as np
+import networkx as nx
+def process_for_json(obj):
+    """Convert a complex object to JSON-serializable types recursively"""
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, (np.integer, np.int32, np.int64)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, np.float32, np.float64)):
+        return float(obj)
+    elif isinstance(obj, (list, tuple)):
+        return [process_for_json(item) for item in obj]
+    elif isinstance(obj, dict):
+        return {str(k): process_for_json(v) for k, v in obj.items()}
+    elif isinstance(obj, (nx.Graph, nx.DiGraph)):
+        return {
+            "nodes": list(obj.nodes()),
+            "edges": list(obj.edges()),
+            "node_attrs": {str(node): process_for_json(attrs) for node, attrs in obj.nodes(data=True)},
+            "edge_attrs": {f"{u}->{v}": process_for_json(attrs) for u, v, attrs in obj.edges(data=True)}
+        }
+    elif hasattr(obj, '__dict__'):
+        # For custom objects with a __dict__
+        try:
+            return {k: process_for_json(v) for k, v in obj.__dict__.items() if not k.startswith('_')}
+        except:
+            return str(obj)
+    # Add more type conversions as needed
+    return obj
+
+# Example application to your GlobalState extraction
+def extract_fields_from_global_state(global_state, fields_to_extract):
+    result = {}
+    
+    for class_name, fields in fields_to_extract.items():
+        if hasattr(global_state, class_name):
+            class_instance = getattr(global_state, class_name)
+            result[class_name] = {}
+            
+            for field in fields:
+                if hasattr(class_instance, field):
+                    value = getattr(class_instance, field)
+                    # Process value to make it JSON serializable
+                    result[class_name][field] = process_for_json(value)
+    
+    return result
+
+def save_documentation(result_folder):
+    # Documentation content
+    documentation = """# GlobalState Data Structure
+
+## Fields Extracted:
+
+### user_data
+- initial_query: User's original query
+- knowledge_docs: Background knowledge documents
+
+### statistics
+- sample_size: Number of observations
+- feature_number: Number of variables
+- data_type: Type of data (continuous, discrete, mixed)
+- linearity: Assessment of linear relationships
+- gaussian_error: Whether data shows Gaussian distribution
+- missingness: Information about missing values
+- heterogeneous: If dataset contains heterogeneous variables
+- domain_index: Domain-specific indexing
+- time_series: If data is time series
+- time_lag: Lag parameter for time series
+- time_index: Time series indexing information
+
+### algorithm
+- selected_algorithm: Algorithm used for analysis
+- selected_reason: Justification for algorithm choice
+- algorithm_arguments: Parameters passed to algorithm
+
+### results
+- converted_graph: Original causal adjacency matrix
+- revised_graph: Adjacency matrix revised with bootstrap and LLM
+- lagged_graph: Causal graph for time-lagged relationships
+- bootstrap_probability: Probability values from bootstrap
+
+## Adjacency Matrix Codes:
+- 0: none_exist (x) - No evidence for causality
+- 1: certain_edges (->) - Strong evidence for causality
+- 2: uncertain_edges (-) - Some evidence for causality
+- 3: bi_edges (<->) - Bidirectional relationship
+- 4: half_certain_edges (o->) - Partial evidence with source uncertainty
+- 5: half_uncertain_edges (o-) - Partial evidence with uncertainty at both ends
+- 6: none_edges (o-o) - No causal relationship
+- 7: highly_correlated_edges (---) - Strong association without clear causality
+
+## Inference Results (Optional):
+These files are only present when users conduct specific inference analyses:
+
+- shap_df.csv: Contains SHAP values explaining causal effects
+- hte.csv: Heterogeneous treatment effect analysis results
+- simulated_shift_intervention.csv: Counterfactual simulation results for interventions"""
+
+    # Save the documentation to a file
+    doc_file_path = os.path.join(result_folder, 'README.md')
+    with open(doc_file_path, 'w') as f:
+        f.write(documentation)
+    
+    print(f"Documentation saved to: {doc_file_path}")
+        
+def create_results_folder_and_copy_files(global_state):
+    import os
+    import shutil
+    import pickle
+    import glob
+    import zipfile
+    """
+    Create a 'results' folder under global_state.user_data.output_graph_dir and
+    copy all JSONs, CSVs, and the report PDF into it.
+    
+    Args:
+        global_state_path: Path to the GlobalState pickle file
+    """
+    try:
+        # Get the output directories
+        output_graph_dir = global_state.user_data.output_graph_dir
+        output_report_dir = global_state.user_data.output_report_dir
+        # Create the results folder
+        results_dir = os.path.join(output_graph_dir, 'results')
+        os.makedirs(results_dir, exist_ok=True)
+        print(f"Created results directory: {results_dir}")
+        
+        # Find all JSON files in the current directory
+        json_files = glob.glob(f"{output_graph_dir}/*.json")
+        print(f"Found {len(json_files)} JSON files")
+        # Find all CSV files in the current directory
+        csv_files = glob.glob(f"{output_graph_dir}/*.csv")
+        print(f"Found {len(csv_files)} CSV files")
+        # PDF report path
+        pdf_report_path = os.path.join(output_report_dir, 'report.pdf')
+        
+        # Copy JSON files
+        for json_file in json_files:
+            dest_path = os.path.join(results_dir, os.path.basename(json_file))
+            shutil.copy2(json_file, dest_path)
+            print(f"Copied: {json_file} -> {dest_path}")
+        
+        # Copy CSV files
+        for csv_file in csv_files:
+            dest_path = os.path.join(results_dir, os.path.basename(csv_file))
+            shutil.copy2(csv_file, dest_path)
+            print(f"Copied: {csv_file} -> {dest_path}")
+        
+        # Copy PDF report if it exists
+        if os.path.exists(pdf_report_path):
+            dest_path = os.path.join(results_dir, 'report.pdf')
+            shutil.copy2(pdf_report_path, dest_path)
+            print(f"Copied: {pdf_report_path} -> {dest_path}")
+        else:
+            print(f"Warning: PDF report not found at {pdf_report_path}")
+        print(f"All files successfully copied to {results_dir}")
+        
+        save_documentation(results_dir)
+        
+        # Create the zip file
+        zip_path = f"{results_dir}.zip"
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+            for root, _, files in os.walk(results_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    zipf.write(file_path, os.path.relpath(file_path, os.path.dirname(results_dir)))
+        print(f"Created zip file: {zip_path}")
+        
+        return zip_path
+        
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        import traceback
+        print(traceback.format_exc())
+        return None

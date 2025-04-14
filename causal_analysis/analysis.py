@@ -47,9 +47,11 @@ def generate_analysis_econml(args, global_state, key_node, treatment, parent_nod
     return [response_ate,response_hte], figs
 
 def generate_analysis_matching(args, treatment, outcome, method, W_col, ate, cate_result, query):
-    # Generate a response using the LLM
-    response_balance = """
-The figure above is for balance checking. It's a comparision of heterogeneous variables before and after matching.
+    # Generate a response using the LLM 
+    response_balance = """ 
+📊 The figure above is for balance checking. It compares heterogeneous variables before and after matching.
+Matching is a technique used in causal analysis to create comparable groups (e.g., treated vs. control) by aligning them on key variables.
+To reduce bias from confounding variables and make the groups more similar, so any differences in outcomes are more likely due to the treatment—not pre-existing differences.
 """
     prompt = f"""
     I'm doing the Matching-Based Effect Treatment Estimation analysis and please help me to write a brief analysis.

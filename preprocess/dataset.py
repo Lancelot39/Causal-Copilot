@@ -81,7 +81,6 @@
 
 
 def knowledge_info(args, global_state):
-    # Kun Zhou Implemented
     '''
     :param args: configurations
     :param global_state: GlobalState
@@ -92,24 +91,64 @@ def knowledge_info(args, global_state):
     data = global_state.user_data.processed_data
     table_name = args.data_file
     table_columns = '\t'.join(data.columns._data)
-    prompt = ("I will conduct causal discovery on the Tabular Dataset %s containing the following Columns: \n\n"
-              "%s\n\nIf the Variables Names are Meaningful, Please list the following information with clear format and accurate expression:"
-              "\n1.Detailed Explanation about the Variables;"
-              "\n2.Possible Causal Relations among these variables;"
-              "\n3.Other Background Domain Knowledge that may be helpful for experts to design causal discovery algorithms\n\n"
-              "Otherwise, if the Variable Names are just Symbols (like x1, y1), Please Return 'No Knowledge'") % (
-             table_name, table_columns)
+    prompt = ("I will conduct causal discovery on the Dataset %s containing the following Columns: \n\n"
+              "%s\n\nPlease provide comprehensive domain knowledge about this data. If variable names are meaningful, analyze in detail. If they're just symbols (like x1, y1), respond with 'No Knowledge'.\n\n"
+              "Please cover these aspects with clear structure:\n\n"
+              "1. VARIABLE DESCRIPTIONS: Detailed explanation of each variable, its meaning, measurement units, and typical ranges\n\n"
+              "2. CAUSAL RELATIONSHIPS: Potential direct and indirect causal connections between variables based on domain expertise\n\n"
+              "3. RELATIONSHIP NATURE: Are relationships primarily linear or nonlinear? Explain with examples\n\n"
+              "4. DATA DISTRIBUTION: Typical distributions of key variables (e.g., Gaussian, heavy-tailed, multimodal)\n\n"
+              "5. CONFOUNDERS: Potential unmeasured variables that might confound relationships\n\n"
+              "6. TEMPORAL ASPECTS: Time-dependencies, lags, or sequential relationships if relevant\n\n"
+              "7. HETEROGENEITY: Subgroups or contexts where relationships might differ\n\n"
+              "8. GRAPH DENSITY: Are causal relationships likely sparse (few connections) or dense (many connections)?\n\n"
+              "9. DOMAIN-SPECIFIC CONSTRAINTS: Physical laws, logical impossibilities, or theoretical frameworks that constrain possible causal relationships\n\n"
+              "10. RELEVANT LITERATURE: Key studies, papers, or established findings in this domain\n\n"
+              "11. DATA QUALITY ISSUES: Typical missing data patterns, measurement errors, or biases in this domain\n\n"
+              "12. INTERACTION EFFECTS: Complex variable interactions that might exist (multiplicative, threshold effects)\n\n"
+              "13. FEEDBACK LOOPS: Potential cyclic causal relationships that might exist\n\n"
+              "14. INSTRUMENTAL VARIABLES: Variables that might serve as valid instruments for causal identification\n\n"
+              "15. INTERVENTION HISTORY: Whether any variables reflect experimental interventions or policy changes\n\n"
+              "FOR TIME-SERIES DATA (if applicable):\n\n"
+              "16. STATIONARITY: Whether variables are expected to be stationary or have trends/seasonality\n\n"
+              "17. LAG STRUCTURE: Expected time lags between causes and effects in this domain\n\n"
+              "18. REGIME CHANGES: Known historical points where causal mechanisms might have changed\n\n"
+              "19. CONTEMPORANEOUS EFFECTS: Which variables might have instantaneous causal effects\n\n"
+              "20. PERIODICITY: Cyclical patterns or periodicities in the data generating process\n\n"
+              "Please organize your response by these numbered sections, with clear headings and concise, informative content in each section."
+              ) % (table_name, table_columns)
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
-            {"role": "system", "content": "You are a helpful assistant."},
+            {"role": "system", "content": "You are a domain expert specializing in causal inference across multiple fields. Analyze dataset variables to extract comprehensive domain knowledge that would help with causal discovery. For each aspect, provide specific insights rather than generic descriptions. If variable names aren't meaningful (e.g., x1, y1), clearly state 'No Knowledge' but suggest what information would be needed from domain experts."},
             {"role": "user", "content": prompt}
         ]
     )
     knowledge_doc = response.choices[0].message.content
     knowledge_docs = [knowledge_doc]
-
     global_state.user_data.knowledge_docs = knowledge_docs
+    
+    client2 = OpenAI()
+    prompt2 = ("I will conduct causal discovery on the Dataset %s containing the following Columns: \n\n"
+              "%s\n\nPlease provide comprehensive domain knowledge about this data. If variable names are meaningful, analyze in detail. If they're just symbols (like x1, y1), respond with 'No Knowledge'.\n\n"
+              "Please cover these aspects with clear structure:\n\n"
+              "1. VARIABLE DESCRIPTIONS: Detailed explanation of each variable, its meaning, measurement units, and typical ranges\n\n"
+              "2. CAUSAL RELATIONSHIPS: Potential direct and indirect causal connections between variables based on domain expertise\n\n"
+              "3. RELATIONSHIP NATURE: Are relationships primarily linear or nonlinear? Explain with examples\n\n"
+              ) % (table_name, table_columns)
+    response2 = client2.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "You are a domain expert specializing in causal inference across multiple fields. Analyze dataset variables to extract comprehensive domain knowledge that would help with causal discovery. "},
+            {"role": "user", "content": prompt2}
+        ]
+    )
+    knowledge_doc_for_user = response2.choices[0].message.content
+    knowledge_docs_for_user = [knowledge_doc_for_user]
+    print(knowledge_docs_for_user)
+    global_state.user_data.knowledge_docs_for_user = knowledge_docs_for_user
+
+    
 
     return global_state
 

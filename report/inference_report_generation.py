@@ -11,7 +11,7 @@ import json
 #from report.report_generation import compile_tex_to_pdf_with_refs
 
 class Inference_Report_generation(object):
-    def __init__(self, global_state, args):
+    def __init__(self, global_state, args, task_index=0):
         """
         :param global_state: a dict containing global variables and information
         :param args: arguments for the report generation
@@ -26,7 +26,7 @@ class Inference_Report_generation(object):
         self.data.columns = [var.replace('_', ' ') for var in self.data.columns]
         self.statistics = global_state.statistics
         # Inference info
-        self.task_info = global_state.inference.task_info[global_state.inference.task_index]
+        self.task_info = global_state.inference.task_info[task_index]
 
         # Path to find the visualization graph
         self.visual_dir = global_state.user_data.output_graph_dir
@@ -36,6 +36,7 @@ class Inference_Report_generation(object):
         proposal = self.task_info['result']['proposal']
         prompt = f"""I'm writing a report on the causal inference task. Here is the brief proposal I have generated based on the data and the task. 
         Please write a 1-2 paragraphs proposal, illustraing why we choose these tasks to address the causal inference query.
+        Only include the proposal, do not include any title or section number, etc.
         **Proposal Information:**
         {proposal}
         **Query:**
@@ -47,6 +48,7 @@ class Inference_Report_generation(object):
         proposal = fix_latex_itemize(proposal)
         proposal = fix_latex_itemize_LLM(self.client, proposal)
         proposal = proposal.replace('_', ' ')
+        proposal = proposal.replace('\documentclass{article}', '').replace('\\begin{document}', '').replace('\\end{document}', '')
         return proposal
     
     def generate_treatment_effect(self):

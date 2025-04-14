@@ -1,6 +1,8 @@
 User original query (TOP PRIORITY):
 [USER_QUERY]
 
+The computation has to be finished in the runtime of [WAIT_TIME] minutes.
+
 ## ⚠️ ESSENTIAL QUERY PRIORITY ⚠️
 - User query SUPERSEDES all standard hyperparameter guidelines
 - Extract specific needs, constraints, domain insights from user query FIRST
@@ -20,7 +22,6 @@ Given a dataset with the following properties:
 We have selected the following algorithm for causal discovery:
 
 Algorithm: [ALGORITHM_NAME]
-Description: [ALGORITHM_DESCRIPTION]
 
 Now, we need to determine the optimal hyperparameters for this algorithm. I'll guide you through a systematic approach to select values that prioritize accuracy while maintaining computational efficiency for moderate graph sizes.
 
@@ -38,7 +39,7 @@ Step 2: Assess computational resources
    - Consider the hardware constraints and GPU availability:
    [CUDA_WARNING]
 
-   - Prioritize to GPU implemented hyperparameter when dealing with large graph (variable size > 100) to achieve more efficient speedup
+   - Prioritize to GPU implemented hyperparameter when dealing with large graph (variable size > 150) to achieve more efficient speedup
 
 Step 3: Evaluate each hyperparameter's impact on accuracy vs. efficiency
    - Critical parameters affecting accuracy (e.g., significance levels, independence tests)
@@ -49,7 +50,17 @@ Step 4: Analyze algorithm-specific recommendations
    - Review expert suggestions for each parameter:
    [HYPERPARAMETER_INFO]
 
-Step 5: Make final decisions based on:
+Step 5: Analyze algorithm performance with different hyperparameter configurations (If existed)
+   - Review benchmarking results for this algorithm with various hyperparameter settings
+   - Identify which configurations perform best on datasets with similar characteristics
+   - Consider how different hyperparameter values affect performance metrics
+   - Analyze the trade-offs between accuracy and computational efficiency
+
+[ALGORITHM_PERFORMANCE]
+
+-------------------------------------------
+
+Step 6: Make final decisions based on:
    - For moderate graph sizes (<50 variables), prioritize accuracy over speed
    - For large graphs (>50 variables), balance accuracy with feasibility and EFFICIENCY
    - For time-series data, carefully consider temporal parameters

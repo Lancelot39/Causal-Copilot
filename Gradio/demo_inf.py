@@ -848,12 +848,10 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 return process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn)
         
         if CURRENT_STAGE == 'inference_analysis_check':
-            with open('/Users/wwy/Documents/Project/Causal-Copilot/demo_data/20250407_133130/Abalone/output_graph/FGES_global_state.pkl', 'rb') as file:
+            with open('/Users/wwy/Documents/Project/Causal-Copilot/demo_data/20250408_145536/sachs/output_graph/PC_global_state.pkl', 'rb') as file:
                 global_state = pickle.load(file)
                 global_state.inference.task_index = -1
                 global_state.inference.task_info = {}
-            # global_state.inference.task_index = -1
-            # global_state.inference.task_info = {}
             chat_history.append((None, "Do you want to conduct downstream analysis based on the causal discovery result? You can describe your needs.\n"
                                         "Otherwise please input 'NO'.\n"
                                            "We support the following tasks: \n"
@@ -878,12 +876,21 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                                         "Reason: " + reason))
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                     return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+                if key_node_list[0] not in global_state.user_data.processed_data:
+                    info = f"❌ We cannot find the result variable you specified, please input your causal analysis query again, or input 'no' to end this part."
+                    chat_history.append((None, info))
+                    CURRENT_STAGE = 'parse_task'
+                    global_state.inference.task_info[global_state.inference.task_index] = {}
+                    global_state.inference.task_index -= 1
+                    yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+                    return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 else:
                     chat_history.append(("📝 Proposal for my causal inference task...", None))
                     chat_history.append((None, reason))
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
                     global_state.inference.task_index += 1
+                    print('task_index to conduct', global_state.inference.task_index)
                     global_state.inference.task_info[global_state.inference.task_index] = {'task':tasks_list,
                                                                                         'desc': descs_list,
                                                                                         'key_node': key_node_list,
@@ -894,7 +901,6 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                         CURRENT_STAGE = "inference_info_collection_1"
                     else:
                         CURRENT_STAGE = "analyze_causal_task"
-                    print('CURRENT_STAGE', CURRENT_STAGE)
             
         if CURRENT_STAGE == "counterfactual_info_collection1":
             task_info = global_state.inference.task_info[global_state.inference.task_index]
@@ -903,7 +909,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             print('treatment: ', treatment)
             chat_history.append((None, f"""💡 In this simulation, we are applying a 'shift intervention' to study how changes in the {treatment} impact the {task_info['key_node'][0]}. 
                                  A shift intervention involves modifying the value of a variable by a fixed amount (the 'shift value') while keeping other variables unchanged.
-                                 For example, if we are studying the effect of increasing income on health outcomes, we might **apply ashift intervention where the income variable is increased by a fixed amount, such as $500**, for all individuals. Then your shift value is 500.
+                                 For example, if we are studying the effect of increasing income on health outcomes, we might **apply a shift intervention where the income variable is increased by a fixed amount, such as $500**, for all individuals. Then your shift value is 500.
                                  Please enter the shift value:"""))
             CURRENT_STAGE = "counterfactual_info_collection2"
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
@@ -929,25 +935,27 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             task_info = global_state.inference.task_info[global_state.inference.task_index]
             ### Check Treatment
             treatment = parse_treatment(task_info['desc'][0], global_state, args)
+            if treatment not in global_state.user_data.processed_data.columns:
+                info = f"❌ We cannot find the treatment variable you specified, please input your causal analysis query again, or input 'no' to end this part."
+                chat_history.append((None, info))
+                CURRENT_STAGE = 'parse_task'
+                global_state.inference.task_index = -1
+                global_state.inference.task_info = {}
+                yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+                return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             is_binary, treat, control = check_binary(global_state.user_data.processed_data[treatment])
             if not is_binary:
                 treat = 1
                 control = 0
                 median_num = global_state.user_data.processed_data[treatment].median()
                 global_state.user_data.processed_data[treatment] = global_state.user_data.processed_data[treatment].apply(lambda x: 1 if x > median_num else 0)
-            # if not is_binary:
-            #     CURRENT_STAGE = "inference_info_collection_binary"
-            #     chat_history.append((None, f"⚠️ Your treatment column is not binary, please specify another variable name or type 'NO' to skip the treatment effect estimation task."))
-            #     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            #     return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            # else:
+                global_state.statistics.data_type_column[treatment] = 'category'
             chat_history.append((None, f"Your treatment column is {treatment}\n"))
             CURRENT_STAGE = "inference_info_collection_2"
             global_state.inference.task_info[global_state.inference.task_index]['treatment'] = treatment
             global_state.inference.task_info[global_state.inference.task_index]['treat'] = treat
             global_state.inference.task_info[global_state.inference.task_index]['control'] = control
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-                
             
         if CURRENT_STAGE == "inference_info_collection_binary":
             if message.lower() == 'no':
@@ -977,10 +985,12 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             confounders = analysis._identify_confounders(treatment, key_node)
             global_state.inference.task_info[global_state.inference.task_index]['confounders'] = confounders
             remaining_var = list(set(analysis.data.columns) - set([treatment]) - set([key_node]) - set(confounders))
-            # Allow user add confounder
+            # Allow user add confounder  
             chat_history.append((None, f"These are Confounders between treatment {treatment} and outcome {key_node}: \n"
                       f"{','.join(confounders)}\n"
-                      "💡 Do you want to add any variables as confounders in your dataset? Please choose from the following:\n"
+                      "💡 Do you want to add any variables as confounders in your dataset?\n"
+                      "A confounder is a variable that influences both the cause and the outcome, potentially biasing results. Adding known confounders helps improve the accuracy of causal analysis. \n"
+                      "Please do not include too many variables as confounders. Please choose from the following:\n"
                       f"{','.join(remaining_var)}\n"))
             CURRENT_STAGE = "inference_info_collection_confounder1"
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
@@ -989,7 +999,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             if message=='' or message.lower()=='no':
                 CURRENT_STAGE = "inference_info_collection_confounder2"
             else:
-                add_confounder, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE = parse_var_selection_query(message, chat_history, download_btn, 
+                add_confounder, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE = parse_var_selection_query(message.strip(), chat_history, download_btn, 
                                                                                                                                 "inference_info_collection_confounder2", 
                                                                                                                                 args, global_state, REQUIRED_INFO, CURRENT_STAGE)
                 global_state.inference.task_info[global_state.inference.task_index]['confounders'] += add_confounder
@@ -1012,8 +1022,10 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 global_state.inference.task_info[global_state.inference.task_index]['confounders'] = confounders
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
-            CURRENT_STAGE = "inference_info_collection_hte"
-            chat_history.append((None, "💡 Is there any heterogeneous variables you care about? If no, please input 'no' and we can suggest some variables with LLM.\n"))
+            CURRENT_STAGE = "inference_info_collection_hte" 
+            chat_history.append((None, "💡 Is there any heterogeneous variables you care about? \n"
+                                 "Heterogeneous variables are factors that may cause the effect of a treatment or cause to vary across different groups (e.g., age, gender, location). Identifying them helps uncover how and for whom effects differ.\n"
+                                 "If no, please input 'no' and we can suggest some variables with LLM.\n"))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
@@ -1027,29 +1039,21 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                                  f"{','.join(hte_variable)}"))
             CURRENT_STAGE = "method_selection"
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            chat_history.append((None, "🔍 Whether your data is experimental or observational?"))
-            yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
         if CURRENT_STAGE == "method_selection":
-            # exp_data, chat_history, download_btn, CURRENT_STAGE = parse_intention_query(message, chat_history, download_btn, CURRENT_STAGE)
-            yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            # if exp_data is None:
-            #     return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            
             task_info = global_state.inference.task_info[global_state.inference.task_index]
             confounders = task_info['confounders']
             cont_confounders = task_info['cont_confounders']
+            treatment = task_info['treatment']
+            key_node = task_info['key_node']
             ### Suggest method based on dataset characteristics
-            # TODO Check IV according to causal Graph
-            exist_IV = False
+            analysis = Analysis(global_state, args)
+            exist_IV, iv_variable = analysis.contains_iv(treatment, key_node)
             ## code ##
             if exist_IV:
-                method = "iv"
-                iv_variable = None
                 global_state.inference.task_info[global_state.inference.task_index]['IV'] = iv_variable
-            # if exp_data:
-            #     method = "uplift"
-            if len(confounders) <= 5:
+                method = "iv"
+            elif len(confounders) <= 5:
                 if len(confounders) - len(cont_confounders) > len(cont_confounders):  # If more than half discrete confounders
                     method = "cem"
                 else:
@@ -1066,9 +1070,25 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 chat_history.append((None, """**Double Machine Learning (DML)** is chosen because the sample size is large. It leverages orthogonalization to remove biases from nuisance function errors, making the treatment effect estimation more reliable. With a sufficient sample size, DML ensures asymptotic normality, enabling valid statistical inference like confidence intervals and hypothesis testing. Accurate nuisance function estimation in larger datasets further enhances its performance."""))
             elif method == "drl":
                 chat_history.append((None, "**Doubly Robust Learning (DRL)** is chosen because the sample size is small. It remains consistent even if only one of the nuisance models (propensity scores or outcome models) is correctly specified. This property makes DRL more robust in small datasets, where limited data can lead to inaccuracies in machine learning model estimates."))
-            CURRENT_STAGE = "analyze_causal_task"
+            CURRENT_STAGE = "method_selection_check"
+            chat_history.append((None, "Do you want to change the method? If so, please choose one from the following: \n"
+                                    "1️⃣ PSM (Propensity Score Matching)\n"
+                                    "2️⃣ CEM (Coarsen Exact Matching)\n"
+                                    "3️⃣ DRL (Doubly Robust Learning)\n"
+                                    "4️⃣ DML (Doubly Machine Learning)\n"
+                                    "5️⃣ IV (Instrumental Variable Method)\n"
+                                    "Otherwise please reply NO."))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+            return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
+        if CURRENT_STAGE == "method_selection_check":
+            chat_history.append((message, None))
+            yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+            global_state, chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE = parse_method_selection_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE)
+            yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+            if CURRENT_STAGE != "analyze_causal_task":
+                return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+            
         if CURRENT_STAGE == "analyze_causal_task":
             chat_history.append((None, f"✏️ Analyzing for your causal task..."))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
@@ -1077,7 +1097,19 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             tasks_list, descs_list, key_node_list = task_info['task'], task_info['desc'], task_info['key_node']
             for i, (task, desc, key_node) in enumerate(zip(tasks_list, descs_list, key_node_list)):
                 chat_history.append((f"🔍 Analyzing for {task}...", None))
-                info, figs, chat_history = analysis.forward(task, desc, key_node, chat_history)
+                try:
+                    info, figs, chat_history = analysis.forward(task, desc, key_node, chat_history)
+                except Exception as e:
+                    print('error during analysis:', e)
+                    traceback.print_exc()
+                    info = f"❌ An error occurred during the {task} analysis, please input your causal analysis query again, or input 'no' to end this part."\
+                        f"Error Information: {e}"
+                    chat_history.append((None, info))
+                    CURRENT_STAGE = 'parse_task'
+                    global_state.inference.task_index = -1
+                    global_state.inference.task_info = {}
+                    yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+                    return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 global_state.inference.task_info[global_state.inference.task_index]['result'][task] = {'response': info,
                                                                                                        'figs': figs}
                 if info is None:
@@ -1092,19 +1124,24 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn         
     
         if CURRENT_STAGE == 'analysis_discussion':
-            chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE =  parse_inf_discuss_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE)
+            chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE = parse_inf_discuss_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE)
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            if CURRENT_STAGE != 'report_generation_check':
-                print(CURRENT_STAGE)
+            if CURRENT_STAGE != 'try_other_inference_check':
                 return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            # else:
-            #     try:
-            #         with open(f'{global_state.user_data.output_graph_dir}/inference_global_state.pkl', 'wb') as f:
-            #             pickle.dump(global_state, f)
-            #     except:
-            #         global_state.args = None
-            #         with open(f'{global_state.user_data.output_graph_dir}/inference_global_state.pkl', 'wb') as f:
-            #             pickle.dump(global_state, f)
+            
+        if CURRENT_STAGE == 'try_other_inference_check':
+            chat_history.append((None, "Do you want to try other inference tasks? If so, please choose one from the following: \n"
+                                        "1️⃣ Treatment Effect Estimation\n"
+                                           "e.g. 'I want to estimate the treatment effect of variable A on variable B'\n"
+                                           "2️⃣ Anormaly Attribution\n"
+                                             "e.g. 'I want to identify the cause of the anomaly in variable A'\n"
+                                           "3️⃣ Feature Importance\n"
+                                           "e.g. 'I want to identify the most important feature for variable A in the dataset'\n"
+                                           "4️⃣ Conterfactual Simulation\n"
+                                           "e.g. 'I want to simulate the counterfactual scenario of variable B if I increase variable A'\n")) 
+            CURRENT_STAGE = 'parse_task'
+            yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+            return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
         # Report Generation
         if CURRENT_STAGE == 'report_generation_check': # empty query or postprocess query parsed successfully
@@ -1137,21 +1174,51 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
         if CURRENT_STAGE == 'report_generation':    
             chat_history.append(("📝 Generate comprehensive report and it may take a few minutes, stay tuned...", None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            try_num = 1
+            try_num = 3
             report_path = call_report_generation(global_state, args, REQUIRED_INFO['output_dir'])
-            # while not os.path.isfile(report_path) and try_num < 3:
-            #     chat_history.append((None, "❌ An error occurred during the Report Generation, we are trying again and please wait for a few minutes."))
-            #     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            #     try_num += 1
-            #     report_path = call_report_generation(global_state, args, REQUIRED_INFO['output_dir'])
+            while not os.path.isfile(report_path) and try_num < 3:
+                chat_history.append((None, "❌ An error occurred during the Report Generation, we are trying again and please wait for a few minutes."))
+                yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+                try_num += 1
+                report_path = call_report_generation(global_state, args, REQUIRED_INFO['output_dir'])
+            
+            # Save GlobalState into json for users
+            import glob
+            global_state_files = glob.glob(f"{global_state.user_data.output_graph_dir}/*_global_state.pkl")
+             # Define which fields to extract
+            fields_to_extract = {
+                'user_data': ['initial_query', 'knowledge_docs'],
+                'statistics': ['sample_size', 'feature_number', 'data_type','linearity', 'gaussian_error', 'missingness', 
+                            'heterogeneous', 'domain_index', 'time_series', 'time_lag', 'time_index'],
+                'algorithm': ['selected_algorithm', 'selected_reason', 'algorithm_arguments'],
+                'results': ['converted_graph', 'revised_graph', 'lagged_graph', 'bootstrap_probability'],
+            }
+            for path in global_state_files:
+                algo_name = path.split('/')[-1].split('_')[0]
+                with open(path, 'rb') as f:
+                    global_state_discovery = pickle.load(f)
+                # Extract the desired fields
+                extracted_data = extract_fields_from_global_state(global_state_discovery, fields_to_extract)
+                # Save to JSON
+                with open(f'{global_state.user_data.output_graph_dir}/{algo_name}_information.json', 'w') as f:
+                    json.dump(extracted_data, f, indent=4)
+            fields_to_extract_inf = {
+                'inference': ['task_info']
+                }
+            extracted_data_inf = extract_fields_from_global_state(global_state, fields_to_extract_inf)
+            # Save to JSON
+            with open(f'{global_state.user_data.output_graph_dir}/inference_information.json', 'w') as f:
+                json.dump(extracted_data_inf, f, indent=4)
+            zip_files = create_results_folder_and_copy_files(global_state)
             chat_history.append((None, "🎉 Analysis complete!"))
-            chat_history.append((None, "📥 You can now download your detailed report using the download button below."))
+            chat_history.append((None, "📥 You can now download your detailed report and result files using the button below."))
             download_btn = gr.DownloadButton(
-                "📥 Download Exclusive Report",
+                "📥 Download result package (ZIP file)",
                 size="sm",
                 elem_classes=["icon-button"],
                 scale=1,
-                value=os.path.join(REQUIRED_INFO['output_dir'], 'output_report', 'report.pdf'),
+                # value=os.path.join(REQUIRED_INFO['output_dir'], 'output_report', 'report.pdf'),
+                value=zip_files,
                 interactive=True
             )
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn

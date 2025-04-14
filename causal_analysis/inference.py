@@ -61,7 +61,6 @@ class Analysis(object):
         self.global_state = global_state
         self.args = args
         self.data = global_state.user_data.processed_data
-        #TODO: graph format
         self.graph = convert_adj_mat(global_state.results.revised_graph)
         self.G = nx.from_numpy_array(self.graph, create_using=nx.DiGraph) # convert adj matrix into DiGraph
         self.G = nx.relabel_nodes(self.G, {i: name for i, name in enumerate(self.data.columns)})
@@ -874,92 +873,6 @@ class Analysis(object):
 
         return result
 
-
-    # def estimate_effect_dml(self, outcome, treatment, T0, T1, X_col, W_col, query):
-    #     if len(W_col) == 0:
-    #         W_col = ['W']
-    #         W = pd.DataFrame(np.zeros((len(self.data), 1)), columns=W_col)
-    #         self.data = pd.concat([self.data, W], axis=1)
-    #         self.global_state.user_data.processed_data = self.data
-
-    #     # Algorithm selection and deliberation
-    #     filter = DML_HTE_Filter(self.args)
-    #     self.global_state = filter.forward(self.global_state, query)
-
-    #     # 2. Now we know the selected model
-    #     model_name = self.global_state.inference.hte_algo_json['name']
-
-    #     encoded_treatment, T0, T1 = self.prepare_treatment_column(self.data, treatment, T0, T1, model_name)
-    #     self.data[treatment] = encoded_treatment
-    #     self.global_state.user_data.processed_data = self.data
-
-    #     reranker = DML_HTE_Param_Selector(self.args, y_col=outcome, T_col=treatment, X_col=X_col, W_col=W_col)
-    #     self.global_state = reranker.forward(self.global_state)
-    #     print(f"[DEBUG] treatment column name: {treatment}, T0: {T0}, T1: {T1}")
-    #     assert isinstance(treatment, str), f"❌ treatment must be str, got {type(treatment)}"
-    #     assert treatment in self.data.columns, f"❌ Column '{treatment}' not found in data columns"
-    #     print(f"[DEBUG] Final T_col = {treatment}")
-    #     print(f"[DEBUG] Columns in data: {self.data.columns.tolist()}")
-
-    #     model_name = self.global_state.inference.hte_algo_json['name']  # ✅ update model name
-    #     programmer = DML_HTE_Programming(self.args, y_col=outcome, T_col=treatment, T0=T0, T1=T1, X_col=X_col, W_col=W_col)
-    #     programmer.fit_model(self.global_state)
-    #     self.global_state.inference.dml_programmer = programmer
-
-    #     # Override T0 and T1 with valid values if using CausalForestDML
-        
-    #     if self.global_state.inference.hte_algo_json['name'] == 'CausalForestDML':
-    #         treatment_values = sorted(self.data[treatment].unique())
-    #         T0, T1 = treatment_values[0], treatment_values[1]
-    #         print(f"Overriding T0/T1 for CausalForestDML: T0={T0}, T1={T1}")
-    #         programmer.T0 = T0
-    #         programmer.T1 = T1
-    #         if programmer.model:
-    #             programmer.model.T0 = T0
-    #             programmer.model.T1 = T1
-    #     # Estimate ate, att, hte
-    #     print(f"Final T0: {T0}, T1: {T1}")
-    #     print(f"Treatment values seen during fit: {self.data[treatment].unique()}")
-    #     ate, ate_lower, ate_upper = programmer.forward(self.global_state, task='ate')
-    #     att, att_lower, att_upper = programmer.forward(self.global_state, task='att')
-    #     hte, hte_lower, hte_upper = programmer.forward(self.global_state, task='hte')
-    #     hte = pd.DataFrame({'hte': hte.flatten()})
-    #     output_dir = self.global_state.user_data.output_graph_dir
-    #     os.makedirs(output_dir, exist_ok=True)  # ✅ Creates the directory if it doesn't exist
-
-    #     hte.to_csv(f'{self.global_state.user_data.output_graph_dir}/hte.csv', index=False)
-
-    #     result = {'ate': [ate, ate_lower, ate_upper],
-    #               'att': [att, att_lower, att_upper],
-    #               'hte': [hte, hte_lower, hte_upper]}
-    #     return result
-
-    # def estimate_effect_drl(self, outcome, treatment, T0, T1, X_col, W_col, query):
-    #     if len(W_col) == 0:
-    #         W_col = ['W']
-    #         W = pd.DataFrame(np.zeros((len(self.data), 1)), columns=W_col)
-    #         self.data = pd.concat([self.data, W], axis=1)
-    #         self.global_state.user_data.processed_data = self.data
-    #     # Algorithm selection and deliberation
-    #     filter = DRL_HTE_Filter(self.args)
-    #     self.global_state = filter.forward(self.global_state, query)
-    #     reranker = DRL_HTE_Param_Selector(self.args, y_col=outcome, T_col=treatment, X_col=X_col, W_col=W_col)
-    #     self.global_state = reranker.forward(self.global_state)
-    #     programmer = DRL_HTE_Programming(self.args, y_col=outcome, T_col=treatment, T0=T0, T1=T1, X_col=X_col, W_col=W_col)
-    #     programmer.fit_model(self.global_state)
-    #     # Estimate ate, att, hte
-    #     ate, ate_lower, ate_upper = programmer.forward(self.global_state, task='ate')
-    #     att, att_lower, att_upper = programmer.forward(self.global_state, task='att')
-    #     hte, hte_lower, hte_upper = programmer.forward(self.global_state, task='hte')
-    #     hte = pd.DataFrame({'hte': hte.flatten()})
-    #     hte.to_csv(f'{self.global_state.user_data.output_graph_dir}/hte.csv', index=False)
-
-    #     result = {'ate': [ate, ate_lower, ate_upper],
-    #               'att': [att, att_lower, att_upper],
-    #               'hte': [hte, hte_lower, hte_upper]}
-    #     return result
-    # TODO: Add def contains_iv() to check where the causal graph contains IV
-
     def estimate_effect_drl(self, outcome, treatment, T0, T1, X_col, W_col, query):
         if len(W_col) == 0:
             W_col = ['W']
@@ -1115,8 +1028,8 @@ class Analysis(object):
 
         # Convert HTE results to a DataFrame
         hte_df = pd.DataFrame({'hte': hte.flatten()})
-        print(f"Saving HTE results to: {self.global_state.user_data.output_graph_dir}/hte_metalearner.csv")
-        hte_df.to_csv(f'{self.global_state.user_data.output_graph_dir}/hte_metalearner.csv', index=False)
+        print(f"Saving HTE results to: {self.global_state.user_data.output_graph_dir}/hte.csv")
+        hte_df.to_csv(f'{self.global_state.user_data.output_graph_dir}/hte.csv', index=False)
 
         result = {
             'ate': [ate, ate_lower, ate_upper],
@@ -1407,26 +1320,6 @@ class Analysis(object):
             hte_variables = task_info['X_col']
             parent_nodes = list(self.G.predecessors(key_node))
             method = task_info['hte_method']
-            ### Suggest method based on dataset characteristics
-            # Check for IV in the Causal Graph
-            exist_IV, iv_variable = self.contains_iv(treatment, key_node)
-            exist_IV = False
-            if exist_IV:
-                self.global_state.inference.task_info[self.global_state.inference.task_index]['IV'] = iv_variable
-                method = "iv"
-            
-            elif len(confounders) <= 5:
-                if len(confounders) - len(cont_confounders) > len(cont_confounders):  # If more than half discrete confounders
-                    method = "cem"
-                    if len(confounders)/(len(self.data.columns)-2)>0.5:
-                        method = "propensity_score"
-                else:
-                    method = "propensity_score"
-            else:
-                if len(self.global_state.user_data.processed_data) > 2000:
-                    method = "dml"
-                else:
-                    method = "drl"
 
             ### Run algorithm
             if method in ["dml", "drl"]:
@@ -1446,8 +1339,8 @@ class Analysis(object):
 
             # TODO: Add MetaLearner Estimation
                 
-            # TODO: Add IV Estimation
-            if method == "iv":
+            elif method == "iv":
+                exist_IV, iv_variable = self.contains_iv(treatment, key_node)
                 result = self.estimate_effect_iv(outcome=key_node, treatment=treatment, instrument_variable=iv_variable, T0=control, T1=treat,
                                                         X_col=hte_variables, W_col=confounders, query=desc)
                 response, figs = generate_analysis_econml(self.args, self.global_state, key_node, treatment, parent_nodes, hte_variables, confounders, result, desc)
@@ -1458,20 +1351,20 @@ class Analysis(object):
                     chat_history.append((None, (f'{fig}',)))
                 chat_history.append((None, response[1]))
                 
-            elif method == "uplift":
-                result = self.estimate_effect_uplift(outcome=key_node, treatment=treatment, T0=control, T1=treat,
-                                                        X_col=hte_variables, W_col=confounders, query=desc)
-                response, figs = generate_analysis_econml(self.args, self.global_state, key_node, treatment, parent_nodes, hte_variables, confounders, result, desc)
+            # elif method == "uplift":
+            #     result = self.estimate_effect_uplift(outcome=key_node, treatment=treatment, T0=control, T1=treat,
+            #                                             X_col=hte_variables, W_col=confounders, query=desc)
+            #     response, figs = generate_analysis_econml(self.args, self.global_state, key_node, treatment, parent_nodes, hte_variables, confounders, result, desc)
                 
-                # Add special uplift-specific formatting for chat history
-                chat_history.append(("📝 Analyzing Individual Treatment Effects with Uplift Modeling...", None))
-                chat_history.append((None, response[0]))
-                chat_history.append(("📝 Analyzing Heterogeneous Treatment Effects...", None))
+            #     # Add special uplift-specific formatting for chat history
+            #     chat_history.append(("📝 Analyzing Individual Treatment Effects with Uplift Modeling...", None))
+            #     chat_history.append((None, response[0]))
+            #     chat_history.append(("📝 Analyzing Heterogeneous Treatment Effects...", None))
                 
-                # Add uplift-specific visualizations
-                for fig in figs:
-                    chat_history.append((None, (f'{fig}',)))
-                chat_history.append((None, response[1]))
+            #     # Add uplift-specific visualizations
+            #     for fig in figs:
+            #         chat_history.append((None, (f'{fig}',)))
+            #     chat_history.append((None, response[1]))
                 
             elif method in ["cem", "propensity_score"]:
                 # Perform matching-based estimation

@@ -6,7 +6,7 @@ $(error $(CONFIG_FILE) not found. See $(CONFIG_FILE).example.)
 endif
 include $(CONFIG_FILE)
 
-LIBRARIES := cuda cudart cudadevrt boost_python38 boost_numpy38 python3.8
+LIBRARIES := cuda cudart cudadevrt boost_python310 boost_numpy310 python3.10
 
 # CUDA compilation rules
 NVCC := $(CUDA_DIR)/bin/nvcc

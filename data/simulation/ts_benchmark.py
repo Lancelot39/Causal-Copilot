@@ -6,7 +6,10 @@ from datetime import datetime
 import sys
 import random
 from typing import Dict, List, Tuple, Union
+import warnings
 
+warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
 # Import the TimeSeriesSimulator from dummy.py
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from dummy import TimeSeriesSimulator, set_random_seed
@@ -53,208 +56,105 @@ def simulate_time_series(config, n_samples=1000, seed=42, noise_type='linear-gau
     
     return ts_simulator.ground_truth, ts_simulator.data
 
-# Define the configurations
-default_config = [
-    {
+# Define the simulation configuration
+simulation_config = {
+  "default_settings": {
     "num_nodes": 20,
     "lag": 5,
     "degree_inter": 4.0,
     "degree_intra": 3.0,
-    }
-]
-
-scale_config_nodes = [
-    {
-    "num_nodes": 5,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    },
-    {
-    "num_nodes": 10,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    },
-    {
-    "num_nodes": 25,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    },
-    {
-    "num_nodes": 50,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    },
-    {
-    "num_nodes": 100,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    }
-]
-
-scale_config_lags = [
-    {
-    "num_nodes": 10,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    },
-    {
-    "num_nodes": 10,
-    "lag": 5,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    },
-    {
-    "num_nodes": 10,
-    "lag": 10,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    },
-    {
-    "num_nodes": 10,
-    "lag": 15,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    },
-    {
-    "num_nodes": 10,
-    "lag": 20,
-    "degree_inter": 3.0,
-    "degree_intra": 2.0,
-    }
-]
-
-intra_config = [
-    {
-    "num_nodes": 10,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 0.0,
-    },
-    {
-    "num_nodes": 20,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 0.0,
-    },
-    {
-    "num_nodes": 30,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 0.0,
-    },
-    {
-    "num_nodes": 10,
-    "lag": 10,
-    "degree_inter": 3.0,
-    "degree_intra": 0.0,
-    },
-    {
-    "num_nodes": 20,
-    "lag": 10,
-    "degree_inter": 3.0,
-    "degree_intra": 0.0,
-    },
-    {
-    "num_nodes": 30,
-    "lag": 10,
-    "degree_inter": 3.0,
-    "degree_intra": 0.0,
-    },
-]
-
-inter_config = [
-    {
-    "num_nodes": 10,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 3.0,
-    },
-    {
-    "num_nodes": 20,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 3.0,
-    },
-    {
-    "num_nodes": 30,
-    "lag": 3,
-    "degree_inter": 3.0,
-    "degree_intra": 3.0,
-    },
-    {
-    "num_nodes": 10,
-    "lag": 10,
-    "degree_inter": 3.0,
-    "degree_intra": 3.0,
-    },
-    {
-    "num_nodes": 20,
-    "lag": 10,
-    "degree_inter": 3.0,
-    "degree_intra": 3.0,
-    },
-    {
-    "num_nodes": 30,
-    "lag": 10,
-    "degree_inter": 3.0,
-    "degree_intra": 3.0,
-    },
-]
-
-edge_config = [
-    {
-    "num_nodes": 20,
-    "lag": 5,
-    "degree_inter": 2.0,
-    "degree_intra": 3.0,
-    },
-    {
-    "num_nodes": 20,
-    "lag": 5,
-    "degree_inter": 4.0,
-    "degree_intra": 3.0,
-    },
-    {
-    "num_nodes": 20,
-    "lag": 5,
-    "degree_inter": 8.0,
-    "degree_intra": 3.0,
-    },
-    {
-    "num_nodes": 20,
-    "lag": 5,
-    "degree_inter": 12.0,
-    "degree_intra": 3.0,
-    },
-    {
-    "num_nodes": 20,
-    "lag": 5,
-    "degree_inter": 16.0,
-    "degree_intra": 3.0,
-    },
-]
+    "n_samples": 2000,
+    "noise_type": "linear-gauss"
+  },
+  "variations": {
+    "node_counts": [5, 10, 25, 50, 100],
+    "lag_values": [3, 5, 10, 15, 20],
+    "degree_inter_values": [2.0, 4.0, 8.0, 12.0, 16.0],
+    "intra_inter_combinations": [
+      {"num_nodes": 10, "lag": 3, "degree_inter": 3.0, "degree_intra": 0.0},
+      {"num_nodes": 20, "lag": 3, "degree_inter": 3.0, "degree_intra": 0.0},
+      {"num_nodes": 30, "lag": 3, "degree_inter": 3.0, "degree_intra": 0.0},
+      {"num_nodes": 10, "lag": 10, "degree_inter": 3.0, "degree_intra": 0.0},
+      {"num_nodes": 20, "lag": 10, "degree_inter": 3.0, "degree_intra": 0.0},
+      {"num_nodes": 30, "lag": 10, "degree_inter": 3.0, "degree_intra": 0.0},
+      {"num_nodes": 10, "lag": 3, "degree_inter": 3.0, "degree_intra": 3.0},
+      {"num_nodes": 20, "lag": 3, "degree_inter": 3.0, "degree_intra": 3.0},
+      {"num_nodes": 30, "lag": 3, "degree_inter": 3.0, "degree_intra": 3.0},
+      {"num_nodes": 10, "lag": 10, "degree_inter": 3.0, "degree_intra": 3.0},
+      {"num_nodes": 20, "lag": 10, "degree_inter": 3.0, "degree_intra": 3.0},
+      {"num_nodes": 30, "lag": 10, "degree_inter": 3.0, "degree_intra": 3.0}
+    ]
+  },
+  "output_dir": "simulated_data/ts_evaluation",
+  "seeds_per_config": 3
+}
 
 if __name__ == "__main__":
     # Set a base random seed for reproducibility
     base_seed = 0
-    n_samples = 2000
-    seed_per_config = 3
-    dir = 'simulated_data/ts_evaluation'
-    # Create a list of all configurations with their names and save directories
-    all_configs = [
-        ("default", default_config, os.path.join(dir, "default")),
-        ("node_scaling", scale_config_nodes, os.path.join(dir, "node_scaling")),
-        ("lag_scaling", scale_config_lags, os.path.join(dir, "lag_scaling")),
-        ("intra_edges", intra_config, os.path.join(dir, "intra_edges")),
-        ("inter_edges", inter_config, os.path.join(dir, "inter_edges")),
-        ("edge_density", edge_config, os.path.join(dir, "edge_density"))
-    ]
+    n_samples = simulation_config["default_settings"]["n_samples"]
+    seed_per_config = simulation_config["seeds_per_config"]
+    output_dir = simulation_config["output_dir"]
+    
+    # Save the simulation configuration
+    os.makedirs(output_dir, exist_ok=True)
+    with open(os.path.join(output_dir, "simulation_config.json"), "w") as f:
+        json.dump(simulation_config, f, indent=2)
+    
+    # Generate configurations
+    all_configs = []
+    
+    # Default configuration
+    default_config = [{
+        "num_nodes": simulation_config["default_settings"]["num_nodes"],
+        "lag": simulation_config["default_settings"]["lag"],
+        "degree_inter": simulation_config["default_settings"]["degree_inter"],
+        "degree_intra": simulation_config["default_settings"]["degree_intra"]
+    }]
+    all_configs.append(("default", default_config, os.path.join(output_dir, "default")))
+    
+    # Node scaling configuration
+    scale_config_nodes = []
+    for nodes in simulation_config["variations"]["node_counts"]:
+        scale_config_nodes.append({
+            "num_nodes": nodes,
+            "lag": 3,
+            "degree_inter": 3.0,
+            "degree_intra": 2.0
+        })
+    all_configs.append(("node_scaling", scale_config_nodes, os.path.join(output_dir, "node_scaling")))
+    
+    # Lag scaling configuration
+    scale_config_lags = []
+    for lag in simulation_config["variations"]["lag_values"]:
+        scale_config_lags.append({
+            "num_nodes": 10,
+            "lag": lag,
+            "degree_inter": 3.0,
+            "degree_intra": 2.0
+        })
+    all_configs.append(("lag_scaling", scale_config_lags, os.path.join(output_dir, "lag_scaling")))
+    
+    # Intra edges configuration (degree_intra = 0)
+    intra_config = [config for config in simulation_config["variations"]["intra_inter_combinations"] 
+                   if config["degree_intra"] == 0.0]
+    all_configs.append(("intra_edges", intra_config, os.path.join(output_dir, "intra_edges")))
+    
+    # Inter edges configuration (degree_intra = 3.0)
+    inter_config = [config for config in simulation_config["variations"]["intra_inter_combinations"] 
+                   if config["degree_intra"] == 3.0]
+    all_configs.append(("inter_edges", inter_config, os.path.join(output_dir, "inter_edges")))
+    
+    # Edge density configuration
+    edge_config = []
+    for degree in simulation_config["variations"]["degree_inter_values"]:
+        edge_config.append({
+            "num_nodes": 20,
+            "lag": 5,
+            "degree_inter": degree,
+            "degree_intra": 3.0
+        })
+    all_configs.append(("edge_density", edge_config, os.path.join(output_dir, "edge_density")))
     
     # Loop through all configurations
     for config_name, configs, save_dir in all_configs:
