@@ -22,3 +22,10 @@ uvicorn main:app --reload
 ```bash
 pip install pydantic pydantic-settings python-dotenv
 ```
+
+## jwt
+
+```bash
+pip install "python-jose[cryptography]"
+
+```
