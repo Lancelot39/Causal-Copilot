@@ -58,24 +58,32 @@ def LLM_parse_query(format, prompt, message, config=None):
     client = LLMClient(args)
     
     if format:
-        completion = client.beta.chat.completions.parse(
-        model="gpt-4o-mini-2024-07-18",
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": message},
-        ],
-        response_format=format,
+        # For structured output, we need to handle it differently
+        # since the unified client doesn't have the parse method
+        response = client.chat_completion(
+            prompt=message,
+            system_prompt=prompt,
+            json_response=True,
+            temperature=0.0
         )
-        parsed_response = completion.choices[0].message.parsed
+        # Try to parse the JSON response
+        if isinstance(response, dict):
+            parsed_response = response
+        else:
+            # If it's a string, try to extract JSON
+            import json
+            try:
+                parsed_response = json.loads(response)
+            except:
+                # Fallback: create a simple object with the response
+                parsed_response = type('ParsedResponse', (), {'content': response})()
     else: 
-        completion = client.beta.chat.completions.parse(
-        model="gpt-4o-mini-2024-07-18",
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": message},
-        ],
+        response = client.chat_completion(
+            prompt=message,
+            system_prompt=prompt,
+            temperature=0.0
         )
-        parsed_response = completion.choices[0].message.content
+        parsed_response = response
     return parsed_response
 
 def parse_drop_high_miss_query(message, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE):
