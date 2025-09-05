@@ -151,7 +151,7 @@ docker run -it --rm --gpus all -v $(pwd):/app -p 7860:7860 causal-copilot-gpu
 **Step 1: Create Python 3.10 Environment**
 ```bash
 # Create a new conda environment with Python 3.10
-conda create -n causal-copilot python=3.10
+conda create -n causal-copilot python=3.10 -y
 conda activate causal-copilot
 ```
 
