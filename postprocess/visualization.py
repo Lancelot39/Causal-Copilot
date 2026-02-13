@@ -74,9 +74,8 @@ class Visualization(object):
         :param threshold: threshold for the bootstrap probability to accept an edge.
         """
         self.global_state = global_state
-        
-        intersection_features = list(set(global_state.user_data.processed_data.columns).intersection(
-            set(global_state.user_data.visual_selected_features)))
+
+        intersection_features = list(global_state.user_data.visual_selected_features)
         self.data = global_state.user_data.processed_data[intersection_features]
         self.data_idx = [global_state.user_data.processed_data.columns.get_loc(var) for var in intersection_features]
         self.bootstrap_prob = global_state.results.bootstrap_probability
