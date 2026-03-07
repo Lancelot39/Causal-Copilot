@@ -1,3 +1,7 @@
+import ast
+import math
+import operator
+
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import pandas as pd
@@ -7,6 +11,71 @@ from typing import Dict, List, Any
 from llm import LLMClient
 import scipy.special
 import requests
+
+
+def _safe_eval_expr(expr: str, variables: dict) -> float:
+    """
+    Safely evaluate a mathematical expression with variables.
+    Only allows: +, -, *, /, **, math functions (log, sqrt, exp, abs), and numeric literals.
+    """
+    _OPERATORS = {
+        ast.Add: operator.add,
+        ast.Sub: operator.sub,
+        ast.Mult: operator.mul,
+        ast.Div: operator.truediv,
+        ast.Pow: operator.pow,
+        ast.USub: operator.neg,
+        ast.UAdd: operator.pos,
+    }
+    _FUNCTIONS = {
+        'log': math.log,
+        'log2': math.log2,
+        'log10': math.log10,
+        'sqrt': math.sqrt,
+        'exp': math.exp,
+        'abs': abs,
+        'max': max,
+        'min': min,
+    }
+
+    def _eval_node(node):
+        if isinstance(node, ast.Expression):
+            return _eval_node(node.body)
+        elif isinstance(node, ast.Constant):
+            if isinstance(node.value, (int, float)):
+                return float(node.value)
+            raise ValueError(f"Unsupported constant: {node.value!r}")
+        elif isinstance(node, ast.Name):
+            name = node.id
+            if name in variables:
+                return float(variables[name])
+            raise ValueError(f"Unknown variable: {name!r}")
+        elif isinstance(node, ast.BinOp):
+            op_func = _OPERATORS.get(type(node.op))
+            if op_func is None:
+                raise ValueError(f"Unsupported operator: {type(node.op).__name__}")
+            return op_func(_eval_node(node.left), _eval_node(node.right))
+        elif isinstance(node, ast.UnaryOp):
+            op_func = _OPERATORS.get(type(node.op))
+            if op_func is None:
+                raise ValueError(f"Unsupported unary op: {type(node.op).__name__}")
+            return op_func(_eval_node(node.operand))
+        elif isinstance(node, ast.Call):
+            if not isinstance(node.func, ast.Name):
+                raise ValueError("Only simple function calls allowed")
+            func = _FUNCTIONS.get(node.func.id)
+            if func is None:
+                raise ValueError(f"Unknown function: {node.func.id!r}")
+            args = [_eval_node(arg) for arg in node.args]
+            return float(func(*args))
+        else:
+            raise ValueError(f"Unsupported expression node: {type(node).__name__}")
+
+    try:
+        tree = ast.parse(expr, mode='eval')
+    except SyntaxError as e:
+        raise ValueError(f"Invalid expression: {expr!r}") from e
+    return _eval_node(tree)
 
 # Unified time complexity units
 # N: number of samples
@@ -111,23 +180,12 @@ class RuntimeEstimator:
         if 'param_calculations' in self.complexity_config:
             for param, calc in self.complexity_config['param_calculations'].items():
                 try:
-                    # Create a safe evaluation environment
-                    safe_dict = {
-                        'log': np.log,  # Use natural log
-                        'int': int,
-                        'min': min,
-                        'max': max,
-                        'pow': pow,
-                        'sqrt': np.sqrt,
-                        'sum': sum,
-                        'range': range,
-                        'comb': scipy.special.comb,
-                        **{k: float(v) if isinstance(v, (int, float, np.number)) else v 
-                           for k, v in params.items()}
-                    }
-                    
-                    # Evaluate the expression
-                    result = eval(calc['expression'], {"__builtins__": {}}, safe_dict)
+                    # Build variables dict for safe evaluation
+                    eval_vars = {k: float(v) for k, v in params.items()
+                                 if isinstance(v, (int, float, np.number))}
+
+                    # Evaluate the expression safely
+                    result = _safe_eval_expr(calc['expression'], eval_vars)
                     params[param] = float(result) if isinstance(result, (int, float, np.number)) else result
                     
                 except Exception as e:
@@ -138,25 +196,9 @@ class RuntimeEstimator:
     
     def _evaluate_expression(self, expr: str, variables: Dict[str, float]) -> float:
         """Safely evaluate a complexity term expression."""
-        # Replace variable names with their values
-        for var, value in variables.items():
-            expr = expr.replace(var, str(value))
-            
-        # Define safe math functions
-        safe_dict = {
-            'log': np.log,
-            'exp': np.exp,
-            'pow': pow,
-            'sqrt': np.sqrt,
-            'sum': sum,
-            'range': range,
-            'comb': scipy.special.comb,
-            'min': min,
-            'max': max,
-            **{k: float(v) for k, v in variables.items()}
-        }
-        
-        return eval(expr, {"__builtins__": {}}, safe_dict)
+        eval_vars = {k: float(v) for k, v in variables.items()
+                     if isinstance(v, (int, float, np.number))}
+        return _safe_eval_expr(expr, eval_vars)
     
     def _calculate_features(self, params: Dict[str, float]) -> pd.Series:
         """Calculate feature values based on complexity terms."""

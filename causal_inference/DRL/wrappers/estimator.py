@@ -180,7 +180,7 @@ class ForestDRL(Estimator):
             else:
                 print("[WARN] Treatment group too small. Using KFold(n_splits=2)")
                 params['cv'] = KFold(n_splits=2)
-        except:
+        except Exception:
             print("[WARN] Could not determine safe CV strategy. Using default KFold(n_splits=2)")
             params['cv'] = KFold(n_splits=2)
 

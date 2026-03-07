@@ -208,12 +208,12 @@ class Analysis(object):
         try:
             my_cem = cem(self.data, confounder_cols = confounders, cont_confounder_cols = cont_confounder,  col_t = treatment, col_y = outcome)
             matched_data = my_cem.match()
-        except:
+        except Exception:
             try:
                 confounders = confounders[:-1]
                 my_cem = cem(self.data, confounder_cols = confounders, cont_confounder_cols = cont_confounder,  col_t = treatment, col_y = outcome)
                 matched_data = my_cem.match()
-            except:
+            except Exception:
                 confounders = confounders[:-1]
                 my_cem = cem(self.data, confounder_cols = confounders, cont_confounder_cols = cont_confounder,  col_t = treatment, col_y = outcome)
                 matched_data = my_cem.match()
