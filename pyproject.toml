@@ -1,0 +1,114 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "causal-copilot"
+version = "0.1.0dev0"
+description = "Autonomous causal analysis from tabular data — LLM-driven discovery + inference."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [
+    { name = "Causal-Copilot Team" },
+]
+keywords = ["causal-inference", "causal-discovery", "causality", "machine-learning"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# Core dependencies — minimal for offline, rule-based discovery
+dependencies = [
+    "numpy>=1.24",
+    "pandas>=2.0",
+    "scipy>=1.10",
+    "scikit-learn>=1.3",
+    "networkx>=3.0",
+    "statsmodels>=0.14",
+]
+
+[project.optional-dependencies]
+# LLM-powered agent mode
+agent = [
+    "openai>=1.0",
+    "pydantic>=2.0",
+]
+# Causal inference (treatment effects)
+inference = [
+    "dowhy>=0.11",
+    "econml>=0.15",
+]
+# Report generation
+report = [
+    "plumbum>=1.8",
+    "pypdf2>=3.0",
+    "pydantic>=2.0",
+]
+# Web demo (Gradio)
+web = [
+    "gradio>=4.0",
+]
+# GPU algorithms
+gpu = [
+    "torch>=2.0",
+]
+# Heavy algorithm dependencies
+algorithms = [
+    "lingam>=1.8",
+    "tigramite>=5.2",
+    "gcastle>=1.0",
+    "causalnex>=0.12",
+]
+# Visualization
+viz = [
+    "matplotlib>=3.7",
+    "seaborn>=0.12",
+]
+# Development
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.4",
+]
+# Everything
+all = [
+    "causal-copilot[agent,inference,report,web,gpu,algorithms,viz,dev]",
+]
+
+[project.urls]
+Homepage = "https://github.com/cauchyturing/Causal-Copilot"
+Documentation = "https://github.com/cauchyturing/Causal-Copilot"
+Repository = "https://github.com/cauchyturing/Causal-Copilot"
+Issues = "https://github.com/cauchyturing/Causal-Copilot/issues"
+
+[project.scripts]
+causal-copilot = "causal_copilot.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["causal_copilot"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]  # line length handled by formatter
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "llm: marks tests requiring LLM API access",
+    "gpu: marks tests requiring GPU",
+]
