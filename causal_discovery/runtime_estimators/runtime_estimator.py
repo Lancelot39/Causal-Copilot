@@ -16,7 +16,10 @@ import requests
 def _safe_eval_expr(expr: str, variables: dict) -> float:
     """
     Safely evaluate a mathematical expression with variables.
-    Only allows: +, -, *, /, **, math functions (log, sqrt, exp, abs), and numeric literals.
+
+    Supports: arithmetic (+, -, *, /, **), math functions (log, sqrt, exp, abs,
+    min, max, int, comb, range, sum, pow), numeric literals, named variables,
+    and inline ternary (x if cond else y).
     """
     _OPERATORS = {
         ast.Add: operator.add,
@@ -24,8 +27,18 @@ def _safe_eval_expr(expr: str, variables: dict) -> float:
         ast.Mult: operator.mul,
         ast.Div: operator.truediv,
         ast.Pow: operator.pow,
+        ast.Mod: operator.mod,
+        ast.FloorDiv: operator.floordiv,
         ast.USub: operator.neg,
         ast.UAdd: operator.pos,
+    }
+    _COMPARISONS = {
+        ast.Gt: operator.gt,
+        ast.GtE: operator.ge,
+        ast.Lt: operator.lt,
+        ast.LtE: operator.le,
+        ast.Eq: operator.eq,
+        ast.NotEq: operator.ne,
     }
     _FUNCTIONS = {
         'log': math.log,
@@ -36,6 +49,12 @@ def _safe_eval_expr(expr: str, variables: dict) -> float:
         'abs': abs,
         'max': max,
         'min': min,
+        'int': lambda x: int(x),
+        'float': lambda x: float(x),
+        'pow': pow,
+        'comb': scipy.special.comb,
+        'sum': sum,
+        'range': range,
     }
 
     def _eval_node(node):
@@ -43,12 +62,12 @@ def _safe_eval_expr(expr: str, variables: dict) -> float:
             return _eval_node(node.body)
         elif isinstance(node, ast.Constant):
             if isinstance(node.value, (int, float)):
-                return float(node.value)
+                return node.value
             raise ValueError(f"Unsupported constant: {node.value!r}")
         elif isinstance(node, ast.Name):
             name = node.id
             if name in variables:
-                return float(variables[name])
+                return variables[name]
             raise ValueError(f"Unknown variable: {name!r}")
         elif isinstance(node, ast.BinOp):
             op_func = _OPERATORS.get(type(node.op))
@@ -67,7 +86,23 @@ def _safe_eval_expr(expr: str, variables: dict) -> float:
             if func is None:
                 raise ValueError(f"Unknown function: {node.func.id!r}")
             args = [_eval_node(arg) for arg in node.args]
-            return float(func(*args))
+            return func(*args)
+        elif isinstance(node, ast.IfExp):
+            # Ternary: x if cond else y
+            test_val = _eval_node(node.test)
+            return _eval_node(node.body) if test_val else _eval_node(node.orelse)
+        elif isinstance(node, ast.Compare):
+            # Comparisons: a > b, a == 0, etc.
+            left = _eval_node(node.left)
+            for op, comparator in zip(node.ops, node.comparators):
+                cmp_func = _COMPARISONS.get(type(op))
+                if cmp_func is None:
+                    raise ValueError(f"Unsupported comparison: {type(op).__name__}")
+                right = _eval_node(comparator)
+                if not cmp_func(left, right):
+                    return False
+                left = right
+            return True
         else:
             raise ValueError(f"Unsupported expression node: {type(node).__name__}")
 

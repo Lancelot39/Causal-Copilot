@@ -31,7 +31,7 @@ class CausalDiscoveryBase(ABC):
         self,
         data: pd.DataFrame | np.ndarray,
         **kwargs,
-    ) -> Tuple[np.ndarray, Dict[str, Any]]:
+    ) -> Tuple[np.ndarray, Dict[str, Any], Any]:
         """
         Run causal discovery on data.
 
@@ -40,7 +40,8 @@ class CausalDiscoveryBase(ABC):
 
         Returns:
             adj_matrix: Adjacency matrix where mat[i,j]=1 means j->i.
-            metadata: Algorithm-specific info (e.g. p-values, scores, model).
+            metadata: Algorithm-specific info (e.g. p-values, scores).
+            model: Fitted model object (algorithm-specific, may be None).
         """
         ...
 
@@ -98,6 +99,14 @@ class CausalInferenceBase(ABC):
             ci: Optional (lower, upper) confidence interval.
         """
         ...
+
+    def estimate_att(self, data: pd.DataFrame) -> Tuple[float, Optional[Tuple[float, float]]]:
+        """Estimate Average Treatment Effect on the Treated. Optional."""
+        raise NotImplementedError(f"{self.name} does not support ATT estimation")
+
+    def estimate_hte(self, data: pd.DataFrame) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, np.ndarray]]]:
+        """Estimate Heterogeneous Treatment Effects. Optional."""
+        raise NotImplementedError(f"{self.name} does not support HTE estimation")
 
     @abstractmethod
     def default_params(self) -> Dict[str, Any]:

@@ -25,7 +25,7 @@ class Provenance:
     algorithm: str                             # which algo ran
     algorithm_version: str                     # package commit or wrapper version
     package_version: str                       # causal-copilot version
-    hyperparams: Dict[str, Any]                # exact params used
+    hyperparams: tuple                             # exact params as tuple of (key, value) pairs for immutability
     planner: str                               # "llm" | "rule" | "oracle" | "random"
     runtime_seconds: float                     # wall-clock time
     timestamp: str                             # ISO 8601 UTC
@@ -34,10 +34,21 @@ class Provenance:
     prompt_version: Optional[str] = None       # hash of prompt template
 
     @staticmethod
+    def freeze_params(params: Dict[str, Any]) -> tuple:
+        """Convert a params dict to an immutable tuple of (key, value) pairs."""
+        return tuple(sorted(params.items()))
+
+    @staticmethod
+    def thaw_params(frozen: tuple) -> Dict[str, Any]:
+        """Convert frozen params back to a dict."""
+        return dict(frozen)
+
+    @staticmethod
     def hash_data(data) -> str:
         """Compute SHA256 hash of input data (DataFrame or ndarray)."""
-        if hasattr(data, 'to_csv'):
-            raw = data.to_csv(index=False).encode('utf-8')
+        if hasattr(data, 'values'):
+            # DataFrame: use underlying numpy array for deterministic hashing
+            raw = data.values.tobytes()
         elif isinstance(data, np.ndarray):
             raw = data.tobytes()
         else:
@@ -118,8 +129,8 @@ class CausalResult:
     algorithm_selection_reason: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
-        """Serialize to JSON-safe dictionary."""
-        d = {
+        """Serialize to JSON-safe dictionary (lossless for all serializable fields)."""
+        d: Dict[str, Any] = {
             "status": self.status,
             "schema_version": self.schema_version,
             "summary": self.summary,
@@ -129,22 +140,34 @@ class CausalResult:
         }
         if self.adjacency_matrix is not None:
             d["adjacency_matrix"] = self.adjacency_matrix.tolist()
+        if self.report_path is not None:
+            d["report_path"] = str(self.report_path)
         if self.effects:
             d["effects"] = {
-                k: {"treatment": v.treatment, "outcome": v.outcome,
-                     "method": v.method, "ate": v.ate}
+                k: {
+                    "treatment": v.treatment, "outcome": v.outcome,
+                    "method": v.method, "ate": v.ate,
+                    "ate_ci": list(v.ate_ci) if v.ate_ci else None,
+                    "att": v.att,
+                    "att_ci": list(v.att_ci) if v.att_ci else None,
+                    "metadata": v.metadata,
+                }
                 for k, v in self.effects.items()
             }
         if self.provenance:
+            p = self.provenance
             d["provenance"] = {
-                "dataset_hash": self.provenance.dataset_hash,
-                "seed": self.provenance.seed,
-                "algorithm": self.provenance.algorithm,
-                "planner": self.provenance.planner,
-                "runtime_seconds": self.provenance.runtime_seconds,
-                "timestamp": self.provenance.timestamp,
-                "environment": self.provenance.environment,
-                "hyperparams": self.provenance.hyperparams,
-                "package_version": self.provenance.package_version,
+                "dataset_hash": p.dataset_hash,
+                "seed": p.seed,
+                "algorithm": p.algorithm,
+                "algorithm_version": p.algorithm_version,
+                "package_version": p.package_version,
+                "hyperparams": dict(p.hyperparams),
+                "planner": p.planner,
+                "planner_model": p.planner_model,
+                "prompt_version": p.prompt_version,
+                "runtime_seconds": p.runtime_seconds,
+                "timestamp": p.timestamp,
+                "environment": p.environment,
             }
         return d

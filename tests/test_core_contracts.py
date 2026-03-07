@@ -25,11 +25,19 @@ class TestProvenance:
         p = Provenance(
             dataset_hash="abc", seed=42, algorithm="PC",
             algorithm_version="0.1", package_version="0.1.0",
-            hyperparams={}, planner="rule", runtime_seconds=1.0,
+            hyperparams=Provenance.freeze_params({"alpha": 0.05}),
+            planner="rule", runtime_seconds=1.0,
             timestamp="2026-01-01T00:00:00Z", environment="test",
         )
         with pytest.raises(AttributeError):
             p.seed = 99
+
+    def test_freeze_thaw_params(self):
+        original = {"alpha": 0.05, "depth": 4}
+        frozen = Provenance.freeze_params(original)
+        assert isinstance(frozen, tuple)
+        thawed = Provenance.thaw_params(frozen)
+        assert thawed == original
 
 
 class TestCausalResult:
@@ -75,15 +83,16 @@ class TestDiscoveryBaseContract:
                 return "Dummy"
 
             def fit(self, data, **kwargs):
-                return np.eye(data.shape[1]), {"info": "dummy"}
+                return np.eye(data.shape[1]), {"info": "dummy"}, None
 
             def default_params(self):
                 return {"alpha": 0.05}
 
         algo = DummyDiscovery(params={"alpha": 0.01})
         assert algo.name == "Dummy"
-        mat, meta = algo.fit(np.random.randn(100, 5))
+        mat, meta, model = algo.fit(np.random.randn(100, 5))
         assert mat.shape == (5, 5)
+        assert model is None
         assert algo.get_params() == {"alpha": 0.01}
 
 
