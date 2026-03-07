@@ -35,7 +35,10 @@ class PCAdapter(CausalDiscoveryBase):
         return {"alpha": 0.05, "indep_test": "fisherz", "stable": True, "depth": 4}
 
     def fit(self, data: pd.DataFrame | np.ndarray, **kwargs) -> Tuple[np.ndarray, Dict[str, Any], Any]:
-        from causal_discovery.wrappers.pc import PC
+        # Import the module directly to avoid wrappers/__init__.py which eagerly imports torch
+        import importlib
+        mod = importlib.import_module("causal_discovery.wrappers.pc")
+        PC = mod.PC
         wrapper = PC(params={**self.default_params(), **self._params})
         df = pd.DataFrame(data) if isinstance(data, np.ndarray) else data
         return wrapper.fit(df)
@@ -52,7 +55,9 @@ class GESAdapter(CausalDiscoveryBase):
         return {"score_func": "local_score_BIC"}
 
     def fit(self, data: pd.DataFrame | np.ndarray, **kwargs) -> Tuple[np.ndarray, Dict[str, Any], Any]:
-        from causal_discovery.wrappers.ges import GES
+        import importlib
+        mod = importlib.import_module("causal_discovery.wrappers.ges")
+        GES = mod.GES
         wrapper = GES(params={**self.default_params(), **self._params})
         df = pd.DataFrame(data) if isinstance(data, np.ndarray) else data
         return wrapper.fit(df)
@@ -69,7 +74,9 @@ class NOTEARSLinearAdapter(CausalDiscoveryBase):
         return {"lambda1": 0.1, "max_iter": 100, "h_tol": 1e-8, "w_threshold": 0.3}
 
     def fit(self, data: pd.DataFrame | np.ndarray, **kwargs) -> Tuple[np.ndarray, Dict[str, Any], Any]:
-        from causal_discovery.wrappers.notears_linear import NOTEARSLinear
+        import importlib
+        mod = importlib.import_module("causal_discovery.wrappers.notears_linear")
+        NOTEARSLinear = mod.NOTEARSLinear
         wrapper = NOTEARSLinear(params={**self.default_params(), **self._params})
         df = pd.DataFrame(data) if isinstance(data, np.ndarray) else data
         return wrapper.fit(df)
@@ -86,7 +93,9 @@ class DirectLiNGAMAdapter(CausalDiscoveryBase):
         return {"measure": "pwling"}
 
     def fit(self, data: pd.DataFrame | np.ndarray, **kwargs) -> Tuple[np.ndarray, Dict[str, Any], Any]:
-        from causal_discovery.wrappers.direct_lingam import DirectLiNGAM
+        import importlib
+        mod = importlib.import_module("causal_discovery.wrappers.direct_lingam")
+        DirectLiNGAM = mod.DirectLiNGAM
         wrapper = DirectLiNGAM(params={**self.default_params(), **self._params})
         df = pd.DataFrame(data) if isinstance(data, np.ndarray) else data
         return wrapper.fit(df)
@@ -103,7 +112,9 @@ class PCMCIAdapter(CausalDiscoveryBase):
         return {"tau_min": 0, "tau_max": 2, "pc_alpha": 0.05, "alpha_level": 0.05}
 
     def fit(self, data: pd.DataFrame | np.ndarray, **kwargs) -> Tuple[np.ndarray, Dict[str, Any], Any]:
-        from causal_discovery.wrappers.pcmci import PCMCI
+        import importlib
+        mod = importlib.import_module("causal_discovery.wrappers.pcmci")
+        PCMCI = mod.PCMCI
         wrapper = PCMCI(params={**self.default_params(), **self._params})
         df = pd.DataFrame(data) if isinstance(data, np.ndarray) else data
         return wrapper.fit(df)
