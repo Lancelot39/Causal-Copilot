@@ -13,8 +13,12 @@ from tigramite.pcmci import PCMCI as PCMCI_model
 from tigramite import data_processing as pp
 from tigramite.independence_tests.parcorr import ParCorr
 from tigramite.independence_tests.robust_parcorr import RobustParCorr
-import torch
-cuda_available = torch.cuda.is_available()
+try:
+    import torch
+    cuda_available = torch.cuda.is_available()
+except ImportError:
+    torch = None
+    cuda_available = False
 from causal_discovery.wrappers.base import CausalDiscoveryAlgorithm
 from causal_discovery.evaluation.evaluator import GraphEvaluator
 from causal_discovery.wrappers.utils.ts_utils import generate_stationary_linear, column_type
