@@ -382,7 +382,7 @@ def parse_sparsity_query(message, chat_history, download_btn, global_state, REQU
     if message.upper() == 'LLM' or message == '':
         try:
             global_state = llm_select_dropped_features(global_state)
-        except:
+        except Exception:
             global_state = llm_select_dropped_features(global_state)
         # if message.upper() == 'LLM':
         #     chat_history.append((None, "The following sparse variables suggested by LLM will be dropped: \n"
@@ -931,7 +931,7 @@ def process_for_json(obj):
         # For custom objects with a __dict__
         try:
             return {k: process_for_json(v) for k, v in obj.__dict__.items() if not k.startswith('_')}
-        except:
+        except Exception:
             return str(obj)
     # Add more type conversions as needed
     return obj

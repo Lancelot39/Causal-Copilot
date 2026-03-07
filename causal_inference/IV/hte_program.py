@@ -25,7 +25,7 @@ class HTE_Programming(object):
         if task == 'ate':
             try:
                 ate, ate_lower, ate_upper = self.model.ate(global_state.user_data.processed_data) 
-            except:
+            except Exception:
                 from utils.logger import logger
                 logger.error("ATE calculation failed. Please check the model and data.")
                 ate, ate_lower, ate_upper =  None, None, None
@@ -33,14 +33,14 @@ class HTE_Programming(object):
         elif task == 'att':
             try:
                 att, att_lower, att_upper = self.model.att(global_state.user_data.processed_data)
-            except:
+            except Exception:
                 logger.error("ATT calculation failed. Please check the model and data.")
                 att, att_lower, att_upper =  None, None, None
             return att, att_lower, att_upper          
         elif task == 'hte':
             try:
                 hte, hte_lower, hte_upper = self.model.hte(global_state.user_data.processed_data)
-            except:
+            except Exception:
                 logger.error("HTE calculation failed. Please check the model and data.")
                 hte, hte_lower, hte_upper =  None, None, None
             return hte, hte_lower, hte_upper

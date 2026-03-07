@@ -810,7 +810,7 @@ class EDA(object):
                 ax_acf.set_ylim(-1.1, 1.1)
                 ax_acf.set_xlabel("Lag")
                 ax_acf.set_ylabel("Correlation")
-            except:
+            except Exception:
                 ax_acf.text(0.5, 0.5, "Cannot compute ACF", ha='center', va='center')
                 ax_acf.axis('off')
             
@@ -846,7 +846,7 @@ class EDA(object):
                 ax_pacf.set_ylim(-1.1, 1.1)
                 ax_pacf.set_xlabel("Lag")
                 ax_pacf.set_ylabel("Partial Correlation")
-            except:
+            except Exception:
                 ax_pacf.text(0.5, 0.5, "Cannot compute PACF", ha='center', va='center')
                 ax_pacf.axis('off')
             
@@ -898,7 +898,7 @@ class EDA(object):
                         summary["stationary_variables"].append(col)
                     else:
                         summary["non_stationary_variables"].append(col)
-                except:
+                except Exception:
                     pass
         summary["total_variables_analyzed"] = len(columns)
         summary["total_stationary"] = len(summary["stationary_variables"])

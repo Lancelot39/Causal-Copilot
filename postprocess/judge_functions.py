@@ -345,11 +345,11 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
         relation_text_dict, relation_text = edges_to_relationship(data, edges_dict, boot_edges_prob)
         try:
             directed_exist_texts_mainnode = ', '.join([text for text in relation_text_dict['certain_edges'] if main_node in text])
-        except:
+        except Exception:
             directed_exist_texts_mainnode = 'None'
         try:
             undirected_exist_texts_mainnode = ', '.join([text for text in relation_text_dict['uncertain_edges'] if main_node in text])
-        except:
+        except Exception:
             undirected_exist_texts_mainnode = 'None'
         
         related_pairs = grouped_dict[main_node]
@@ -450,7 +450,7 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
                         edges_dict['certain_edges'].remove((var_j, var_i))
                     if (var_i, var_j) in edges_dict['certain_edges']:
                         edges_dict['certain_edges'].remove((var_i, var_j))
-            except:
+            except Exception:
                 continue
 
     for main_node in  grouped_dict.keys():
@@ -516,11 +516,11 @@ def edges_to_relationship(data, edges_dict, boot_edges_prob=None):
                 try:
                     idx_j = data.columns.str.lower().get_loc(edges[0].lower())
                     idx_i = data.columns.str.lower().get_loc(edges[1].lower())
-                except:
+                except Exception:
                     try:
                         idx_j = data.columns.str.lower().get_loc(edges[0].lower().replace('_', ' '))
                         idx_i = data.columns.str.lower().get_loc(edges[1].lower().replace('_', ' '))
-                    except:
+                    except Exception:
                         continue  
                 prob = boot_edges_prob[edge_type][idx_i, idx_j]
                 result_dict[edge_type].append(f'{edges[0]} {relation_dict[edge_type]} {edges[1]} with bootstrap probability {prob}')

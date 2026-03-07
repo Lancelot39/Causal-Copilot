@@ -35,7 +35,7 @@ class UpliftFilter:
         # Load the causal graph template if available
         try:
             causal_graph = open("causal_inference/Uplift/context/causal_graph_template.txt", "r").read()
-        except:
+        except Exception:
             causal_graph = "No causal graph available"
         
         replacements = {

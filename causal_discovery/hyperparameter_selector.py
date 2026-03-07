@@ -17,7 +17,7 @@ class HyperparameterSelector:
             algorithm_description = global_state.algorithm.algorithm_candidates[selected_algo]['description']
             algorithm_optimum_reason = global_state.algorithm.algorithm_optimum['reason']
             algorithm_optimum_reason = algorithm_description + "\n" + algorithm_optimum_reason
-        except:
+        except Exception:
             algorithm_optimum_reason = "User specifies this algorithm."
 
         # Select hyperparameters

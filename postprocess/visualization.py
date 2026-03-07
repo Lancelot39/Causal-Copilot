@@ -107,7 +107,7 @@ class Visualization(object):
         for edge in edges_dict['certain_edges']:
             try:
                 pag.add_edge(edge[0], edge[1], pag.directed_edge_name)
-            except:
+            except Exception:
                 pag.remove_edge(edge[1], edge[0], pag.directed_edge_name)
                 pag.add_edge(edge[0], edge[1], pag.bidirected_edge_name)
         for edge in edges_dict['uncertain_edges']:

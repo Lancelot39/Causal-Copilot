@@ -316,7 +316,7 @@ def series_lag_est(time_series, nlags=20, acf_threshold=0.6, pacf_top_pct=0.4):
             if model.bic < best_bic:
                 best_bic = model.bic
                 best_bic_lag = lag
-        except:
+        except Exception:
             continue
 
     candidate_lags = list(set(acf_peaks) | set(pacf_significant_lags) | {best_aic_lag, best_bic_lag})
