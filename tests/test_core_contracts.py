@@ -1,8 +1,10 @@
 """Tests for core interface contracts -- CausalResult, Provenance, base classes."""
+import json
+
 import numpy as np
 import pytest
 
-from causal_copilot.core.result import CausalResult, Provenance, TreatmentEffect
+from causal_copilot.core.result import CausalResult, Provenance, TreatmentEffect, _json_safe
 from causal_copilot.core.base import CausalDiscoveryBase, CausalInferenceBase
 
 
@@ -60,6 +62,41 @@ class TestCausalResult:
     def test_schema_version(self):
         r = CausalResult(status="ok")
         assert r.schema_version == "0.1.0"
+
+
+class TestJsonSafe:
+    def test_ndarray(self):
+        result = _json_safe(np.array([1, 2, 3]))
+        assert result == [1, 2, 3]
+
+    def test_nested_dict(self):
+        data = {"a": np.array([1.0]), "b": {"c": np.int64(5)}}
+        result = _json_safe(data)
+        assert result == {"a": [1.0], "b": {"c": 5}}
+        json.dumps(result)  # must not raise
+
+    def test_non_serializable_dropped(self):
+        result = _json_safe({"model": object(), "score": 0.5})
+        assert result["score"] == 0.5
+        assert "<object>" in result["model"]
+
+    def test_primitives(self):
+        assert _json_safe("hello") == "hello"
+        assert _json_safe(42) == 42
+        assert _json_safe(None) is None
+
+
+class TestCausalResultNodeNames:
+    def test_node_names_in_to_dict(self):
+        r = CausalResult(status="ok", node_names=["A", "B"], adjacency_matrix=np.eye(2))
+        d = r.to_dict()
+        assert d["node_names"] == ["A", "B"]
+
+    def test_discovery_metadata_in_to_dict(self):
+        r = CausalResult(status="ok", discovery_metadata={"lag_matrix": np.zeros((2, 2))})
+        d = r.to_dict()
+        assert "lag_matrix" in d["discovery_metadata"]
+        json.dumps(d)  # must be serializable
 
 
 class TestTreatmentEffect:

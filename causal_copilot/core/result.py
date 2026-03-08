@@ -17,6 +17,24 @@ except ImportError:
     nx = None
 
 
+def _json_safe(obj: Any) -> Any:
+    """Recursively convert an object to JSON-serializable form."""
+    if isinstance(obj, dict):
+        return {str(k): _json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_json_safe(v) for v in obj]
+    if isinstance(obj, np.ndarray):
+        return obj.tolist()
+    if isinstance(obj, np.integer):
+        return int(obj)
+    if isinstance(obj, np.floating):
+        return float(obj)
+    if isinstance(obj, (str, int, float, bool, type(None))):
+        return obj
+    # Drop non-serializable objects (models, etc.)
+    return f"<{type(obj).__name__}>"
+
+
 @dataclass(frozen=True)
 class Provenance:
     """Full reproducibility record for a single pipeline run."""
@@ -110,7 +128,9 @@ class CausalResult:
 
     # Core outputs
     adjacency_matrix: Optional[np.ndarray] = None
+    node_names: Optional[List[str]] = None     # column/variable names matching matrix indices
     graph: Optional[Any] = None                # nx.DiGraph when available
+    discovery_metadata: Dict[str, Any] = field(default_factory=dict)  # algorithm-specific outputs
     effects: Dict[str, TreatmentEffect] = field(default_factory=dict)
 
     # Transparency (every output MUST have these)
@@ -140,6 +160,10 @@ class CausalResult:
         }
         if self.adjacency_matrix is not None:
             d["adjacency_matrix"] = self.adjacency_matrix.tolist()
+        if self.node_names is not None:
+            d["node_names"] = self.node_names
+        if self.discovery_metadata:
+            d["discovery_metadata"] = _json_safe(self.discovery_metadata)
         if self.report_path is not None:
             d["report_path"] = str(self.report_path)
         if self.effects:

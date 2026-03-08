@@ -183,12 +183,33 @@ class TestResultStructure:
             result = CausalCopilot().analyze(simple_df, seed=0)
         assert isinstance(result.provenance.hyperparams, tuple)
 
+    def test_node_names_populated(self, simple_df):
+        with _mock_algorithm():
+            result = CausalCopilot().analyze(simple_df, seed=0)
+        assert result.node_names == ["x", "y", "z", "w"]
+
+    def test_discovery_metadata_populated(self, simple_df):
+        with _mock_algorithm():
+            result = CausalCopilot().analyze(simple_df, seed=0)
+        assert result.discovery_metadata == {"mock": True}
+
+    def test_forced_algo_has_effective_hyperparams(self, simple_df):
+        with _mock_algorithm():
+            result = CausalCopilot().analyze(simple_df, algorithm="PC", seed=0)
+        # Should have default_params, not empty {}
+        params = dict(result.provenance.hyperparams)
+        assert params  # non-empty
+        assert "mock_param" in params
+
     def test_to_dict_roundtrip(self, simple_df):
         with _mock_algorithm():
             result = CausalCopilot().analyze(simple_df, seed=0)
         d = result.to_dict()
         assert d["status"] == "ok"
         assert "adjacency_matrix" in d
+        assert "node_names" in d
+        assert d["node_names"] == ["x", "y", "z", "w"]
+        assert "discovery_metadata" in d
         assert "provenance" in d
         assert d["provenance"]["seed"] == 0
 
@@ -291,6 +312,9 @@ class _MockAlgo:
     def __init__(self, adj_matrix=None, fit_side_effect=None):
         self._adj = adj_matrix
         self._side_effect = fit_side_effect
+
+    def default_params(self):
+        return {"mock_param": True}
 
     def fit(self, data, **kwargs):
         if self._side_effect:

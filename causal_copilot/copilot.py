@@ -216,6 +216,13 @@ class CausalCopilot:
         # Load algorithm
         try:
             algo = _load_algorithm(decision.algorithm, decision.hyperparams)
+            # For forced algorithms with empty hyperparams, record effective defaults
+            if not decision.hyperparams:
+                decision = PlannerDecision(
+                    algorithm=decision.algorithm,
+                    hyperparams=algo.default_params(),
+                    reason=decision.reason,
+                )
         except (ValueError, ImportError) as e:
             return CausalResult(
                 status="failed",
@@ -296,7 +303,9 @@ class CausalCopilot:
         return CausalResult(
             status="ok",
             adjacency_matrix=adj_matrix,
+            node_names=cols,
             graph=graph,
+            discovery_metadata=metadata if isinstance(metadata, dict) else {},
             summary=f"Discovered {edge_summary} edges using {decision.algorithm} "
                     f"on {numeric_df.shape[0]} samples × {numeric_df.shape[1]} features "
                     f"in {elapsed:.1f}s.",

@@ -121,6 +121,9 @@ class TestNoCommand:
 # ---------------------------------------------------------------------------
 
 class _MockAlgo:
+    def default_params(self):
+        return {"mock_param": True}
+
     def fit(self, data, **kwargs):
         n = data.shape[1]
         return np.zeros((n, n)), {"mock": True}, None
