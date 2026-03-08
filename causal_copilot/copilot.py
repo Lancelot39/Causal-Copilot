@@ -281,8 +281,9 @@ class CausalCopilot:
         if adj_matrix.shape != (n_vars, n_vars):
             # Some wrappers (e.g. CDNOD) drop domain_index internally,
             # producing a smaller matrix than expected.
-            if adj_matrix.shape[0] == adj_matrix.shape[1]:
+            if adj_matrix.shape[0] == adj_matrix.shape[1] and adj_matrix.shape[0] < n_vars:
                 # Square but smaller — trim node_names to match
+                # (e.g. CDNOD drops domain_index internally)
                 cols = cols[:adj_matrix.shape[0]]
                 warnings.append(
                     f"Adjacency matrix is {adj_matrix.shape[0]}x{adj_matrix.shape[0]} "
@@ -291,7 +292,8 @@ class CausalCopilot:
             else:
                 return CausalResult(
                     status="failed",
-                    summary=f"Algorithm returned non-square adjacency matrix: {adj_matrix.shape}",
+                    summary=f"Adjacency matrix shape {adj_matrix.shape} does not match "
+                            f"{n_vars} features",
                     warnings=warnings,
                     provenance=_make_provenance(data_hash, seed, decision, active_planner, elapsed),
                 )

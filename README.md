@@ -367,7 +367,7 @@ Causal-Copilot produces **exploratory** causal graphs, not confirmatory evidence
 **What it does well:**
 - Automated algorithm selection and hyperparameter tuning for tabular data
 - Reproducible results with full provenance tracking (seed, params, environment)
-- 20+ causal discovery algorithms with unified interface
+- 5 algorithms via Python API (PC, GES, NOTEARSLinear, DirectLiNGAM, PCMCI), 20+ via full pipeline
 
 **What it does NOT do:**
 - Prove causation from observational data alone

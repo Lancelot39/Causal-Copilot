@@ -211,12 +211,20 @@ class TestResultStructure:
         assert result.node_names == ["x", "y", "z"]  # trimmed to match matrix
         assert any("trimmed" in w for w in result.warnings)
 
+    def test_matrix_larger_than_data_fails(self, simple_df):
+        # 5x5 matrix for 4-column data should fail, not silently pass
+        big_adj = np.zeros((5, 5))
+        with _mock_algorithm(adj_matrix=big_adj):
+            result = CausalCopilot().analyze(simple_df, seed=0)
+        assert result.status == "failed"
+        assert "does not match" in result.summary
+
     def test_non_square_matrix_fails(self, simple_df):
         bad_adj = np.zeros((3, 4))
         with _mock_algorithm(adj_matrix=bad_adj):
             result = CausalCopilot().analyze(simple_df, seed=0)
         assert result.status == "failed"
-        assert "non-square" in result.summary.lower()
+        assert "does not match" in result.summary
 
     def test_to_dict_roundtrip(self, simple_df):
         with _mock_algorithm():
