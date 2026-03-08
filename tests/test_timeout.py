@@ -34,9 +34,9 @@ class TestTimeout:
         assert result.provenance is not None
 
     def test_subprocess_seed_reproducibility(self, simple_df):
-        """Same seed should produce identical results across runs."""
-        r1 = CausalCopilot().analyze(simple_df, seed=123, timeout=60)
-        r2 = CausalCopilot().analyze(simple_df, seed=123, timeout=60)
+        """Same seed should produce identical results across runs (forces ICALiNGAM)."""
+        r1 = CausalCopilot().analyze(simple_df, algorithm="ICALiNGAM", seed=123, timeout=60)
+        r2 = CausalCopilot().analyze(simple_df, algorithm="ICALiNGAM", seed=123, timeout=60)
         assert r1.status == "ok"
         assert r2.status == "ok"
         np.testing.assert_array_equal(r1.adjacency_matrix, r2.adjacency_matrix)

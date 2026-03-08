@@ -49,7 +49,7 @@ class GrangerCausalityBackend(Backend):
                     ]
                     if min(p_values) < alpha:
                         adj_matrix[i, j] = 1  # j Granger-causes i
-                except (ValueError, KeyError) as exc:
+                except (ValueError, KeyError, RuntimeError) as exc:
                     n_failed += 1
                     if n_failed >= n_pairs:
                         raise RuntimeError(

@@ -107,7 +107,7 @@ class TestRealAlgorithms:
         adapter = _try_import_adapter("GrangerCausality")
         # 10 rows with default p=10 → need > 11 observations
         df = _make_linear_data(n=10)
-        with pytest.raises((ValueError, RuntimeError)):
+        with pytest.raises(ValueError, match="more observations than lag order"):
             adapter.fit(df)
 
 
