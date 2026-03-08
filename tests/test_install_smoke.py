@@ -40,7 +40,10 @@ class TestAnalyzeWithoutRepoRoot:
             "Z": 0.6 * (0.8 * x) + rng.normal(size=n) * 0.4,
         })
         result = CausalCopilot().analyze(df, seed=42)
-        assert result.status in ("ok", "partial", "failed")
+        # Must succeed — if this returns "failed" the backend is broken
+        assert result.status == "ok", f"Expected ok, got {result.status}: {result.summary}"
+        assert result.adjacency_matrix is not None
+        assert result.node_names == ["X", "Y", "Z"]
 
     def test_result_serialization(self):
         import json

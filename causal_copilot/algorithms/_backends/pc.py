@@ -68,7 +68,7 @@ class PCBackend(Backend):
             uc_priority=self._params.get("uc_priority", -1),
             mvpc=self._params.get("mvpc", False),
             correction_name=self._params.get("correction_name", "MV_Crtn_Fisher_Z"),
-            background_knowledge=self._params.get("background_knowledge", None),
+            background_knowledge=None,
             verbose=self._params.get("verbose", False),
             show_progress=self._params.get("show_progress", False),
             node_names=node_names,

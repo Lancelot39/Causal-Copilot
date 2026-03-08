@@ -71,7 +71,7 @@ class PCMCIBackend(Backend):
             "conflict_resolution": self._params.get("conflict_resolution", True),
             "reset_lagged_links": self._params.get("reset_lagged_links", False),
             "fdr_method": self._params.get("fdr_method", "none"),
-            "link_assumptions": self._params.get("link_assumptions", None),
+            "link_assumptions": None,
             "max_conds_dim": self._params.get("max_conds_dim", None),
             "max_combinations": self._params.get("max_combinations", 1),
             "max_conds_py": self._params.get("max_conds_py", None),
@@ -97,6 +97,8 @@ class PCMCIBackend(Backend):
         matrices = (q_matrix <= pc_alpha).astype(int)
         lag_matrix = np.array([matrices[:, :, lag].T for lag in range(matrices.shape[2])])
         summary_matrix = np.any(lag_matrix, axis=0).astype(int)
+        # Clear diagonal — lagged self-dependence should not appear as self-loops
+        np.fill_diagonal(summary_matrix, 0)
 
         info = {
             "val_matrix": results["val_matrix"],
