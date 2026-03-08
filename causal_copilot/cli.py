@@ -65,7 +65,12 @@ def cmd_analyze(args):
     """Run causal discovery on a CSV file."""
     from causal_copilot import CausalCopilot
 
-    copilot = CausalCopilot(planner=args.planner)
+    try:
+        copilot = CausalCopilot(planner=args.planner)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+
     result = copilot.analyze(
         args.data,
         algorithm=args.algorithm,
@@ -137,6 +142,8 @@ def cmd_quickstart(args):
         out_path = Path(args.output)
         out_path.write_text(json.dumps(result.to_dict(), indent=2))
         print(f"\nFull result written to {out_path}")
+
+    sys.exit(0 if result.status == "ok" else 1)
 
 
 def main(argv=None):

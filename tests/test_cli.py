@@ -81,9 +81,20 @@ class TestAnalyze:
         assert "seed=99" in out
 
 
+    def test_analyze_bad_planner(self, tmp_path, capsys):
+        rng = np.random.default_rng(0)
+        df = pd.DataFrame({"a": rng.normal(size=50), "b": rng.normal(size=50)})
+        csv_path = tmp_path / "test.csv"
+        df.to_csv(csv_path, index=False)
+
+        with pytest.raises(SystemExit) as exc_info:
+            main(["analyze", str(csv_path), "-p", "bogus"])
+        assert exc_info.value.code == 1
+
+
 class TestQuickstart:
     def test_quickstart_runs(self, capsys):
-        with _mock_algorithm():
+        with _mock_algorithm(), pytest.raises(SystemExit, match="0"):
             main(["quickstart"])
         out = capsys.readouterr().out
         assert "Quickstart" in out
@@ -91,7 +102,7 @@ class TestQuickstart:
 
     def test_quickstart_json_output(self, tmp_path):
         out_path = tmp_path / "quickstart.json"
-        with _mock_algorithm():
+        with _mock_algorithm(), pytest.raises(SystemExit, match="0"):
             main(["quickstart", "-o", str(out_path)])
         assert out_path.exists()
         data = json.loads(out_path.read_text())

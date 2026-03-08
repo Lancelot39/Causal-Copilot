@@ -257,7 +257,8 @@ class TestEdgeCounting:
             result = CausalCopilot().analyze(simple_df, seed=0)
         assert "2 directed" in result.summary
 
-    def test_undirected_count(self, simple_df):
+    def test_undirected_count_symmetric(self, simple_df):
+        """Undirected edges encoded symmetrically: both (i,j) and (j,i) = 2."""
         adj = np.array([
             [0, 2, 0, 0],
             [2, 0, 0, 0],
@@ -266,7 +267,18 @@ class TestEdgeCounting:
         ])
         with _mock_algorithm(adj_matrix=adj):
             result = CausalCopilot().analyze(simple_df, seed=0)
-        # Undirected edges counted once (divided by 2)
+        assert "1 undirected" in result.summary
+
+    def test_undirected_count_one_sided(self, simple_df):
+        """Undirected edges encoded one-sided: only (i,j) = 2 (PC wrapper style)."""
+        adj = np.array([
+            [0, 2, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+            [0, 0, 0, 0],
+        ])
+        with _mock_algorithm(adj_matrix=adj):
+            result = CausalCopilot().analyze(simple_df, seed=0)
         assert "1 undirected" in result.summary
 
 

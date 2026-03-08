@@ -274,10 +274,17 @@ class CausalCopilot:
 
         provenance = _make_provenance(data_hash, seed, decision, active_planner, elapsed)
 
-        # Count edges by type
+        # Count edges by type — undirected/bidirected may be one-sided or symmetric
         n_directed = int(np.sum(adj_matrix == 1))
-        n_undirected = int(np.sum(adj_matrix == 2)) // 2  # counted twice in matrix
-        n_bidirected = int(np.sum(adj_matrix == 3)) // 2
+        # Count unique unordered pairs for symmetric edge types
+        n_undirected = sum(
+            1 for i in range(adj_matrix.shape[0]) for j in range(i + 1, adj_matrix.shape[1])
+            if adj_matrix[i, j] == 2 or adj_matrix[j, i] == 2
+        )
+        n_bidirected = sum(
+            1 for i in range(adj_matrix.shape[0]) for j in range(i + 1, adj_matrix.shape[1])
+            if adj_matrix[i, j] == 3 or adj_matrix[j, i] == 3
+        )
 
         edge_parts = [f"{n_directed} directed"]
         if n_undirected:

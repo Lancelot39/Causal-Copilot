@@ -108,7 +108,7 @@ ignore = ["E501"]  # line length handled by formatter
 quote-style = "double"
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "benchmarks"]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "llm: marks tests requiring LLM API access",
