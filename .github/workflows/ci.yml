@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,algorithms]"
       - run: python -m pytest tests/ benchmarks/ -v -m "not slow" --tb=short
 
   build-wheel:
@@ -43,4 +43,4 @@ jobs:
       - run: pip install build
       - run: python -m build
       - run: pip install dist/*.whl
-      - run: python -c "from causal_copilot import CausalCopilot; print('import ok')"
+      - run: cd /tmp && python -c "from causal_copilot import CausalCopilot; print('import ok')"
