@@ -102,6 +102,14 @@ class TestRealAlgorithms:
         for i in range(adj.shape[0]):
             assert adj[i, i] == 0, f"Self-loop at ({i},{i})"
 
+    def test_granger_short_data_raises(self):
+        """Granger should raise ValueError when data is too short for lag order."""
+        adapter = _try_import_adapter("GrangerCausality")
+        # 10 rows with default p=10 → need > 11 observations
+        df = _make_linear_data(n=10)
+        with pytest.raises((ValueError, RuntimeError)):
+            adapter.fit(df)
+
 
 @pytest.mark.slow
 class TestEndToEndQuickstart:

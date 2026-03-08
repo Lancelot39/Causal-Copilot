@@ -21,7 +21,17 @@ class GrangerCausalityBackend(Backend):
         alpha = self._params.get("alpha", 0.05)
         criterion = self._params.get("criterion", "ssr_ftest")
 
+        # Guard: need enough observations for the requested lag order
+        n_obs = len(data)
+        if n_obs <= max_lag + 1:
+            raise ValueError(
+                f"Granger causality requires more observations than lag order + 1. "
+                f"Got {n_obs} rows with max_lag={max_lag}."
+            )
+
         adj_matrix = np.zeros((n_vars, n_vars), dtype=int)
+        n_pairs = n_vars * (n_vars - 1)
+        n_failed = 0
 
         for i in range(n_vars):
             for j in range(n_vars):
@@ -39,8 +49,12 @@ class GrangerCausalityBackend(Backend):
                     ]
                     if min(p_values) < alpha:
                         adj_matrix[i, j] = 1  # j Granger-causes i
-                except Exception:
-                    pass  # Some pairs may fail
+                except (ValueError, KeyError) as exc:
+                    n_failed += 1
+                    if n_failed >= n_pairs:
+                        raise RuntimeError(
+                            f"All {n_pairs} Granger tests failed. Last error: {exc}"
+                        ) from exc
 
-        info = {"lag": max_lag, "nodes": node_names}
+        info = {"lag": max_lag, "nodes": node_names, "n_failed_pairs": n_failed}
         return adj_matrix, info, None

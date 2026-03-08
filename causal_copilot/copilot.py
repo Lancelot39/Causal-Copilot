@@ -28,6 +28,11 @@ import numpy as np
 import pandas as pd
 
 cfg = json.load(sys.stdin)
+
+# Reproduce parent's random seed in the child process
+if cfg.get("seed") is not None:
+    np.random.seed(cfg["seed"])
+
 from causal_copilot.algorithms.registry import REGISTRY
 from causal_copilot.core.result import _json_safe
 
@@ -46,7 +51,7 @@ except Exception as e:
 
 
 def _run_in_subprocess(
-    algo: CausalDiscoveryBase, data: pd.DataFrame, timeout: int
+    algo: CausalDiscoveryBase, data: pd.DataFrame, timeout: int, seed: int | None = None
 ) -> tuple[np.ndarray, dict]:
     """Run algo.fit(data) in a fresh subprocess with kill-based timeout.
 
@@ -60,6 +65,7 @@ def _run_in_subprocess(
         "algo_name": algo.name,
         "algo_params": algo.get_params(),
         "data_json": data.to_json(),
+        "seed": seed,
     })
 
     proc = subprocess.Popen(
@@ -286,7 +292,7 @@ class CausalCopilot:
         # Execute algorithm (with process-based timeout)
         try:
             try:
-                adj_matrix, metadata = _run_in_subprocess(algo, numeric_df, timeout)
+                adj_matrix, metadata = _run_in_subprocess(algo, numeric_df, timeout, seed=seed)
             except (OSError, AttributeError, TypeError) as sub_err:
                 if isinstance(sub_err, TimeoutError):
                     raise  # TimeoutError is a subclass of OSError — don't swallow it
