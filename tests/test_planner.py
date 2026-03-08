@@ -1,10 +1,11 @@
 """Tests for rule-based planner and data guards."""
+
 import numpy as np
 import pandas as pd
 import pytest
 
-from causal_copilot.core.planner import detect_data_properties, rule_based_select, PlannerDecision
-from causal_copilot.core.guards import validate_data, DataValidationError
+from causal_copilot.core.guards import DataValidationError, validate_data
+from causal_copilot.core.planner import detect_data_properties, rule_based_select
 
 
 class TestDataProperties:
@@ -24,32 +25,67 @@ class TestDataProperties:
 
 class TestRuleBasedPlanner:
     def test_small_linear_selects_pc(self):
-        props = {"n_samples": 500, "n_features": 10, "is_time_series": False,
-                 "likely_linear": True, "likely_gaussian": True, "has_missing": False, "missing_ratio": 0}
+        props = {
+            "n_samples": 500,
+            "n_features": 10,
+            "is_time_series": False,
+            "likely_linear": True,
+            "likely_gaussian": True,
+            "has_missing": False,
+            "missing_ratio": 0,
+        }
         decision = rule_based_select(props)
         assert decision.algorithm == "PC"
 
     def test_time_series_selects_pcmci(self):
-        props = {"n_samples": 500, "n_features": 10, "is_time_series": True,
-                 "likely_linear": True, "likely_gaussian": True, "has_missing": False, "missing_ratio": 0}
+        props = {
+            "n_samples": 500,
+            "n_features": 10,
+            "is_time_series": True,
+            "likely_linear": True,
+            "likely_gaussian": True,
+            "has_missing": False,
+            "missing_ratio": 0,
+        }
         decision = rule_based_select(props)
         assert decision.algorithm == "PCMCI"
 
     def test_large_data_selects_notears(self):
-        props = {"n_samples": 10000, "n_features": 50, "is_time_series": False,
-                 "likely_linear": True, "likely_gaussian": True, "has_missing": False, "missing_ratio": 0}
+        props = {
+            "n_samples": 10000,
+            "n_features": 50,
+            "is_time_series": False,
+            "likely_linear": True,
+            "likely_gaussian": True,
+            "has_missing": False,
+            "missing_ratio": 0,
+        }
         decision = rule_based_select(props)
         assert decision.algorithm == "NOTEARSLinear"
 
     def test_non_gaussian_selects_lingam(self):
-        props = {"n_samples": 500, "n_features": 10, "is_time_series": False,
-                 "likely_linear": True, "likely_gaussian": False, "has_missing": False, "missing_ratio": 0}
+        props = {
+            "n_samples": 500,
+            "n_features": 10,
+            "is_time_series": False,
+            "likely_linear": True,
+            "likely_gaussian": False,
+            "has_missing": False,
+            "missing_ratio": 0,
+        }
         decision = rule_based_select(props)
         assert decision.algorithm == "DirectLiNGAM"
 
     def test_decision_has_reason(self):
-        props = {"n_samples": 500, "n_features": 10, "is_time_series": False,
-                 "likely_linear": False, "likely_gaussian": True, "has_missing": False, "missing_ratio": 0}
+        props = {
+            "n_samples": 500,
+            "n_features": 10,
+            "is_time_series": False,
+            "likely_linear": False,
+            "likely_gaussian": True,
+            "has_missing": False,
+            "missing_ratio": 0,
+        }
         decision = rule_based_select(props)
         assert len(decision.reason) > 0
         assert isinstance(decision.hyperparams, dict)

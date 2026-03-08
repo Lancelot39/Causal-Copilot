@@ -1,8 +1,9 @@
 """Rule-based algorithm selection planner (offline, deterministic)."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -11,12 +12,13 @@ import pandas as pd
 @dataclass
 class PlannerDecision:
     """Output of algorithm selection — typed, inspectable, serializable."""
+
     algorithm: str
-    hyperparams: Dict[str, Any]
+    hyperparams: dict[str, Any]
     reason: str
 
 
-def detect_data_properties(data: pd.DataFrame) -> Dict[str, Any]:
+def detect_data_properties(data: pd.DataFrame) -> dict[str, Any]:
     """Detect basic statistical properties of input data for algorithm selection."""
     n_samples, n_features = data.shape
 
@@ -67,7 +69,7 @@ _DEFAULT_HYPERPARAMS = {
 }
 
 
-def rule_based_select(properties: Dict[str, Any]) -> PlannerDecision:
+def rule_based_select(properties: dict[str, Any]) -> PlannerDecision:
     """
     Select algorithm based on data properties using a simple decision tree.
 

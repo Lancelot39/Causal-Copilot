@@ -1,10 +1,11 @@
 """CausalCopilot — the main entry point for causal analysis."""
+
 from __future__ import annotations
 
 import signal
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -20,6 +21,7 @@ _VALID_PLANNERS = ("rule",)  # "llm" will be added in a future version
 
 class AlgorithmTimeoutError(Exception):
     """Raised when algorithm execution exceeds timeout."""
+
     pass
 
 
@@ -37,12 +39,13 @@ _ALGORITHM_REGISTRY = {
 }
 
 
-def _load_algorithm(name: str, params: Dict[str, Any]) -> CausalDiscoveryBase:
+def _load_algorithm(name: str, params: dict[str, Any]) -> CausalDiscoveryBase:
     """Lazily import and instantiate an algorithm adapter."""
     if name not in _ALGORITHM_REGISTRY:
         raise ValueError(f"Unknown algorithm: {name!r}. Available: {sorted(_ALGORITHM_REGISTRY)}")
     module_path, class_name = _ALGORITHM_REGISTRY[name]
     import importlib
+
     mod = importlib.import_module(module_path)
     cls = getattr(mod, class_name)
     return cls(params=params)
@@ -76,11 +79,14 @@ def _build_graph(adj_matrix: np.ndarray, columns: list):
 
 def _make_provenance(data_hash, seed, decision, active_planner, elapsed):
     return Provenance(
-        dataset_hash=data_hash, seed=seed,
-        algorithm=decision.algorithm, algorithm_version=__version__,
+        dataset_hash=data_hash,
+        seed=seed,
+        algorithm=decision.algorithm,
+        algorithm_version=__version__,
         package_version=__version__,
         hyperparams=Provenance.freeze_params(decision.hyperparams),
-        planner=active_planner, runtime_seconds=elapsed,
+        planner=active_planner,
+        runtime_seconds=elapsed,
         timestamp=Provenance.now_utc(),
         environment=Provenance.get_environment(),
     )
@@ -104,8 +110,8 @@ class CausalCopilot:
         self,
         data: str | Path | pd.DataFrame,
         *,
-        planner: Optional[str] = None,
-        algorithm: Optional[str] = None,
+        planner: str | None = None,
+        algorithm: str | None = None,
         timeout: int = 300,
         seed: int = 42,
     ) -> CausalResult:
@@ -192,7 +198,7 @@ class CausalCopilot:
         numeric_df = numeric_df.dropna()
         n_dropped = n_before - len(numeric_df)
         if n_dropped > 0:
-            warnings.append(f"Dropped {n_dropped} rows with missing values ({n_dropped/n_before:.1%}).")
+            warnings.append(f"Dropped {n_dropped} rows with missing values ({n_dropped / n_before:.1%}).")
         if len(numeric_df) < 10:
             return CausalResult(
                 status="failed",
@@ -235,7 +241,7 @@ class CausalCopilot:
         alarm_set = False
         try:
             try:
-                if hasattr(signal, 'SIGALRM'):
+                if hasattr(signal, "SIGALRM"):
                     old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
                     signal.alarm(timeout)
                     alarm_set = True
@@ -284,7 +290,7 @@ class CausalCopilot:
             if adj_matrix.shape[0] == adj_matrix.shape[1] and adj_matrix.shape[0] < n_vars:
                 # Square but smaller — trim node_names to match
                 # (e.g. CDNOD drops domain_index internally)
-                cols = cols[:adj_matrix.shape[0]]
+                cols = cols[: adj_matrix.shape[0]]
                 warnings.append(
                     f"Adjacency matrix is {adj_matrix.shape[0]}x{adj_matrix.shape[0]} "
                     f"but data had {n_vars} columns; node_names trimmed to match matrix."
@@ -292,8 +298,7 @@ class CausalCopilot:
             else:
                 return CausalResult(
                     status="failed",
-                    summary=f"Adjacency matrix shape {adj_matrix.shape} does not match "
-                            f"{n_vars} features",
+                    summary=f"Adjacency matrix shape {adj_matrix.shape} does not match {n_vars} features",
                     warnings=warnings,
                     provenance=_make_provenance(data_hash, seed, decision, active_planner, elapsed),
                 )
@@ -307,11 +312,15 @@ class CausalCopilot:
         n_directed = int(np.sum(adj_matrix == 1))
         # Count unique unordered pairs for symmetric edge types
         n_undirected = sum(
-            1 for i in range(adj_matrix.shape[0]) for j in range(i + 1, adj_matrix.shape[1])
+            1
+            for i in range(adj_matrix.shape[0])
+            for j in range(i + 1, adj_matrix.shape[1])
             if adj_matrix[i, j] == 2 or adj_matrix[j, i] == 2
         )
         n_bidirected = sum(
-            1 for i in range(adj_matrix.shape[0]) for j in range(i + 1, adj_matrix.shape[1])
+            1
+            for i in range(adj_matrix.shape[0])
+            for j in range(i + 1, adj_matrix.shape[1])
             if adj_matrix[i, j] == 3 or adj_matrix[j, i] == 3
         )
 
@@ -329,8 +338,8 @@ class CausalCopilot:
             graph=graph,
             discovery_metadata=metadata if isinstance(metadata, dict) else {},
             summary=f"Discovered {edge_summary} edges using {decision.algorithm} "
-                    f"on {numeric_df.shape[0]} samples × {numeric_df.shape[1]} features "
-                    f"in {elapsed:.1f}s.",
+            f"on {numeric_df.shape[0]} samples × {numeric_df.shape[1]} features "
+            f"in {elapsed:.1f}s.",
             warnings=warnings,
             provenance=provenance,
             algorithm_selection_reason=decision.reason,

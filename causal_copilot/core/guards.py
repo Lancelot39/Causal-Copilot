@@ -1,11 +1,9 @@
 """Data validation guards — enforce boundaries before pipeline execution."""
-from __future__ import annotations
 
-from typing import List
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd
-
 
 # v0.1 boundaries (laptop-first)
 MAX_SAMPLES = 100_000
@@ -15,10 +13,11 @@ MAX_MISSING_RATIO = 0.5
 
 class DataValidationError(ValueError):
     """Raised when input data fails validation."""
+
     pass
 
 
-def validate_data(data: pd.DataFrame) -> List[str]:
+def validate_data(data: pd.DataFrame) -> list[str]:
     """
     Validate input data and return list of warnings.
     Raises DataValidationError for hard failures.
@@ -41,14 +40,12 @@ def validate_data(data: pd.DataFrame) -> List[str]:
 
     if n_samples > MAX_SAMPLES:
         raise DataValidationError(
-            f"Too many samples ({n_samples:,}). v0.1 maximum is {MAX_SAMPLES:,}. "
-            "Consider subsampling."
+            f"Too many samples ({n_samples:,}). v0.1 maximum is {MAX_SAMPLES:,}. Consider subsampling."
         )
 
     if n_features > MAX_FEATURES:
         raise DataValidationError(
-            f"Too many features ({n_features}). v0.1 maximum is {MAX_FEATURES}. "
-            "Consider feature selection."
+            f"Too many features ({n_features}). v0.1 maximum is {MAX_FEATURES}. Consider feature selection."
         )
 
     # Check missing values
@@ -64,8 +61,7 @@ def validate_data(data: pd.DataFrame) -> List[str]:
     numeric_cols = data.select_dtypes(include=[np.number]).columns
     if len(numeric_cols) < 2:
         raise DataValidationError(
-            f"Need at least 2 numeric columns, found {len(numeric_cols)}. "
-            "Causal discovery requires numeric data."
+            f"Need at least 2 numeric columns, found {len(numeric_cols)}. Causal discovery requires numeric data."
         )
 
     non_numeric = set(data.columns) - set(numeric_cols)

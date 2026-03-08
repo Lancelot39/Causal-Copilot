@@ -1,18 +1,17 @@
 """Integration tests for CausalCopilot.analyze() — the main entry point."""
-import tempfile
-from pathlib import Path
+
 from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from causal_copilot.copilot import CausalCopilot, _build_graph, AlgorithmTimeoutError
-
+from causal_copilot.copilot import CausalCopilot, _build_graph
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def simple_df():
@@ -38,6 +37,7 @@ def csv_path(simple_df, tmp_path):
 # Constructor
 # ---------------------------------------------------------------------------
 
+
 class TestConstructor:
     def test_default_planner(self):
         c = CausalCopilot()
@@ -51,6 +51,7 @@ class TestConstructor:
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
+
 
 class TestDataLoading:
     def test_file_not_found(self):
@@ -86,6 +87,7 @@ class TestDataLoading:
 # Validation & cleaning
 # ---------------------------------------------------------------------------
 
+
 class TestValidationAndCleaning:
     def test_too_few_numeric_columns(self):
         df = pd.DataFrame({"a": [1] * 20, "b": ["x"] * 20})
@@ -116,10 +118,12 @@ class TestValidationAndCleaning:
         # 20 rows, 12 have NaN in one column → 8 remain after dropna → fail (<10)
         # Keep missing ratio under 50% so validate_data passes
         vals = [float(i) for i in range(8)] + [np.nan] * 12
-        df = pd.DataFrame({
-            "a": vals,
-            "b": [float(i) for i in range(20)],
-        })
+        df = pd.DataFrame(
+            {
+                "a": vals,
+                "b": [float(i) for i in range(20)],
+            }
+        )
         result = CausalCopilot().analyze(df)
         assert result.status == "failed"
         assert "remain" in result.summary.lower()
@@ -128,6 +132,7 @@ class TestValidationAndCleaning:
 # ---------------------------------------------------------------------------
 # Algorithm selection & execution
 # ---------------------------------------------------------------------------
+
 
 class TestAlgorithmSelection:
     def test_forced_algorithm(self, simple_df):
@@ -149,6 +154,7 @@ class TestAlgorithmSelection:
 
     def test_algorithm_failure_captured(self, simple_df):
         """If algorithm.fit() raises, result is failed with message."""
+
         def _failing_fit(data, **kwargs):
             raise RuntimeError("algo exploded")
 
@@ -162,6 +168,7 @@ class TestAlgorithmSelection:
 # ---------------------------------------------------------------------------
 # Result structure
 # ---------------------------------------------------------------------------
+
 
 class TestResultStructure:
     def test_ok_result_has_all_fields(self, simple_df):
@@ -243,6 +250,7 @@ class TestResultStructure:
 # Graph building
 # ---------------------------------------------------------------------------
 
+
 class TestBuildGraph:
     def test_directed_edges(self):
         # mat[i,j]=1 means j→i
@@ -275,11 +283,13 @@ class TestBuildGraph:
         assert g.number_of_nodes() == 3
 
     def test_mixed_edges(self):
-        mat = np.array([
-            [0, 1, 0],
-            [0, 0, 2],
-            [0, 0, 0],
-        ])
+        mat = np.array(
+            [
+                [0, 1, 0],
+                [0, 0, 2],
+                [0, 0, 0],
+            ]
+        )
         g = _build_graph(mat, ["A", "B", "C"])
         assert g.has_edge("B", "A")  # directed
         assert g["B"]["A"]["edge_type"] == "directed"
@@ -291,38 +301,45 @@ class TestBuildGraph:
 # Edge counting in summary
 # ---------------------------------------------------------------------------
 
+
 class TestEdgeCounting:
     def test_directed_count(self, simple_df):
-        adj = np.array([
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ])
+        adj = np.array(
+            [
+                [0, 1, 0, 0],
+                [0, 0, 1, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ]
+        )
         with _mock_algorithm(adj_matrix=adj):
             result = CausalCopilot().analyze(simple_df, seed=0)
         assert "2 directed" in result.summary
 
     def test_undirected_count_symmetric(self, simple_df):
         """Undirected edges encoded symmetrically: both (i,j) and (j,i) = 2."""
-        adj = np.array([
-            [0, 2, 0, 0],
-            [2, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ])
+        adj = np.array(
+            [
+                [0, 2, 0, 0],
+                [2, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ]
+        )
         with _mock_algorithm(adj_matrix=adj):
             result = CausalCopilot().analyze(simple_df, seed=0)
         assert "1 undirected" in result.summary
 
     def test_undirected_count_one_sided(self, simple_df):
         """Undirected edges encoded one-sided: only (i,j) = 2 (PC wrapper style)."""
-        adj = np.array([
-            [0, 2, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-            [0, 0, 0, 0],
-        ])
+        adj = np.array(
+            [
+                [0, 2, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+                [0, 0, 0, 0],
+            ]
+        )
         with _mock_algorithm(adj_matrix=adj):
             result = CausalCopilot().analyze(simple_df, seed=0)
         assert "1 undirected" in result.summary
@@ -332,8 +349,10 @@ class TestEdgeCounting:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 class _MockAlgo:
     """Minimal mock that satisfies the algorithm interface."""
+
     def __init__(self, adj_matrix=None, fit_side_effect=None):
         self._adj = adj_matrix
         self._side_effect = fit_side_effect
@@ -351,6 +370,7 @@ class _MockAlgo:
 
 class _mock_algorithm:
     """Context manager that patches _load_algorithm to return a mock."""
+
     def __init__(self, adj_matrix=None, fit_side_effect=None):
         self._adj = adj_matrix
         self._side_effect = fit_side_effect

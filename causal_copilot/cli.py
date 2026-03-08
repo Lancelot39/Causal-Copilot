@@ -1,4 +1,5 @@
 """Causal-Copilot CLI entry point."""
+
 from __future__ import annotations
 
 import argparse
@@ -13,6 +14,7 @@ def cmd_doctor(args):
     print("=" * 40)
 
     from causal_copilot import __version__
+
     print(f"Version: {__version__}")
 
     # Check core deps
@@ -51,6 +53,7 @@ def cmd_doctor(args):
 
     print("\nPlatform:")
     import platform
+
     print(f"  OS: {platform.system()} {platform.release()}")
     print(f"  Python: {sys.version.split()[0]}")
     print(f"  Arch: {platform.machine()}")
@@ -58,6 +61,7 @@ def cmd_doctor(args):
 
 def cmd_version(args):
     from causal_copilot import __version__
+
     print(f"causal-copilot {__version__}")
 
 
@@ -99,6 +103,7 @@ def cmd_quickstart(args):
     """Run a demo analysis on bundled synthetic data."""
     import numpy as np
     import pandas as pd
+
     from causal_copilot import CausalCopilot
 
     print("Causal-Copilot Quickstart")
@@ -119,7 +124,7 @@ def cmd_quickstart(args):
     print(f"Summary: {result.summary}")
 
     if result.adjacency_matrix is not None:
-        print(f"\nAdjacency matrix (columns → rows):")
+        print("\nAdjacency matrix (columns → rows):")
         cols = ["X", "Y", "Z"]
         header = "     " + "  ".join(f"{c:>4}" for c in cols)
         print(header)

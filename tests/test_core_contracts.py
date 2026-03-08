@@ -1,11 +1,12 @@
 """Tests for core interface contracts -- CausalResult, Provenance, base classes."""
+
 import json
 
 import numpy as np
 import pytest
 
-from causal_copilot.core.result import CausalResult, Provenance, TreatmentEffect, _json_safe
 from causal_copilot.core.base import CausalDiscoveryBase, CausalInferenceBase
+from causal_copilot.core.result import CausalResult, Provenance, TreatmentEffect, _json_safe
 
 
 class TestProvenance:
@@ -25,11 +26,16 @@ class TestProvenance:
 
     def test_frozen(self):
         p = Provenance(
-            dataset_hash="abc", seed=42, algorithm="PC",
-            algorithm_version="0.1", package_version="0.1.0",
+            dataset_hash="abc",
+            seed=42,
+            algorithm="PC",
+            algorithm_version="0.1",
+            package_version="0.1.0",
             hyperparams=Provenance.freeze_params({"alpha": 0.05}),
-            planner="rule", runtime_seconds=1.0,
-            timestamp="2026-01-01T00:00:00Z", environment="test",
+            planner="rule",
+            runtime_seconds=1.0,
+            timestamp="2026-01-01T00:00:00Z",
+            environment="test",
         )
         with pytest.raises(AttributeError):
             p.seed = 99

@@ -1,4 +1,5 @@
 """Tests for the CLI commands."""
+
 import json
 from unittest.mock import patch
 
@@ -80,7 +81,6 @@ class TestAnalyze:
         out = capsys.readouterr().out
         assert "seed=99" in out
 
-
     def test_analyze_bad_planner(self, tmp_path, capsys):
         rng = np.random.default_rng(0)
         df = pd.DataFrame({"a": rng.normal(size=50), "b": rng.normal(size=50)})
@@ -120,6 +120,7 @@ class TestNoCommand:
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 class _MockAlgo:
     def default_params(self):
         return {"mock_param": True}
@@ -131,6 +132,7 @@ class _MockAlgo:
 
 class _mock_algorithm:
     """Patches _load_algorithm in copilot module."""
+
     def __enter__(self):
         self._patcher = patch(
             "causal_copilot.copilot._load_algorithm",

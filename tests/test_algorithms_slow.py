@@ -3,6 +3,7 @@
 Run with: pytest tests/test_algorithms_slow.py -m slow -v
 These tests are SKIPPED if algorithm dependencies are not installed.
 """
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -21,6 +22,7 @@ def _try_import_adapter(name):
     """Try to import and instantiate an adapter, skip if deps missing."""
     try:
         from causal_copilot.algorithms.adapters import STABLE_ALGORITHMS
+
         cls = STABLE_ALGORITHMS[name]
         adapter = cls()
         return adapter
@@ -89,8 +91,9 @@ class TestEndToEndQuickstart:
     def test_quickstart_e2e(self, tmp_path):
         """Full CausalCopilot.analyze() on synthetic data with real algorithm."""
         try:
-            from causal_copilot import CausalCopilot
             import json
+
+            from causal_copilot import CausalCopilot
 
             df = _make_linear_data(n=200)
             copilot = CausalCopilot()

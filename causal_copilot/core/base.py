@@ -1,8 +1,9 @@
 """Abstract base classes for causal discovery and inference algorithms."""
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -17,8 +18,8 @@ class CausalDiscoveryBase(ABC):
     and planner-agnostic execution.
     """
 
-    def __init__(self, params: Optional[Dict[str, Any]] = None):
-        self._params: Dict[str, Any] = params or {}
+    def __init__(self, params: dict[str, Any] | None = None):
+        self._params: dict[str, Any] = params or {}
 
     @property
     @abstractmethod
@@ -31,7 +32,7 @@ class CausalDiscoveryBase(ABC):
         self,
         data: pd.DataFrame | np.ndarray,
         **kwargs,
-    ) -> Tuple[np.ndarray, Dict[str, Any], Any]:
+    ) -> tuple[np.ndarray, dict[str, Any], Any]:
         """
         Run causal discovery on data.
 
@@ -46,11 +47,11 @@ class CausalDiscoveryBase(ABC):
         ...
 
     @abstractmethod
-    def default_params(self) -> Dict[str, Any]:
+    def default_params(self) -> dict[str, Any]:
         """Return default hyperparameters for this algorithm."""
         ...
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         """Return current parameters."""
         return dict(self._params)
 
@@ -68,12 +69,12 @@ class CausalInferenceBase(ABC):
 
     def __init__(
         self,
-        params: Optional[Dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
         outcome: str = "",
         treatment: str = "",
-        covariates: Optional[list] = None,
+        covariates: list | None = None,
     ):
-        self._params: Dict[str, Any] = params or {}
+        self._params: dict[str, Any] = params or {}
         self.outcome = outcome
         self.treatment = treatment
         self.covariates = covariates or []
@@ -90,7 +91,7 @@ class CausalInferenceBase(ABC):
         ...
 
     @abstractmethod
-    def estimate_ate(self, data: pd.DataFrame) -> Tuple[float, Optional[Tuple[float, float]]]:
+    def estimate_ate(self, data: pd.DataFrame) -> tuple[float, tuple[float, float] | None]:
         """
         Estimate Average Treatment Effect.
 
@@ -100,20 +101,20 @@ class CausalInferenceBase(ABC):
         """
         ...
 
-    def estimate_att(self, data: pd.DataFrame) -> Tuple[float, Optional[Tuple[float, float]]]:
+    def estimate_att(self, data: pd.DataFrame) -> tuple[float, tuple[float, float] | None]:
         """Estimate Average Treatment Effect on the Treated. Optional."""
         raise NotImplementedError(f"{self.name} does not support ATT estimation")
 
-    def estimate_hte(self, data: pd.DataFrame) -> Tuple[np.ndarray, Optional[Tuple[np.ndarray, np.ndarray]]]:
+    def estimate_hte(self, data: pd.DataFrame) -> tuple[np.ndarray, tuple[np.ndarray, np.ndarray] | None]:
         """Estimate Heterogeneous Treatment Effects. Optional."""
         raise NotImplementedError(f"{self.name} does not support HTE estimation")
 
     @abstractmethod
-    def default_params(self) -> Dict[str, Any]:
+    def default_params(self) -> dict[str, Any]:
         """Return default hyperparameters."""
         ...
 
-    def get_params(self) -> Dict[str, Any]:
+    def get_params(self) -> dict[str, Any]:
         return dict(self._params)
 
     def set_params(self, **params) -> None:

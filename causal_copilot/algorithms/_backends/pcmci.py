@@ -1,12 +1,13 @@
 """PCMCI backend — imports tigramite directly."""
+
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, Tuple
-
-from tigramite.pcmci import PCMCI as PCMCI_model
 from tigramite import data_processing as pp
 from tigramite.independence_tests.parcorr import ParCorr
 from tigramite.independence_tests.robust_parcorr import RobustParCorr
+from tigramite.pcmci import PCMCI as PCMCI_model
 
 from causal_copilot.algorithms._backends._base import Backend
 
@@ -20,21 +21,27 @@ def _build_cond_ind_test(test_name: str):
     elif test_name == "gpdc":
         try:
             import torch
+
             if torch.cuda.is_available():
                 from tigramite.independence_tests.gpdc_torch import GPDCtorch as GPDC
+
                 return GPDC()
         except ImportError:
             pass
         from tigramite.independence_tests.gpdc import GPDC
+
         return GPDC(significance="analytic", gp_params=None)
     elif test_name == "gsq":
         from tigramite.independence_tests.gsquared import Gsquared
+
         return Gsquared(significance="analytic")
     elif test_name == "regression":
         from tigramite.independence_tests.regressionCI import RegressionCI
+
         return RegressionCI(significance="analytic")
     elif test_name == "cmi":
         from tigramite.independence_tests.cmiknn import CMIknn
+
         return CMIknn(
             significance="shuffle_test",
             knn=0.1,
@@ -50,7 +57,7 @@ def _build_cond_ind_test(test_name: str):
 class PCMCIBackend(Backend):
     """PCMCI+ time-series causal discovery using tigramite."""
 
-    def fit(self, data: pd.DataFrame) -> Tuple[np.ndarray, Dict[str, Any], Any]:
+    def fit(self, data: pd.DataFrame) -> tuple[np.ndarray, dict[str, Any], Any]:
         # Remove domain_index if present
         if "domain_index" in data.columns:
             data = data.drop(columns=["domain_index"])

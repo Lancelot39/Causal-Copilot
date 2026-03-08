@@ -2,16 +2,17 @@
 
 Run with: pytest benchmarks/ -v
 """
+
 import numpy as np
 import pytest
 
+from benchmarks.evaluate import evaluate_adjacency
 from benchmarks.scenarios import ALL_SCENARIOS, Scenario
-from benchmarks.evaluate import evaluate_adjacency, DiscoveryMetrics
-
 
 # ---------------------------------------------------------------------------
 # Scenario smoke tests
 # ---------------------------------------------------------------------------
+
 
 class TestScenarios:
     @pytest.mark.parametrize("name", list(ALL_SCENARIOS.keys()))
@@ -28,10 +29,14 @@ class TestScenarios:
         """Same scenario generated twice must produce identical data."""
         s1 = ALL_SCENARIOS[name]
         # Re-import to regenerate
-        from benchmarks.scenarios import _make_scenario, linear_chain, fork, collider, diamond, sparse_10
+        from benchmarks.scenarios import _make_scenario, collider, diamond, fork, linear_chain, sparse_10
+
         gen_fns = {
-            "linear_chain": linear_chain, "fork": fork, "collider": collider,
-            "diamond": diamond, "sparse_10": sparse_10,
+            "linear_chain": linear_chain,
+            "fork": fork,
+            "collider": collider,
+            "diamond": diamond,
+            "sparse_10": sparse_10,
         }
         s2 = _make_scenario(name, s1.description, gen_fns[name])
         np.testing.assert_array_equal(s1.data.values, s2.data.values)
@@ -50,6 +55,7 @@ class TestScenarios:
 # ---------------------------------------------------------------------------
 # Evaluation metrics
 # ---------------------------------------------------------------------------
+
 
 class TestEvaluation:
     def test_perfect_prediction(self):

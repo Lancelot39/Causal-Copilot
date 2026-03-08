@@ -1,7 +1,9 @@
 """NOTEARS (linear) backend — tries gcastle first, falls back to causal-learn."""
+
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Any, Dict, Tuple
 
 from causal_copilot.algorithms._backends._base import Backend
 
@@ -9,16 +11,14 @@ from causal_copilot.algorithms._backends._base import Backend
 class NOTEARSLinearBackend(Backend):
     """NOTEARS linear using gcastle (castle.algorithms.Notears)."""
 
-    def fit(self, data: pd.DataFrame) -> Tuple[np.ndarray, Dict[str, Any], Any]:
+    def fit(self, data: pd.DataFrame) -> tuple[np.ndarray, dict[str, Any], Any]:
         # Remove domain_index if present
         if isinstance(data, pd.DataFrame) and "domain_index" in data.columns:
             data = data.drop(columns=["domain_index"])
 
         if isinstance(data, pd.DataFrame):
-            node_names = list(data.columns)
             data_values = data.values
         else:
-            node_names = [f"X{i}" for i in range(data.shape[1])]
             data_values = np.array(data)
 
         from castle.algorithms import Notears

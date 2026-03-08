@@ -1,4 +1,5 @@
 """Evaluation metrics for causal discovery benchmarks."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -9,6 +10,7 @@ import numpy as np
 @dataclass
 class DiscoveryMetrics:
     """Metrics comparing discovered adjacency to ground truth."""
+
     true_positives: int
     false_positives: int
     false_negatives: int
