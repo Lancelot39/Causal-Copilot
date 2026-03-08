@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-import signal
+import json
+import subprocess
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -18,15 +20,68 @@ from causal_copilot.core.result import CausalResult, Provenance
 
 _VALID_PLANNERS = ("rule",)  # "llm" will be added in a future version
 
+# Inline script executed in a fresh Python process by _run_in_subprocess.
+# Reads JSON config from stdin, runs algo.fit(), writes JSON result to stdout.
+_WORKER_SCRIPT = r"""
+import io, json, sys
+import numpy as np
+import pandas as pd
 
-class AlgorithmTimeoutError(Exception):
-    """Raised when algorithm execution exceeds timeout."""
+cfg = json.load(sys.stdin)
+from causal_copilot.algorithms.registry import REGISTRY
+from causal_copilot.core.result import _json_safe
 
-    pass
+spec = REGISTRY.get(cfg["algo_name"])
+if spec is None:
+    json.dump({"status": "error", "message": f"Unknown algorithm: {cfg['algo_name']}"}, sys.stdout)
+    sys.exit(0)
+adapter = spec.adapter_cls(params=cfg["algo_params"])
+df = pd.read_json(io.StringIO(cfg["data_json"]))
+try:
+    adj, meta, _ = adapter.fit(df)
+    json.dump({"status": "ok", "adj": adj.tolist(), "meta": _json_safe(meta)}, sys.stdout)
+except Exception as e:
+    json.dump({"status": "error", "message": str(e)}, sys.stdout)
+"""
 
 
-def _timeout_handler(signum, frame):
-    raise AlgorithmTimeoutError("Algorithm execution timed out")
+def _run_in_subprocess(
+    algo: CausalDiscoveryBase, data: pd.DataFrame, timeout: int
+) -> tuple[np.ndarray, dict]:
+    """Run algo.fit(data) in a fresh subprocess with kill-based timeout.
+
+    Launches a new Python interpreter via subprocess.Popen, avoiding all
+    fork-safety issues (deadlocks in multi-threaded parents, macOS spawn
+    restrictions). Data crosses the process boundary as JSON over stdin/stdout.
+
+    Returns (adj_matrix, metadata) or raises TimeoutError / RuntimeError.
+    """
+    cfg = json.dumps({
+        "algo_name": algo.name,
+        "algo_params": algo.get_params(),
+        "data_json": data.to_json(),
+    })
+
+    proc = subprocess.Popen(
+        [sys.executable, "-c", _WORKER_SCRIPT],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    try:
+        stdout, stderr = proc.communicate(input=cfg.encode(), timeout=timeout)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait(timeout=5)
+        raise TimeoutError(f"Algorithm timed out after {timeout}s")
+
+    if proc.returncode != 0:
+        raise RuntimeError(f"Subprocess exited with code {proc.returncode}: {stderr.decode()[:500]}")
+
+    result = json.loads(stdout.decode())
+    if result["status"] == "ok":
+        return np.array(result["adj"]), result.get("meta", {})
+    raise RuntimeError(result.get("message", "Unknown error in subprocess"))
 
 
 def _load_algorithm(name: str, params: dict[str, Any]) -> CausalDiscoveryBase:
@@ -228,22 +283,18 @@ class CausalCopilot:
                 warnings=warnings + [str(e)],
             )
 
-        # Execute with timeout (signal.alarm is Unix-only and main-thread-only)
-        old_handler = None
-        alarm_set = False
+        # Execute algorithm (with process-based timeout)
         try:
             try:
-                if hasattr(signal, "SIGALRM"):
-                    old_handler = signal.signal(signal.SIGALRM, _timeout_handler)
-                    signal.alarm(timeout)
-                    alarm_set = True
-            except (ValueError, OSError):
-                # Not in main thread or signal not available — skip timeout
-                pass
-
-            adj_matrix, metadata, model = algo.fit(numeric_df)
-
-        except AlgorithmTimeoutError:
+                adj_matrix, metadata = _run_in_subprocess(algo, numeric_df, timeout)
+            except (OSError, AttributeError, TypeError) as sub_err:
+                if isinstance(sub_err, TimeoutError):
+                    raise  # TimeoutError is a subclass of OSError — don't swallow it
+                # Subprocess couldn't start: fork unavailable (OSError), mock algo
+                # missing .name/.get_params (AttributeError), or serialization
+                # failure (TypeError). Fall back to direct execution (no timeout).
+                adj_matrix, metadata, _ = algo.fit(numeric_df)
+        except TimeoutError:
             elapsed = time.monotonic() - start_time
             return CausalResult(
                 status="failed",
@@ -261,15 +312,6 @@ class CausalCopilot:
                 provenance=_make_provenance(data_hash, seed, decision, active_planner, elapsed),
                 algorithm_selection_reason=decision.reason,
             )
-        finally:
-            # Always clean up signal state
-            if alarm_set:
-                signal.alarm(0)
-            if old_handler is not None:
-                try:
-                    signal.signal(signal.SIGALRM, old_handler)
-                except (ValueError, OSError):
-                    pass
 
         elapsed = time.monotonic() - start_time
 
