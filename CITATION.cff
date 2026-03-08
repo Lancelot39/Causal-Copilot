@@ -1,0 +1,66 @@
+cff-version: 1.2.0
+message: "If you use Causal-Copilot in your research, please cite it as follows."
+title: "Causal-Copilot: An Autonomous Causal Analysis Agent"
+type: software
+license: MIT
+repository-code: "https://github.com/cauchyturing/Causal-Copilot"
+url: "https://causalcopilot.com"
+authors:
+  - family-names: Wang
+    given-names: Xinyue
+  - family-names: Zhou
+    given-names: Kun
+  - family-names: Wu
+    given-names: Wenyi
+  - family-names: Singh
+    given-names: Har Simrat
+  - family-names: Nan
+    given-names: Fang
+  - family-names: Jin
+    given-names: Songyao
+  - family-names: Philip
+    given-names: Aryan
+  - family-names: Patnaik
+    given-names: Saloni
+  - family-names: Zhu
+    given-names: Hou
+  - family-names: Singh
+    given-names: Shivam
+  - family-names: Prashant
+    given-names: Parjanya
+  - family-names: Shen
+    given-names: Qian
+  - family-names: Huang
+    given-names: Biwei
+preferred-citation:
+  type: article
+  title: "Causal-Copilot: An Autonomous Causal Analysis Agent"
+  authors:
+    - family-names: Wang
+      given-names: Xinyue
+    - family-names: Zhou
+      given-names: Kun
+    - family-names: Wu
+      given-names: Wenyi
+    - family-names: Singh
+      given-names: Har Simrat
+    - family-names: Nan
+      given-names: Fang
+    - family-names: Jin
+      given-names: Songyao
+    - family-names: Philip
+      given-names: Aryan
+    - family-names: Patnaik
+      given-names: Saloni
+    - family-names: Zhu
+      given-names: Hou
+    - family-names: Singh
+      given-names: Shivam
+    - family-names: Prashant
+      given-names: Parjanya
+    - family-names: Shen
+      given-names: Qian
+    - family-names: Huang
+      given-names: Biwei
+  journal: "arXiv preprint arXiv:2504.13263"
+  year: 2025
