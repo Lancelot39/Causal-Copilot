@@ -28,6 +28,38 @@ Identifying causality lets scientists look past correlations and uncover the mec
 
 ---
 
+## Python API Quickstart
+
+```bash
+pip install causal-copilot              # core (offline, no LLM needed)
+pip install causal-copilot[algorithms]  # + algorithm backends (lingam, tigramite, etc.)
+```
+
+```python
+import pandas as pd
+from causal_copilot import CausalCopilot
+
+df = pd.read_csv("your_data.csv")
+result = CausalCopilot().analyze(df, seed=42)
+
+print(result.status)             # "ok" | "partial" | "failed"
+print(result.adjacency_matrix)   # numpy array (mat[i,j]=1 means j->i)
+print(result.node_names)         # column names matching matrix indices
+print(result.summary)            # human-readable summary
+print(result.provenance)         # full reproducibility record
+```
+
+**CLI:**
+```bash
+causal-copilot analyze data.csv --algorithm PC --seed 42 -o result.json
+causal-copilot quickstart        # synthetic data demo
+causal-copilot doctor            # check dependencies
+```
+
+See [Technical Report](https://arxiv.org/pdf/2504.13263) for algorithm details.
+
+---
+
 ## Demo
 
 ### Video Demo
@@ -327,6 +359,24 @@ Distributed under the MIT License. See `LICENSE` for more information.
 ## Contact
 
 For additional information, questions, or feedback, please contact ours **[Xinyue Wang](xiw159@ucsd.edu)**, **[Kun Zhou](franciskunzhou@gmail.com)**, **[Wenyi Wu](wew058@ucsd.edu)**, and **[Biwei Huang](bih007@ucsd.edu)**. We welcome contributions! Come and join us now!
+
+## Scope & Boundaries
+
+Causal-Copilot produces **exploratory** causal graphs, not confirmatory evidence. Results depend on algorithm assumptions (faithfulness, sufficiency, linearity, etc.) and data quality.
+
+**What it does well:**
+- Automated algorithm selection and hyperparameter tuning for tabular data
+- Reproducible results with full provenance tracking (seed, params, environment)
+- 20+ causal discovery algorithms with unified interface
+
+**What it does NOT do:**
+- Prove causation from observational data alone
+- Handle image, text, or unstructured data
+- Replace domain expertise for interpreting results
+
+Always validate discovered edges against domain knowledge before making decisions.
+
+---
 
 If you use Causal-Copilot in your research, please cite it as follows:
 
