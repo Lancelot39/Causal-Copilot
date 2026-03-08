@@ -63,6 +63,7 @@ gpu = [
 ]
 # Heavy algorithm dependencies
 algorithms = [
+    "causal-learn>=0.1.3.7",
     "lingam>=1.8",
     "tigramite>=5.2",
     "gcastle>=1.0",
