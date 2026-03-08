@@ -59,14 +59,11 @@ def detect_data_properties(data: pd.DataFrame) -> dict[str, Any]:
     }
 
 
-# Default hyperparameters for each stable algorithm
-_DEFAULT_HYPERPARAMS = {
-    "PC": {"alpha": 0.05, "indep_test": "fisherz", "stable": True, "depth": 4},
-    "GES": {"score_func": "local_score_BIC"},
-    "NOTEARSLinear": {"lambda1": 0.1, "max_iter": 100, "h_tol": 1e-8, "w_threshold": 0.3},
-    "DirectLiNGAM": {"measure": "pwling"},
-    "PCMCI": {"tau_min": 0, "tau_max": 2, "pc_alpha": 0.05, "alpha_level": 0.05},
-}
+def _get_defaults(name: str) -> dict[str, Any]:
+    """Read default hyperparams from the canonical registry."""
+    from causal_copilot.algorithms.registry import REGISTRY
+
+    return dict(REGISTRY[name].default_params)
 
 
 def rule_based_select(properties: dict[str, Any]) -> PlannerDecision:
@@ -86,7 +83,7 @@ def rule_based_select(properties: dict[str, Any]) -> PlannerDecision:
     if properties["is_time_series"]:
         return PlannerDecision(
             algorithm="PCMCI",
-            hyperparams=dict(_DEFAULT_HYPERPARAMS["PCMCI"]),
+            hyperparams=_get_defaults("PCMCI"),
             reason="Time-series data detected — PCMCI handles temporal causal discovery.",
         )
 
@@ -94,27 +91,27 @@ def rule_based_select(properties: dict[str, Any]) -> PlannerDecision:
         if p <= 50:
             return PlannerDecision(
                 algorithm="DirectLiNGAM",
-                hyperparams=dict(_DEFAULT_HYPERPARAMS["DirectLiNGAM"]),
+                hyperparams=_get_defaults("DirectLiNGAM"),
                 reason="Non-gaussian errors detected — DirectLiNGAM exploits non-gaussianity for identifiability.",
             )
 
     if properties["likely_linear"] and p <= 30 and n <= 5000:
         return PlannerDecision(
             algorithm="PC",
-            hyperparams=dict(_DEFAULT_HYPERPARAMS["PC"]),
+            hyperparams=_get_defaults("PC"),
             reason="Small-medium linear data — PC is well-understood with strong theoretical guarantees.",
         )
 
     if p > 30 or n > 5000:
         return PlannerDecision(
             algorithm="NOTEARSLinear",
-            hyperparams=dict(_DEFAULT_HYPERPARAMS["NOTEARSLinear"]),
+            hyperparams=_get_defaults("NOTEARSLinear"),
             reason="Large data or many features — NOTEARSLinear scales via continuous optimization.",
         )
 
     # Default fallback
     return PlannerDecision(
         algorithm="GES",
-        hyperparams=dict(_DEFAULT_HYPERPARAMS["GES"]),
+        hyperparams=_get_defaults("GES"),
         reason="General-purpose score-based method — GES is a robust default for medium-sized data.",
     )

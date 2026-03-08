@@ -29,26 +29,14 @@ def _timeout_handler(signum, frame):
     raise AlgorithmTimeoutError("Algorithm execution timed out")
 
 
-# Lazy registry — maps algorithm name to import path
-_ALGORITHM_REGISTRY = {
-    "PC": ("causal_copilot.algorithms.adapters", "PCAdapter"),
-    "GES": ("causal_copilot.algorithms.adapters", "GESAdapter"),
-    "NOTEARSLinear": ("causal_copilot.algorithms.adapters", "NOTEARSLinearAdapter"),
-    "DirectLiNGAM": ("causal_copilot.algorithms.adapters", "DirectLiNGAMAdapter"),
-    "PCMCI": ("causal_copilot.algorithms.adapters", "PCMCIAdapter"),
-}
-
-
 def _load_algorithm(name: str, params: dict[str, Any]) -> CausalDiscoveryBase:
-    """Lazily import and instantiate an algorithm adapter."""
-    if name not in _ALGORITHM_REGISTRY:
-        raise ValueError(f"Unknown algorithm: {name!r}. Available: {sorted(_ALGORITHM_REGISTRY)}")
-    module_path, class_name = _ALGORITHM_REGISTRY[name]
-    import importlib
+    """Instantiate an algorithm adapter from the canonical registry."""
+    from causal_copilot.algorithms.registry import REGISTRY
 
-    mod = importlib.import_module(module_path)
-    cls = getattr(mod, class_name)
-    return cls(params=params)
+    if name not in REGISTRY:
+        raise ValueError(f"Unknown algorithm: {name!r}. Available: {sorted(REGISTRY)}")
+    spec = REGISTRY[name]
+    return spec.adapter_cls(params=params)
 
 
 def _build_graph(adj_matrix: np.ndarray, columns: list):
@@ -78,11 +66,15 @@ def _build_graph(adj_matrix: np.ndarray, columns: list):
 
 
 def _make_provenance(data_hash, seed, decision, active_planner, elapsed):
+    from causal_copilot.algorithms.registry import REGISTRY
+
+    spec = REGISTRY.get(decision.algorithm)
+    algo_version = spec.algorithm_version if spec else "unknown"
     return Provenance(
         dataset_hash=data_hash,
         seed=seed,
         algorithm=decision.algorithm,
-        algorithm_version=__version__,
+        algorithm_version=algo_version,
         package_version=__version__,
         hyperparams=Provenance.freeze_params(decision.hyperparams),
         planner=active_planner,
