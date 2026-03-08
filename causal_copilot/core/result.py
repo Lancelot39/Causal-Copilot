@@ -24,8 +24,9 @@ def _json_safe(obj: Any) -> Any:
     if isinstance(obj, (list, tuple)):
         return [_json_safe(v) for v in obj]
     if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    if isinstance(obj, np.integer):
+        # tolist() then recurse to catch any remaining numpy scalars
+        return _json_safe(obj.tolist())
+    if isinstance(obj, (np.integer, np.bool_)):
         return int(obj)
     if isinstance(obj, np.floating):
         return float(obj)
@@ -159,7 +160,7 @@ class CausalResult:
             "algorithm_selection_reason": self.algorithm_selection_reason,
         }
         if self.adjacency_matrix is not None:
-            d["adjacency_matrix"] = self.adjacency_matrix.tolist()
+            d["adjacency_matrix"] = _json_safe(self.adjacency_matrix)
         if self.node_names is not None:
             d["node_names"] = self.node_names
         if self.discovery_metadata:
@@ -186,7 +187,7 @@ class CausalResult:
                 "algorithm": p.algorithm,
                 "algorithm_version": p.algorithm_version,
                 "package_version": p.package_version,
-                "hyperparams": dict(p.hyperparams),
+                "hyperparams": _json_safe(dict(p.hyperparams)),
                 "planner": p.planner,
                 "planner_model": p.planner_model,
                 "prompt_version": p.prompt_version,

@@ -1,44 +1,120 @@
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
+
+# All imports are wrapped in try/except so missing optional dependencies
+# don't prevent importing individual wrappers that DO have their deps.
 
 # constraint-based algorithms
-# PC based algorithms
-from .pc import PC
-from .fci import FCI
-from .cdnod import CDNOD
-from .pc_parallel import PCParallel
-## Markov Blanket based algorithms
-from .inter_iamb import InterIAMB
-from .bamb import BAMB
-from .hiton_mb import HITONMB
-from .iambnpc import IAMBnPC
-from .mbor import MBOR
+try:
+    from .pc import PC
+except ImportError:
+    pass
+try:
+    from .fci import FCI
+except ImportError:
+    pass
+try:
+    from .cdnod import CDNOD
+except ImportError:
+    pass
+try:
+    from .pc_parallel import PCParallel
+except ImportError:
+    pass
+try:
+    from .inter_iamb import InterIAMB
+except ImportError:
+    pass
+try:
+    from .bamb import BAMB
+except ImportError:
+    pass
+try:
+    from .hiton_mb import HITONMB
+except ImportError:
+    pass
+try:
+    from .iambnpc import IAMBnPC
+except ImportError:
+    pass
+try:
+    from .mbor import MBOR
+except ImportError:
+    pass
 
 # score-based algorithms
-## Greedy search based algorithms
-from .ges import GES
-from .fges import FGES
-from .x_ges import XGES as XGES
-## Continuous optimization based algorithms
-from .notears_linear import NOTEARSLinear
-from .notears_nolinear import NOTEARSNonlinear
-from .corl import CORL
-# from .calm import CALM
-from .golem import GOLEM
-## permutation based algorithms
-from .grasp import GRaSP
+try:
+    from .ges import GES
+except ImportError:
+    pass
+try:
+    from .fges import FGES
+except ImportError:
+    pass
+try:
+    from .x_ges import XGES as XGES
+except ImportError:
+    pass
+try:
+    from .notears_linear import NOTEARSLinear
+except ImportError:
+    pass
+try:
+    from .notears_nolinear import NOTEARSNonlinear
+except ImportError:
+    pass
+try:
+    from .corl import CORL
+except ImportError:
+    pass
+try:
+    from .golem import GOLEM
+except ImportError:
+    pass
+try:
+    from .grasp import GRaSP
+except ImportError:
+    pass
 
 # functional-model based algorithms
-from .direct_lingam import DirectLiNGAM
-from .ica_lingam import ICALiNGAM
+try:
+    from .direct_lingam import DirectLiNGAM
+except ImportError:
+    pass
+try:
+    from .ica_lingam import ICALiNGAM
+except ImportError:
+    pass
 
 # hybrid algorithms
-from .hybrid import Hybrid
+try:
+    from .hybrid import Hybrid
+except ImportError:
+    pass
 
-from .dynotears import DYNOTEARS
-from .pcmci import PCMCI
-from .var_lingam import VARLiNGAM
-from .granger_causality import GrangerCausality
-from .nts_notears import NTSNOTEARS
+# time-series algorithms
+try:
+    from .dynotears import DYNOTEARS
+except ImportError:
+    pass
+try:
+    from .pcmci import PCMCI
+except ImportError:
+    pass
+try:
+    from .var_lingam import VARLiNGAM
+except ImportError:
+    pass
+try:
+    from .granger_causality import GrangerCausality
+except ImportError:
+    pass
+try:
+    from .nts_notears import NTSNOTEARS
+except ImportError:
+    pass
 
 constraint_based_algorithms = ['PC', 'FCI', 'CDNOD', 'InterIAMB', 'BAMB', 'HITONMB', 'IAMBnPC', 'MBOR', 'PCParallel', 'AcceleratedPC']
 score_based_algorithms = ['GES', 'FGES', 'XGES', 'NOTEARSLinear', 'NOTEARSNonlinear', 'CORL', 'CALM', 'GOLEM', 'DYNOTEARS']
