@@ -83,6 +83,25 @@ class TestRealAlgorithms:
         assert adj.shape == (3, 3)
         assert isinstance(meta, dict)
 
+    def test_ica_lingam_real(self):
+        adapter = _try_import_adapter("ICALiNGAM")
+        df = _make_linear_data()
+        adj, meta, model = _run_fit(adapter, df, "ICALiNGAM")
+        assert isinstance(adj, np.ndarray)
+        assert adj.shape == (3, 3)
+        assert isinstance(meta, dict)
+
+    def test_granger_causality_real(self):
+        adapter = _try_import_adapter("GrangerCausality")
+        df = _make_linear_data(n=200)
+        adj, meta, model = _run_fit(adapter, df, "GrangerCausality")
+        assert isinstance(adj, np.ndarray)
+        assert adj.shape == (3, 3)
+        assert isinstance(meta, dict)
+        # Granger should NOT have self-loops
+        for i in range(adj.shape[0]):
+            assert adj[i, i] == 0, f"Self-loop at ({i},{i})"
+
 
 @pytest.mark.slow
 class TestEndToEndQuickstart:

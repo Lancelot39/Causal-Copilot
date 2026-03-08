@@ -4,8 +4,8 @@ from causal_copilot.algorithms.registry import REGISTRY
 
 
 class TestAlgorithmSpec:
-    def test_registry_has_5_algorithms(self):
-        assert len(REGISTRY) == 5
+    def test_registry_has_7_algorithms(self):
+        assert len(REGISTRY) == 7
 
     def test_all_specs_have_required_fields(self):
         for name, spec in REGISTRY.items():

@@ -100,6 +100,42 @@ class PCMCIAdapter(CausalDiscoveryBase):
         return backend.fit(df)
 
 
+class ICALiNGAMAdapter(CausalDiscoveryBase):
+    """Adapter for the ICALiNGAM algorithm."""
+
+    @property
+    def name(self) -> str:
+        return "ICALiNGAM"
+
+    def default_params(self) -> dict[str, Any]:
+        return {"max_iter": 1000}
+
+    def fit(self, data: pd.DataFrame | np.ndarray, **kwargs) -> tuple[np.ndarray, dict[str, Any], Any]:
+        from causal_copilot.algorithms._backends.ica_lingam import ICALiNGAMBackend
+
+        backend = ICALiNGAMBackend({**self.default_params(), **self._params})
+        df = pd.DataFrame(data) if isinstance(data, np.ndarray) else data
+        return backend.fit(df)
+
+
+class GrangerCausalityAdapter(CausalDiscoveryBase):
+    """Adapter for the GrangerCausality algorithm."""
+
+    @property
+    def name(self) -> str:
+        return "GrangerCausality"
+
+    def default_params(self) -> dict[str, Any]:
+        return {"p": 10, "alpha": 0.05, "criterion": "ssr_ftest"}
+
+    def fit(self, data: pd.DataFrame | np.ndarray, **kwargs) -> tuple[np.ndarray, dict[str, Any], Any]:
+        from causal_copilot.algorithms._backends.granger import GrangerCausalityBackend
+
+        backend = GrangerCausalityBackend({**self.default_params(), **self._params})
+        df = pd.DataFrame(data) if isinstance(data, np.ndarray) else data
+        return backend.fit(df)
+
+
 # Registry for programmatic access
 STABLE_ALGORITHMS = {
     "PC": PCAdapter,
@@ -107,4 +143,6 @@ STABLE_ALGORITHMS = {
     "NOTEARSLinear": NOTEARSLinearAdapter,
     "DirectLiNGAM": DirectLiNGAMAdapter,
     "PCMCI": PCMCIAdapter,
+    "ICALiNGAM": ICALiNGAMAdapter,
+    "GrangerCausality": GrangerCausalityAdapter,
 }

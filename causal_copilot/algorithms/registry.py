@@ -26,6 +26,8 @@ def _build_registry() -> dict[str, AlgorithmSpec]:
     from causal_copilot.algorithms.adapters import (
         DirectLiNGAMAdapter,
         GESAdapter,
+        GrangerCausalityAdapter,
+        ICALiNGAMAdapter,
         NOTEARSLinearAdapter,
         PCAdapter,
         PCMCIAdapter,
@@ -78,6 +80,24 @@ def _build_registry() -> dict[str, AlgorithmSpec]:
             algorithm_version="pcmci-v1",
             tags=("timeseries", "constraint"),
             optional_deps=("algorithms",),
+        ),
+        "ICALiNGAM": AlgorithmSpec(
+            name="ICALiNGAM",
+            adapter_cls=ICALiNGAMAdapter,
+            family="functional",
+            default_params={"max_iter": 1000},
+            upstream_packages=["causal-learn"],
+            algorithm_version="ica-lingam-v1",
+            tags=("dag-output", "linear", "non-gaussian"),
+        ),
+        "GrangerCausality": AlgorithmSpec(
+            name="GrangerCausality",
+            adapter_cls=GrangerCausalityAdapter,
+            family="timeseries",
+            default_params={"p": 10, "alpha": 0.05, "criterion": "ssr_ftest"},
+            upstream_packages=["statsmodels"],
+            algorithm_version="granger-v1",
+            tags=("timeseries", "linear", "pairwise"),
         ),
     }
 

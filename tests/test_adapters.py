@@ -6,6 +6,8 @@ from causal_copilot.algorithms.adapters import (
     STABLE_ALGORITHMS,
     DirectLiNGAMAdapter,
     GESAdapter,
+    GrangerCausalityAdapter,
+    ICALiNGAMAdapter,
     NOTEARSLinearAdapter,
     PCAdapter,
     PCMCIAdapter,
@@ -24,6 +26,8 @@ class TestAdapterConformance:
             NOTEARSLinearAdapter,
             DirectLiNGAMAdapter,
             PCMCIAdapter,
+            ICALiNGAMAdapter,
+            GrangerCausalityAdapter,
         ],
     )
     def test_is_subclass(self, cls):
@@ -37,6 +41,8 @@ class TestAdapterConformance:
             NOTEARSLinearAdapter,
             DirectLiNGAMAdapter,
             PCMCIAdapter,
+            ICALiNGAMAdapter,
+            GrangerCausalityAdapter,
         ],
     )
     def test_can_instantiate(self, cls):
@@ -52,6 +58,8 @@ class TestAdapterConformance:
             NOTEARSLinearAdapter,
             DirectLiNGAMAdapter,
             PCMCIAdapter,
+            ICALiNGAMAdapter,
+            GrangerCausalityAdapter,
         ],
     )
     def test_default_params(self, cls):
@@ -68,6 +76,8 @@ class TestAdapterConformance:
             NOTEARSLinearAdapter,
             DirectLiNGAMAdapter,
             PCMCIAdapter,
+            ICALiNGAMAdapter,
+            GrangerCausalityAdapter,
         ],
     )
     def test_params_override(self, cls):
@@ -76,11 +86,11 @@ class TestAdapterConformance:
 
 
 class TestRegistry:
-    def test_registry_has_5_algorithms(self):
-        assert len(STABLE_ALGORITHMS) == 5
+    def test_registry_has_7_algorithms(self):
+        assert len(STABLE_ALGORITHMS) == 7
 
     def test_registry_names(self):
-        expected = {"PC", "GES", "NOTEARSLinear", "DirectLiNGAM", "PCMCI"}
+        expected = {"PC", "GES", "NOTEARSLinear", "DirectLiNGAM", "PCMCI", "ICALiNGAM", "GrangerCausality"}
         assert set(STABLE_ALGORITHMS.keys()) == expected
 
     def test_registry_values_are_classes(self):
