@@ -275,8 +275,28 @@ class CausalCopilot:
 
         elapsed = time.monotonic() - start_time
 
-        # Build graph handling all edge types (1=directed, 2=undirected, 3=bidirected)
+        # Guard: adjacency matrix dimensions must match feature count
         cols = list(numeric_df.columns)
+        n_vars = len(cols)
+        if adj_matrix.shape != (n_vars, n_vars):
+            # Some wrappers (e.g. CDNOD) drop domain_index internally,
+            # producing a smaller matrix than expected.
+            if adj_matrix.shape[0] == adj_matrix.shape[1]:
+                # Square but smaller — trim node_names to match
+                cols = cols[:adj_matrix.shape[0]]
+                warnings.append(
+                    f"Adjacency matrix is {adj_matrix.shape[0]}x{adj_matrix.shape[0]} "
+                    f"but data had {n_vars} columns; node_names trimmed to match matrix."
+                )
+            else:
+                return CausalResult(
+                    status="failed",
+                    summary=f"Algorithm returned non-square adjacency matrix: {adj_matrix.shape}",
+                    warnings=warnings,
+                    provenance=_make_provenance(data_hash, seed, decision, active_planner, elapsed),
+                )
+
+        # Build graph handling all edge types (1=directed, 2=undirected, 3=bidirected)
         graph = _build_graph(adj_matrix, cols)
 
         provenance = _make_provenance(data_hash, seed, decision, active_planner, elapsed)

@@ -32,7 +32,7 @@ def _run_fit(adapter, df, name):
     """Run adapter.fit(), skip if runtime deps are missing."""
     try:
         return adapter.fit(df)
-    except (ImportError, ModuleNotFoundError) as e:
+    except (ImportError, ModuleNotFoundError, FileNotFoundError) as e:
         pytest.skip(f"Runtime dependencies not available for {name}: {e}")
 
 

@@ -201,6 +201,23 @@ class TestResultStructure:
         assert params  # non-empty
         assert "mock_param" in params
 
+    def test_matrix_smaller_than_data_trims_node_names(self, simple_df):
+        # Simulate a wrapper (e.g. CDNOD) that drops domain_index internally,
+        # producing a 3x3 matrix for 4-column data.
+        small_adj = np.zeros((3, 3))
+        with _mock_algorithm(adj_matrix=small_adj):
+            result = CausalCopilot().analyze(simple_df, seed=0)
+        assert result.status == "ok"
+        assert result.node_names == ["x", "y", "z"]  # trimmed to match matrix
+        assert any("trimmed" in w for w in result.warnings)
+
+    def test_non_square_matrix_fails(self, simple_df):
+        bad_adj = np.zeros((3, 4))
+        with _mock_algorithm(adj_matrix=bad_adj):
+            result = CausalCopilot().analyze(simple_df, seed=0)
+        assert result.status == "failed"
+        assert "non-square" in result.summary.lower()
+
     def test_to_dict_roundtrip(self, simple_df):
         with _mock_algorithm():
             result = CausalCopilot().analyze(simple_df, seed=0)
