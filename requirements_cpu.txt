@@ -122,7 +122,8 @@ colorama==0.4.6
 dask==2025.2.0
 cloudpickle==3.1.1
 causalnex==0.12.1
-
+python-multipart==0.0.22
+groovy==0.1.2
 
 econml==0.15.1
 sparse==0.16.0
