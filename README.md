@@ -139,6 +139,14 @@ docker build -f Dockerfile.gpu -t causal-copilot-gpu .
 docker run -it --rm --gpus all -v $(pwd):/app -p 7860:7860 causal-copilot-gpu
 ```
 
+**💡 Using Ollama with Docker:** If you are running Ollama on your host machine and want to connect to it from inside the Docker container, set the following environment variable in your `.env` file:
+```bash
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+```
+This is because `localhost` inside a container refers to the container itself, not the host machine. `host.docker.internal` is a special DNS name that resolves to the host.
+
+On native Linux Docker Engine, add `--add-host=host.docker.internal:host-gateway` to the `docker run` command if `host.docker.internal` does not resolve automatically.
+
 #### 🔧 Conda Environment Installation
 
 **⚠️ Note:** Conda environment installation might not be stable and may have compatibility issues with LaTeX dependencies required for report generation. We recommend using Docker instead.
