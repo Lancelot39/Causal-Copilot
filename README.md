@@ -145,6 +145,8 @@ OLLAMA_BASE_URL=http://host.docker.internal:11434
 ```
 This is because `localhost` inside a container refers to the container itself, not the host machine. `host.docker.internal` is a special DNS name that resolves to the host.
 
+On native Linux Docker Engine, add `--add-host=host.docker.internal:host-gateway` to the `docker run` command if `host.docker.internal` does not resolve automatically.
+
 #### 🔧 Conda Environment Installation
 
 **⚠️ Note:** Conda environment installation might not be stable and may have compatibility issues with LaTeX dependencies required for report generation. We recommend using Docker instead.
