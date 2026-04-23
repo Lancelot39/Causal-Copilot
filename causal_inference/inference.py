@@ -1011,27 +1011,45 @@ class Analysis(object):
         return False, None
     
     def estimate_effect_iv(self, outcome, treatment, instrument_variable, T0, T1, X_col, W_col, query):
+        if not instrument_variable:
+            raise ValueError("IV estimation requires a valid instrument variable.")
+
         if len(W_col) == 0:
             W_col = ['W']
             W = pd.DataFrame(np.zeros((len(self.data), 1)), columns=W_col)
             self.data = pd.concat([self.data, W], axis=1)
             self.global_state.user_data.processed_data = self.data
 
-        # Step 1: Apply Filtering (if necessary)
-        filter = MetaLearners_HTE_Filter(self.args)
+        # Step 1: Select an IV-specific HTE algorithm.
+        filter = IV_HTE_Filter(self.args)
         self.global_state = filter.forward(self.global_state, query)
 
-        # Step 2: Select the best hyperparameters for the Metalearner
-        reranker = MetaLearners_HTE_Param_Selector(self.args, y_col=outcome, T_col=treatment, X_col=X_col, W_col=W_col)
+        # Step 2: Select nuisance models for the IV estimator.
+        reranker = IV_HTE_Param_Selector(
+            self.args,
+            y_col=outcome,
+            T_col=treatment,
+            Z_col=instrument_variable,
+            X_col=X_col,
+            W_col=W_col,
+        )
         self.global_state = reranker.forward(self.global_state)
         
         
         logger.debug(f"W_col being passed: {W_col}", "IV")
-        # Step 3: Choose and initialize the appropriate Metalearner
-        programmer = MetaLearners_HTE_Programming(
-            self.args, y_col=outcome, T_col=treatment, T0=T0, T1=T1, X_col=X_col
+        # Step 3: Choose and initialize the appropriate IV estimator.
+        programmer = IV_HTE_Programming(
+            self.args,
+            y_col=outcome,
+            T_col=treatment,
+            Z_col=instrument_variable,
+            T0=T0,
+            T1=T1,
+            X_col=X_col,
+            W_col=W_col,
         )
         programmer.fit_model(self.global_state)
+        self.global_state.inference.iv_programmer = programmer
 
         # Step 4: Estimate ATE, ATT, HTE
         ate, ate_lower, ate_upper = programmer.forward(self.global_state, task='ate')
@@ -1353,6 +1371,15 @@ class Analysis(object):
                 
             elif method == "iv":
                 exist_IV, iv_variable = self.contains_iv(treatment, key_node)
+                if not exist_IV:
+                    response = (
+                        f"❌ No valid instrumental variable was found for treatment `{treatment}` "
+                        f"and outcome `{key_node}` in the current causal graph. "
+                        "Please provide a valid instrument, revise the graph, or choose a non-IV estimation method."
+                    )
+                    figs = []
+                    chat_history.append((None, response))
+                    return response, figs, chat_history
                 result = self.estimate_effect_iv(outcome=key_node, treatment=treatment, instrument_variable=iv_variable, T0=control, T1=treat,
                                                         X_col=hte_variables, W_col=confounders, query=desc)
                 response, figs = generate_analysis_econml(self.args, self.global_state, key_node, treatment, parent_nodes, hte_variables, confounders, result, desc)

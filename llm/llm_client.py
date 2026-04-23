@@ -74,7 +74,7 @@ class LLMClient:
                 - api_key: API key for OpenAI/OpenRouter (if using OpenAI/OpenRouter)
                 - base_url: Base URL for Ollama (if using Ollama)
         """
-        self.provider = os.getenv('LLM_PROVIDER', 'openai')
+        self.provider = os.getenv('LLM_PROVIDER', 'openai').lower()
         
         # Set default models based on provider
         if self.provider == 'openai':
@@ -94,7 +94,7 @@ class LLMClient:
                 base_url="https://openrouter.ai/api/v1"
             )
         elif self.provider == 'ollama':
-            self.client = OllamaClient()
+            self.client = OllamaClient(model_name=self.model)
         else:
             raise ValueError(f"Unsupported LLM provider: {self.provider}")
     
@@ -176,7 +176,8 @@ class LLMClient:
                 prompt=user_prompt,
                 system_prompt=system_content,
                 json_response=json_response,
-                temperature=temperature
+                temperature=temperature,
+                model=model or self.model
             )
         
         # Parse response
@@ -201,4 +202,4 @@ class LLMClient:
                         pass
                 raise ValueError(f"Failed to parse JSON response: {content}")
         
-        return content 
+        return content

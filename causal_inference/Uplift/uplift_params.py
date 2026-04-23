@@ -3,6 +3,7 @@ import json
 import os
 import sklearn
 from sklearn import ensemble
+from causal_inference.prompt_utils import render_dataset_prompt
 
 class UpliftParamSelector:
     def __init__(self, args):
@@ -12,18 +13,14 @@ class UpliftParamSelector:
 
         prompt_path = 'causal_inference/Uplift/context/model_select_prompt_tree.txt' #New prompt file
         algo_text_path = 'causal_inference/Uplift/context/model_tree.txt'#New context file.
-        prompt = open(prompt_path, "r").read()
-        algo_text = open(algo_text_path, "r").read()
-
-        replacement = {
-                "[COLUMNS]": '\t'.join(global_state.user_data.processed_data.columns._data),
-                "[STATISTICS INFO]": global_state.statistics.description,
-                "[ALGO_CONTEXT]": algo_text,
-                "[ALGORITHM_NAME]" : global_state.inference.uplift_algo_json['name']
-                }
-        for placeholder, value in replacement.items():
-            prompt = prompt.replace(placeholder, value)
-        return prompt
+        return render_dataset_prompt(
+            prompt_path,
+            algo_text_path,
+            global_state,
+            extra_replacements={
+                "[ALGORITHM_NAME]": global_state.inference.uplift_algo_json['name'],
+            },
+        )
     
     def model_suggestion(self, client, prompt):
         response = client.chat_completion(

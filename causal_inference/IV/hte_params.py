@@ -4,6 +4,7 @@ import os
 import sklearn.linear_model
 import sklearn.ensemble
 import sklearn.svm
+from causal_inference.prompt_utils import render_dataset_prompt
 from llm import LLMClient
 
 # Class to get models in IV two stages suggested by LLM
@@ -29,19 +30,13 @@ class HTE_Param_Selector(object):
 
         return prompt_path, algo_text_path, discrete
 
-    def prompt_generation(self, prompt_path, algo_text_path, global_state):
-        prompt = open(prompt_path, "r").read()
-        algo_text = open(algo_text_path, "r").read()
-        
-        replacement = {
-                "[COLUMNS]": '\t'.join(global_state.user_data.processed_data.columns._data),
-                "[STATISTICS INFO]": global_state.statistics.description,
-                "[TARGET_NODE]": self.y_col,
-                "[ALGO_CONTEXT]": algo_text
-                }
-        for placeholder, value in replacement.items():
-            prompt = prompt.replace(placeholder, value)
-        return prompt
+    def prompt_generation(self, prompt_path, algo_text_path, target_node, global_state):
+        return render_dataset_prompt(
+            prompt_path,
+            algo_text_path,
+            global_state,
+            target_node=target_node,
+        )
     
     def model_suggestion(self, client, prompt):
         response = client.chat_completion(
@@ -171,21 +166,20 @@ class HTE_Param_Selector(object):
         :return: A doc containing the selected algorithm and its hyperparameter settings
         '''
         client = LLMClient(self.args)
-        # Set up the Hyperparameters
-        # Load hyperparameters prompt template
-        import json
-        import DML.wrappers as wrappers
-
         # Check if discrete
         prompt_path_y, algo_text_path_y, discrete_y = self.check_discrete(self.y_col, global_state)
         prompt_path_T, algo_text_path_T, discrete_T = self.check_discrete(self.T_col, global_state)
         prompt_path_z, algo_text_path_z, discrete_z = self.check_discrete(self.Z_col, global_state)
 
         # Generate prompts
-        y_prompt = self.prompt_generation(prompt_path_y, algo_text_path_y, global_state)
-        T_prompt = self.prompt_generation(prompt_path_T, algo_text_path_T, global_state)
-        z_prompt = self.prompt_generation(prompt_path_z, algo_text_path_z, global_state)
-        final_prompt = open('causal_inference/IV/context/final_stage_select_prompt.txt', "r").read()
+        y_prompt = self.prompt_generation(prompt_path_y, algo_text_path_y, self.y_col, global_state)
+        T_prompt = self.prompt_generation(prompt_path_T, algo_text_path_T, self.T_col, global_state)
+        z_prompt = self.prompt_generation(prompt_path_z, algo_text_path_z, self.Z_col, global_state)
+        final_prompt = render_dataset_prompt(
+            'causal_inference/IV/context/final_stage_select_prompt.txt',
+            'causal_inference/IV/context/regressor.txt',
+            global_state,
+        )
         
         # model_y_xw - outcome
         global_state.inference.hte_model_y_json = None

@@ -6,8 +6,6 @@ These are the Instrumental Variable (IV) estimation algorithms implemented for e
 - **LinearDRIV**  
 - **SparseLinearDRIV**  
 - **ForestDRIV**  
-- **metalearners** (if applicable in the IV context)
-
 ---
 
 ## Algorithms Description
@@ -55,11 +53,3 @@ These are the Instrumental Variable (IV) estimation algorithms implemented for e
   - Requires larger sample sizes and is more computationally intensive.
 
 ---
-
-### **metalearners**
-
-- **Description**:  
-  A flexible approach that allows for the use of various machine learning models in both the nuisance and final stages of IV estimation.  
-- **Key Characteristics**:  
-  - Offers the highest flexibility by combining multiple models.
-  - Often used when model selection is automated through cross-validation.

@@ -1179,13 +1179,18 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
         if CURRENT_STAGE == 'report_generation':    
             chat_history.append(("📝 Generate comprehensive report and it may take a few minutes, stay tuned...", None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            try_num = 3
+            max_report_attempts = 3
+            try_num = 1
             report_path = call_report_generation(global_state, args, REQUIRED_INFO['output_dir'])
-            while not os.path.isfile(report_path) and try_num < 3:
+            while (not report_path or not os.path.isfile(report_path)) and try_num < max_report_attempts:
                 chat_history.append((None, "❌ An error occurred during the Report Generation, we are trying again and please wait for a few minutes."))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
                 try_num += 1
                 report_path = call_report_generation(global_state, args, REQUIRED_INFO['output_dir'])
+            if not report_path or not os.path.isfile(report_path):
+                chat_history.append((None, "❌ Report generation failed after 3 attempts. Please check the logs and try again before downloading results."))
+                yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
+                return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             
             # Save GlobalState into json for users
             import glob

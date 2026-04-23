@@ -255,7 +255,7 @@ For **Openrouter**:
 ```bash
 LLM_PROVIDER=openrouter
 LLM_MODEL=anthropic/claude-sonnet-4
-OPENAI_API_KEY=sk-your-openrouter-api-key-here
+OPENROUTER_API_KEY=sk-or-your-openrouter-api-key-here
 ```
 
 For **Ollama** (local):
@@ -281,7 +281,7 @@ There are two ways to use Causal-Copilot:
 Use the CLI for focused causal discovery analysis:
 
 ```bash
-python main.py --data_file your_data --apikey your_openai_apikey --initial_query your_user_query
+python main.py --data-file your_data.csv --initial_query "your user query"
 ```
 
 **Features:**

@@ -1,6 +1,5 @@
 from .estimator import *
 
-__all__ = ['DML', 'LinearDML', 'SparseLinearDML', 'CausalForestDML', 'metalearners']
-
+__all__ = ['DRIV', 'LinearDRIV', 'SparseLinearDRIV', 'ForestDRIV']
 
 

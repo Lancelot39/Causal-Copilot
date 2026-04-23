@@ -102,8 +102,7 @@ class HyperparameterSelector:
         # print(hp_prompt)
         
         response = self.llm_client.chat_completion("Please select the best hyperparameters for the algorithm.",
-                                                    system_prompt=hp_prompt, json_response=True,  temperature=0.0,
-                                                    model="gpt-4o")
+                                                    system_prompt=hp_prompt, json_response=True,  temperature=0.0)
 
         hyper_suggest = response
         global_state.algorithm.algorithm_arguments_json = hyper_suggest
@@ -123,4 +122,4 @@ class HyperparameterSelector:
                                (f"    Explanation: {param_info['explanation']}\n" if 'explanation' in param_info else "")
                                for param_name, param_info in response['hyperparameters'].items()]))
 
-        return hyper_suggest 
+        return hyper_suggest

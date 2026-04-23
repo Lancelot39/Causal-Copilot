@@ -4,6 +4,7 @@ import os
 import sklearn.linear_model
 import sklearn.ensemble
 import sklearn.svm
+from causal_inference.prompt_utils import render_dataset_prompt
 from llm import LLMClient
 
 # Class to get models in DML two stages suggested by LLM
@@ -26,17 +27,12 @@ class HTE_Param_Selector(object):
             prompt_path = 'causal_inference/DML/context/classifier_select_prompt.txt'
             algo_text_path = 'causal_inference/DML/context/classifier.txt'
             discrete = True
-        prompt = open(prompt_path, "r").read()
-        algo_text = open(algo_text_path, "r").read()
-        
-        replacement = {
-                "[COLUMNS]": '\t'.join(global_state.user_data.processed_data.columns._data),
-                "[STATISTICS INFO]": global_state.statistics.description,
-                "[TARGET_NODE]": self.y_col,
-                "[ALGO_CONTEXT]": algo_text
-                }
-        for placeholder, value in replacement.items():
-            prompt = prompt.replace(placeholder, value)
+        prompt = render_dataset_prompt(
+            prompt_path,
+            algo_text_path,
+            global_state,
+            target_node=target_node,
+        )
         return prompt, discrete
     
     def model_suggestion(self, client, prompt):
@@ -73,7 +69,11 @@ class HTE_Param_Selector(object):
 
         y_prompt, discrete_y = self.prompt_generation(self.y_col, global_state)
         T_prompt, discrete_T = self.prompt_generation(self.T_col, global_state)
-        final_prompt = open('causal_inference/DML/context/final_stage_select_prompt.txt', "r").read()
+        final_prompt = render_dataset_prompt(
+            'causal_inference/DML/context/final_stage_select_prompt.txt',
+            'causal_inference/DML/context/regressor.txt',
+            global_state,
+        )
 
         global_state.inference.hte_model_y_json = None
         while not global_state.inference.hte_model_y_json:

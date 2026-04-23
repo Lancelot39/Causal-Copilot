@@ -1,11 +1,4 @@
-try:
-    from .llm_client import LLMClient
-except ImportError:
-    LLMClient = None
-
-try:
-    from .ollama_client import OllamaClient
-except ImportError:
-    OllamaClient = None
+from .llm_client import LLMClient
+from .ollama_client import OllamaClient
 
 __all__ = ['OllamaClient', 'LLMClient']

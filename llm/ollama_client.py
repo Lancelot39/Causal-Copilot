@@ -4,21 +4,22 @@ import json
 from typing import Optional, Dict, Any, List
 
 class OllamaClient:
-    def __init__(self):
+    def __init__(self, model_name: Optional[str] = None, base_url: Optional[str] = None):
         """
         Initialize the Ollama client.
         
         Args:
             model_name (str): Name of the model to use (default: "llama2")
         """
-        self.model_name = os.getenv('LLM_MODEL')
-        self.base_url = os.getenv('OLLAMA_BASE_URL')
+        self.model_name = model_name or os.getenv('LLM_MODEL', 'llama2')
+        self.base_url = (base_url or os.getenv('OLLAMA_BASE_URL', 'http://localhost:11434')).rstrip('/')
         
     def chat_completion(self, 
                        prompt: str, 
                        system_prompt: str = "You are a helpful assistant.",
                        json_response: bool = False,
-                       temperature: float = 0.0) -> str:
+                       temperature: float = 0.0,
+                       model: Optional[str] = None) -> str:
         """
         Send a chat completion request to Ollama.
         
@@ -37,7 +38,7 @@ class OllamaClient:
         ]
         
         payload = {
-            "model": self.model_name,
+            "model": model or self.model_name,
             "messages": messages,
             "stream": False,
             "options": {
@@ -102,4 +103,4 @@ class OllamaClient:
             )
             response.raise_for_status()
         except requests.exceptions.RequestException as e:
-            raise Exception(f"Error pulling Ollama model: {str(e)}") 
+            raise Exception(f"Error pulling Ollama model: {str(e)}")

@@ -10,7 +10,6 @@ Please analyze the dataset characteristics and recommend the most suitable HTE e
 - LinearDRIV  
 - SparseLinearDRIV  
 - ForestDRIV  
-- metalearners  
 
 Provide your recommendation in the structured JSON format below:
 
