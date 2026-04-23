@@ -296,7 +296,8 @@ def call_llm_new(args, prompt, prompt_type):
     lines = [line for line in lines if line.startswith('(')]
     for line in lines:
         try:
-            pair, result, explanation = line.split(':')[0].strip(), line.split(':')[1].strip().upper(), line.split(':')[2].strip()
+            pair, result, explanation = [part.strip() for part in line.split(':', 2)]
+            result = result.upper()
             llm_answer[pair] = {'result': result,
                                 'explanation': explanation}
         except Exception as e:
@@ -354,6 +355,7 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
         
         related_pairs = grouped_dict[main_node]
         # All Pairwise Relationships
+        relationship = ''
         if 'all_relation' in prompt_type:
             relationship = f"""
             We have conducted the statistical causal discovery algorithm to find the following causal relationships from a statistical perspective:
@@ -361,7 +363,7 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
             According to the results shown above, it has been determined that {directed_exist_texts_mainnode} and {undirected_exist_texts_mainnode}, but it may not be correct. 
             """
         # Markov Blanket Context
-        if 'markov_blanket' in prompt_type:
+        elif 'markov_blanket' in prompt_type:
             relationship = f"""
             We have conducted the statistical causal discovery algorithm to find the following causal relationships from a statistical perspective:
             Edges of node {main_node}:
@@ -386,17 +388,13 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
                 Edges of node {node}:
                 {directed_exist_texts_related} and {undirected_exist_texts_related}
                 """
-        # Basic Prompt: No infos and ask relationships directly
-        else: 
-            relationship = ''
-
         task = f"Firstly, determine the causal relationship between\n"
         for node_i, node_j in related_pairs:
             task += f" {node_i} and {node_j},"
        
-        format =  ""
+        response_format = ""
         for node_i, node_j in related_pairs:
-            format += f"({node_i}, {node_j}): A or B or C or D: explanations ; \n"
+            response_format += f"({node_i}, {node_j}): A or B or C or D: explanations ; \n"
         # Format domain knowledge for prompt injection
         if knowledge_docs:
             if isinstance(knowledge_docs, list):
@@ -411,7 +409,8 @@ def llm_evaluation_new(data, args, edges_dict, boot_edges_prob, bootstrap_check_
             "[COLUMNS]": ', '.join([col for col in data.columns]),
             "[MAIN_NODE]": main_node,
             "[RELATIONSHIP]": relationship + knowledge_section,
-            "[TASK]": task
+            "[TASK]": task,
+            "[FORMAT]": response_format
             }
         with open('postprocess/context/pruning_prompt.txt', 'r') as file:
             prompt_pruning = file.read()
