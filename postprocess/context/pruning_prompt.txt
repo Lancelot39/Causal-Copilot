@@ -3,7 +3,7 @@ We want to carry out causal discovery analysis, considering these variables: [CO
 [RELATIONSHIP]
 
 **Your Task**:
-Your task is to double check these causal relationships about node {main_node} from a domain knowledge perspective and determine whether this statistically suggested hypothesis is plausible in the context of the domain.
+Your task is to double check these causal relationships about node [MAIN_NODE] from a domain knowledge perspective and determine whether this statistically suggested hypothesis is plausible in the context of the domain.
 [TASK] 
 
 **Options**

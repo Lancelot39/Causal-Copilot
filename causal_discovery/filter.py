@@ -1,6 +1,9 @@
 import json
 import os
-import torch
+try:
+    import torch
+except ImportError:
+    torch = None
 from utils.logger import logger
 from llm import LLMClient
 
@@ -63,14 +66,20 @@ class Filter(object):
 
     def create_prompt(self, global_state):
         algo_context, prompt_template = self.load_prompt_context(global_state)
+        knowledge = getattr(global_state.user_data, "knowledge_docs", None)
+        if isinstance(knowledge, list):
+            knowledge = "\n".join(str(k) for k in knowledge)
+        knowledge = str(knowledge) if knowledge else "No domain knowledge provided."
+
         replacements = {
             "[USER_QUERY]": global_state.user_data.initial_query,
             # "[TABLE_NAME]": self.args.data_file,
             "[WAIT_TIME]": str(global_state.algorithm.waiting_minutes),
             "[COLUMNS]": ', '.join(global_state.user_data.processed_data.columns),
             "[STATISTICS_DESC]": global_state.statistics.description,
+            "[DOMAIN_KNOWLEDGE]": knowledge,
             "[ALGO_CONTEXT]": algo_context,
-            "[CUDA_WARNING]": "Current machine supports CUDA, some algorithms can be accelerated by GPU if needed." if torch.cuda.is_available() else "\nCurrent machine doesn't support CUDA, do not choose any GPU-powered algorithms.",
+            "[CUDA_WARNING]": "Current machine supports CUDA, some algorithms can be accelerated by GPU if needed." if (torch is not None and torch.cuda.is_available()) else "\nCurrent machine doesn't support CUDA, do not choose any GPU-powered algorithms.",
             "[TOP_K]": str(TOP_K),
             "[ACCEPT_CPDAG]": "The user accepts the output graph including undirected edges/undeterministic directions (CPDAG/PAG)" if global_state.user_data.accept_CPDAG else "The user does not accept the output graph including undirected edges/undeterministic directions (CPDAG/PAG), so the output graph should be a DAG."
         }
