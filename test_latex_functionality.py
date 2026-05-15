@@ -7,6 +7,13 @@ This script tests all LaTeX-related functionality needed for the project.
 
 import sys
 import os
+import pytest
+
+pytestmark = [pytest.mark.integration, pytest.mark.latex]
+
+if os.getenv("RUN_LATEX_TESTS") != "1":
+    pytest.skip("set RUN_LATEX_TESTS=1 to run LaTeX integration checks", allow_module_level=True)
+
 import subprocess
 import tempfile
 import pandas as pd

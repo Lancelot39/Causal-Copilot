@@ -175,6 +175,23 @@ For GPU version (if you have NVIDIA GPU):
 bash setup_gpu.sh
 ```
 
+#### ✅ Development Verification
+
+For lightweight maintainer checks, install the development tools in a Python 3.10 environment and run:
+
+```bash
+pip install -r requirements_dev.txt
+bash scripts/verify.sh
+```
+
+The default verification command runs syntax-level linting, smoke tests, and Python bytecode compilation for owned project code. LLM, Ollama, and LaTeX integration checks are opt-in because they require external services or system tooling:
+
+```bash
+RUN_LLM_TESTS=1 pytest causal_discovery/tests/selection_test.py
+RUN_OLLAMA_TESTS=1 pytest llm/test_ollama.py
+RUN_LATEX_TESTS=1 pytest test_latex_functionality.py
+```
+
 <!-- **Manual Dependencies (if setup scripts fail):**
 
 For CPU version:

@@ -1,5 +1,6 @@
 import json
 import causal_inference.DRL.wrappers as wrappers
+from utils.logger import logger
 #import hte.wrappers as wrappers
 
 class HTE_Programming(object):
@@ -12,7 +13,6 @@ class HTE_Programming(object):
         self.X_col = X_col
         self.W_col = W_col
         self.model = None
-        from utils.logger import logger
         logger.info(f"HTE Programming with T: {self.T_col}")
 
     def fit_model(self, global_state):

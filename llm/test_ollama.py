@@ -1,5 +1,13 @@
-from llm.ollama_client import OllamaClient
+import os
 import sys
+import pytest
+
+pytestmark = [pytest.mark.integration, pytest.mark.llm]
+
+if os.getenv("RUN_OLLAMA_TESTS") != "1":
+    pytest.skip("set RUN_OLLAMA_TESTS=1 to run Ollama integration checks", allow_module_level=True)
+
+from llm.ollama_client import OllamaClient
 
 def test_ollama_client():
     try:
@@ -33,4 +41,4 @@ def test_ollama_client():
         raise
 
 if __name__ == "__main__":
-    test_ollama_client() 
+    test_ollama_client()

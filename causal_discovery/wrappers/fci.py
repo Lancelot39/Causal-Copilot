@@ -23,6 +23,7 @@ from causallearn.graph.GraphNode import GraphNode
 
 from causal_discovery.wrappers.base import CausalDiscoveryAlgorithm
 from causal_discovery.evaluation.evaluator import GraphEvaluator
+from data.simulator.dummy import DataSimulator
 
 class FCI(CausalDiscoveryAlgorithm):
     def __init__(self, params: Dict = {}):

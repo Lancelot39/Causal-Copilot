@@ -1,4 +1,11 @@
 import os
+import pytest
+
+pytestmark = [pytest.mark.integration, pytest.mark.llm]
+
+if os.getenv("RUN_LLM_TESTS") != "1":
+    pytest.skip("set RUN_LLM_TESTS=1 to run LLM selection integration checks", allow_module_level=True)
+
 import re
 import sys
 import json
