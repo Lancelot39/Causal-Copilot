@@ -69,9 +69,9 @@ import sys
 from queue import Queue
 current_dir = os.path.dirname(os.path.abspath(__file__))
 demo_cases_path = os.path.join(current_dir, "demo_cases")
-gr.set_static_paths(paths=[Path.cwd().absolute()/"web_demo/public", Path.cwd().absolute()/"asset"])
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from web_demo.frontend_utils import build_upload_error_response, get_static_allowed_paths
 from web_demo.demo_config import get_demo_config
 from global_setting.Initialize_state import global_state_initialization
 from preprocess.stat_info_functions import *
@@ -90,6 +90,9 @@ from user.discuss import Discussion
 from llm import LLMClient
 from pydantic import BaseModel
 from web_demo.help_functions import *
+
+STATIC_ALLOWED_PATHS = get_static_allowed_paths()
+gr.set_static_paths(paths=[Path(path) for path in STATIC_ALLOWED_PATHS])
 
 print('##########Initialize Global Variables##########')
 # Global variables
@@ -175,9 +178,7 @@ def handle_file_upload(file, REQUIRED_INFO, CURRENT_STAGE, chatbot, file_upload_
         return REQUIRED_INFO, CURRENT_STAGE, chatbot, file_upload_btn, download_btn
 
     except Exception as e:
-        error_message = f"❌ Error loading file: {str(e)}"
-        chatbot.append((None, error_message))
-        return chatbot, file_upload_btn, download_btn
+        return build_upload_error_response(REQUIRED_INFO, CURRENT_STAGE, chatbot, file_upload_btn, download_btn, e)
 
 def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn):
     REQUIRED_INFO = update(REQUIRED_INFO, 'processing', True)
@@ -2039,4 +2040,4 @@ if __name__ == "__main__":
     demo.queue(default_concurrency_limit=MAX_CONCURRENT_REQUESTS,
                max_size=MAX_QUEUE_SIZE)  # Enable queuing at the app level
     
-    demo.launch(favicon_path="asset/logo.png", server_name="0.0.0.0", server_port=7860, allowed_paths=["/file=web_demo/public", "/file=asset"], show_api=False)
+    demo.launch(favicon_path="asset/logo.png", server_name="0.0.0.0", server_port=7860, allowed_paths=STATIC_ALLOWED_PATHS, show_api=False)

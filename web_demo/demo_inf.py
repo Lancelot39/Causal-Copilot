@@ -69,6 +69,7 @@ import pickle
 import torch
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from web_demo.frontend_utils import build_upload_error_response
 from web_demo.demo_config import get_demo_config
 from global_setting.Initialize_state import global_state_initialization
 from preprocess.stat_info_functions import *
@@ -167,9 +168,7 @@ def handle_file_upload(file, REQUIRED_INFO, CURRENT_STAGE, chatbot, file_upload_
         return REQUIRED_INFO, CURRENT_STAGE, chatbot, file_upload_btn, download_btn
 
     except Exception as e:
-        error_message = f"❌ Error loading file: {str(e)}"
-        chatbot.append((None, error_message))
-        return chatbot, file_upload_btn, download_btn
+        return build_upload_error_response(REQUIRED_INFO, CURRENT_STAGE, chatbot, file_upload_btn, download_btn, e)
 
 def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn):
     REQUIRED_INFO = update(REQUIRED_INFO, 'processing', True)
