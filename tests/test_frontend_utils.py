@@ -1,6 +1,10 @@
 from pathlib import Path
 
-from web_demo.frontend_utils import build_upload_error_response, get_static_allowed_paths
+from web_demo.frontend_utils import (
+    build_report_gallery_items,
+    build_upload_error_response,
+    get_static_allowed_paths,
+)
 
 
 def test_upload_error_response_preserves_callback_shape_and_state():
@@ -37,3 +41,43 @@ def test_static_allowed_paths_are_absolute_existing_directories():
         static_path = Path(path)
         assert static_path.is_absolute()
         assert static_path.is_dir()
+
+
+def test_report_gallery_items_skip_missing_files_and_fallback_image(tmp_path):
+    reports_dir = tmp_path / "reports"
+    reports_dir.mkdir()
+    report_file = reports_dir / "available.pdf"
+    fallback_image = reports_dir / "fallback.png"
+    report_file.write_bytes(b"%PDF-1.4\n")
+    fallback_image.write_bytes(b"png")
+
+    gallery_items = build_report_gallery_items(
+        [
+            {
+                "title": "Available report",
+                "description": "Uses the fallback preview",
+                "author": "Causal Copilot",
+                "file_path": "reports/available.pdf",
+                "image_path": "reports/missing.png",
+            },
+            {
+                "title": "Missing report",
+                "description": "Should not render",
+                "author": "Causal Copilot",
+                "file_path": "reports/missing.pdf",
+                "image_path": "reports/fallback.png",
+            },
+        ],
+        project_root=tmp_path,
+        fallback_image_path="reports/fallback.png",
+    )
+
+    assert gallery_items == [
+        {
+            "title": "Available report",
+            "description": "Uses the fallback preview",
+            "author": "Causal Copilot",
+            "file": "/gradio_api/file=reports/available.pdf",
+            "image": "/gradio_api/file=reports/fallback.png",
+        }
+    ]

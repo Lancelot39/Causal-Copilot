@@ -12,7 +12,6 @@ sys.path.append(algorithm_dir)
 from causal_discovery.wrappers.utils.ts_utils import dict_to_adjacency_matrix, generate_stationary_linear
 from causal_discovery.wrappers.base import CausalDiscoveryAlgorithm
 from causal_discovery.evaluation.evaluator import GraphEvaluator
-from causalnex.structure.dynotears import from_pandas_dynamic
 
 class DYNOTEARS(CausalDiscoveryAlgorithm):
     def __init__(self, params: Dict = {}):
@@ -43,6 +42,15 @@ class DYNOTEARS(CausalDiscoveryAlgorithm):
         return {k: v for k, v in self._params.items() if k in self._secondary_param_keys}
 
     def fit(self, data: pd.DataFrame) -> Tuple[np.ndarray, Dict]:
+        try:
+            from causalnex.structure.dynotears import from_pandas_dynamic
+        except ImportError as exc:
+            raise ImportError(
+                "DYNOTEARS requires the optional 'causalnex' package, which is not "
+                "installed by default because it conflicts with the NumPy version "
+                "used by the current application requirements."
+            ) from exc
+
         # Check and remove domain_index if it exists
         if 'domain_index' in data.columns:
             data = data.drop(columns=['domain_index'])
@@ -144,4 +152,4 @@ if __name__ == "__main__":
         'w_threshold':0.01
     }
     dynotears_algo = DYNOTEARS(params)
-    dynotears_algo.test_algorithm() 
+    dynotears_algo.test_algorithm()

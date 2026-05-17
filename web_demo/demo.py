@@ -71,7 +71,11 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 demo_cases_path = os.path.join(current_dir, "demo_cases")
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from web_demo.frontend_utils import build_upload_error_response, get_static_allowed_paths
+from web_demo.frontend_utils import (
+    build_report_gallery_items,
+    build_upload_error_response,
+    get_static_allowed_paths,
+)
 from web_demo.demo_config import get_demo_config
 from global_setting.Initialize_state import global_state_initialization
 from preprocess.stat_info_functions import *
@@ -1865,51 +1869,27 @@ with gr.Blocks(title="Causal Copilot", js=js, theme=gr.themes.Soft(), css="""
     # Download report handler with updated visibility
     download_btn.click()
 
-    # Define report cards with real PDF reports from output_report directory
-    report_items = [
+    # Define report cards with files that are present in this checkout.
+    report_items = build_report_gallery_items([
         {
             "title": "Abalone Causal Analysis",
             "description": "Discovering relationships between physical attributes and age of abalone",
             "author": "Causal Copilot",
-            "file": "/gradio_api/file=web_demo/public/tabular-abalone.pdf",
-            "image": "/gradio_api/file=web_demo/public/abalone.png" # Path relative to static dir
+            "file_path": "asset/report_Abalone.pdf",
         },
         {
-            "title": "Heart Disease Study",
-            "description": "Causal factors influencing heart disease development",
+            "title": "CCS Data Causal Analysis",
+            "description": "Analyzing causal relationships in concrete compressive strength data",
             "author": "Causal Copilot",
-            "file": "/gradio_api/file=web_demo/public/tabular-heartdisease.pdf",
-            "image": "/gradio_api/file=web_demo/public/heartdisease.png"
+            "file_path": "asset/report_CCS.pdf",
         },
         {
-            "title": "Climate Time Series Analysis",
-            "description": "Temporal patterns and causality in climate data",
+            "title": "Sachs Protein Signaling",
+            "description": "Discovering causal structure between protein signaling molecules",
             "author": "Causal Copilot",
-            "file": "/gradio_api/file=web_demo/public/timeseries-climate.pdf",
-            "image": "/gradio_api/file=web_demo/public/climate.png"
-        },
-        {
-            "title": "Student Performance Factors",
-            "description": "Determining key influences on academic achievement",
-            "author": "Causal Copilot",
-            "file": "/gradio_api/file=web_demo/public/tabular-student-score.pdf",
-            "image": "/gradio_api/file=web_demo/public/student_score.png"
-        },
-        {
-            "title": "Earthquake Time Series",
-            "description": "Temporal factors affecting seismic activity",
-            "author": "Causal Copilot",
-            "file": "/gradio_api/file=web_demo/public/timeseries-earthquake.pdf",
-            "image": "/gradio_api/file=web_demo/public/earthquake.png"
-        },
-        {
-            "title": "Online Shop Analysis",
-            "description": "Online shopping behavior and purchase patterns",
-            "author": "Causal Copilot",
-            "file": "/gradio_api/file=web_demo/public/timeseries-online-shop.pdf",
-            "image": "/gradio_api/file=web_demo/public/online_shop.png"
+            "file_path": "asset/report_Sachs.pdf",
         }
-    ]
+    ])
 
     # Gallery section for showcasing finished demos
     with gr.Row(elem_classes=["gallery-section"]):

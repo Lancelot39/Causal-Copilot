@@ -76,8 +76,8 @@ pywhy-graphs==0.1.0
 pyyaml==6.0.2
 requests==2.32.3
 rich==13.9.4
-ruff==0.7.2
-safehttpx==0.1.1
+ruff==0.15.13
+safehttpx==0.1.6
 scikit-learn==1.5.2
 scipy==1.13.1
 seaborn==0.13.2
@@ -115,11 +115,10 @@ dask==2025.2.0
 cloudpickle==3.1.1
 gpucsl==0.0.7
 colorama==0.4.6
-causalnex
 momentchi2==0.1.8
 numdifftools==0.9.41
 semopy==2.3.11
-pygam==0.9.1
+pygam==0.12.0
 progressbar2==4.5.0
 python-utils==3.9.1  
 psy==0.0.1
@@ -128,7 +127,7 @@ zipp==3.21.0
 dotenv==0.9.9
 python-dotenv==1.0.1
 
-econml==0.15.1
+econml==0.16.0
 sparse==0.16.0
 shap==0.47.1
 xgboost==3.0.0

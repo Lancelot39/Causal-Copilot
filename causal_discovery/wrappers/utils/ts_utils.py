@@ -2,8 +2,6 @@ import numpy as np
 import pandas as pd
 from typing import Dict, Tuple, Union, List
 
-from causalnex.structure.data_generators import gen_stationary_dyn_net_and_df
-
 def dict_to_adjacency_matrix(result_dict, num_nodes, lookback_period):
     # adj_matrix = np.zeros((lookback_period, num_nodes, num_nodes))
     lagged_adj_matrix = np.zeros((lookback_period + 1, num_nodes, num_nodes))
@@ -55,6 +53,16 @@ def generate_stationary_linear(
         w_decay=1.0,
         noise='linear-gauss'
     ):
+    try:
+        from causalnex.structure.data_generators import gen_stationary_dyn_net_and_df
+    except ImportError as exc:
+        raise ImportError(
+            "Synthetic DYNOTEARS time-series generation requires the optional "
+            "'causalnex' package, which is not installed by default because it "
+            "conflicts with the NumPy version used by the current application "
+            "requirements."
+        ) from exc
+
     graph_net, df, intra_nodes, inter_nodes = gen_stationary_dyn_net_and_df(
         num_nodes=n_nodes,
         n_samples=n_samples,

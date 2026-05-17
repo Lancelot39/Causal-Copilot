@@ -4,8 +4,6 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from llm import LLMClient
 import re
 import numpy as np 
-from plumbum.cmd import latexmk
-from plumbum import local
 from report.help_functions import *
 import json 
 from utils.logger import logger
@@ -432,5 +430,4 @@ if __name__ == '__main__':
     # save_path = 'demo_data/20250121_223113/lalonde/output_report'
     # compile_tex_to_pdf_with_refs(f'{save_path}/report.tex', save_path)
     
-
 

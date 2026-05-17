@@ -6,8 +6,6 @@ import re
 from pydantic import BaseModel
 from typing import List, Dict, Tuple, Optional
 import numpy as np 
-from plumbum.cmd import latexmk
-from plumbum import local
 import networkx as nx
 from postprocess.visualization import Visualization, convert_to_edges
 from postprocess.judge_functions import edges_to_relationship
@@ -31,6 +29,13 @@ def compile_tex_to_pdf_with_refs(tex_file, output_dir=None, clean=True):
         bool: True if compilation successful, False otherwise
     """
     try:
+        try:
+            from plumbum.cmd import latexmk
+            from plumbum import local
+        except ImportError as e:
+            logger.error(f"LaTeX compiler is unavailable: {str(e)}")
+            return False
+
         tex_dir = os.path.dirname(tex_file)
         if output_dir is None:
             output_dir = tex_dir
@@ -1187,4 +1192,3 @@ if __name__ == '__main__':
     save_path = 'demo_data/20250408_145536/sachs/output_report'
     compile_tex_to_pdf_with_refs(f'{save_path}/report.tex', save_path)
     
-
