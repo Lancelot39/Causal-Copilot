@@ -63,8 +63,6 @@ import gradio as gr
 import pandas as pd
 import io
 import os
-import shutil
-from datetime import datetime
 import sys
 from queue import Queue
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -75,6 +73,7 @@ from web_demo.frontend_utils import (
     build_report_gallery_items,
     build_upload_error_response,
     get_static_allowed_paths,
+    stage_dataset_file,
 )
 from web_demo.demo_config import get_demo_config
 from global_setting.Initialize_state import global_state_initialization
@@ -153,17 +152,7 @@ DEMO_DATASETS = {
 
 
 def upload_file(file, REQUIRED_INFO):
-    # TODO: add more complicated file unique ID handling
-    date_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-    os.makedirs(os.path.join(UPLOAD_FOLDER, date_time, os.path.basename(file.name).replace('.csv', '')), exist_ok=True)
-
-    target_path = os.path.join(UPLOAD_FOLDER, date_time, os.path.basename(file.name).replace('.csv', ''),
-                               os.path.basename(file.name))
-    REQUIRED_INFO = update(REQUIRED_INFO, 'target_path', target_path)
-    output_dir = os.path.join(UPLOAD_FOLDER, date_time, os.path.basename(file.name).replace('.csv', ''))
-    REQUIRED_INFO = update(REQUIRED_INFO, 'output_dir', output_dir)
-    shutil.copy(file.name, target_path)
-    return REQUIRED_INFO
+    return stage_dataset_file(file.name, UPLOAD_FOLDER, REQUIRED_INFO)
 
 def handle_file_upload(file, REQUIRED_INFO, CURRENT_STAGE, chatbot, file_upload_btn, download_btn):
     chatbot = chatbot.copy()
@@ -1315,22 +1304,13 @@ def load_demo_dataset(dataset_name, REQUIRED_INFO, CURRENT_STAGE, chatbot, demo_
     dataset = DEMO_DATASETS[dataset_name]
     source_path = dataset["path"]
 
-    date_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-    os.makedirs(os.path.join(UPLOAD_FOLDER, date_time, os.path.basename(source_path).replace('.csv', '')),
-                exist_ok=True)
-
-    target_path = os.path.join(UPLOAD_FOLDER, date_time, os.path.basename(source_path).replace('.csv', ''),
-                               os.path.basename(source_path))
-    REQUIRED_INFO = update(REQUIRED_INFO, 'target_path', target_path)
-    output_dir = os.path.join(UPLOAD_FOLDER, date_time, os.path.basename(source_path).replace('.csv', ''))
-    REQUIRED_INFO = update(REQUIRED_INFO, 'output_dir', output_dir)
-    shutil.copy(source_path, target_path)
+    REQUIRED_INFO = stage_dataset_file(source_path, UPLOAD_FOLDER, REQUIRED_INFO)
 
     REQUIRED_INFO = update(REQUIRED_INFO, 'data_uploaded', True)
     REQUIRED_INFO = update(REQUIRED_INFO, 'initial_query', True)
     CURRENT_STAGE = 'initial_process'
 
-    df = pd.read_csv(target_path)
+    df = pd.read_csv(REQUIRED_INFO["target_path"])
     #chatbot.append((f"{dataset['query']}", None))
     bot_message = f"✅ Loaded demo dataset '{dataset_name}' with {len(df)} rows and {len(df.columns)} columns."
     chatbot = chatbot.copy()

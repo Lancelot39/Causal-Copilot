@@ -4,6 +4,7 @@ from web_demo.frontend_utils import (
     build_report_gallery_items,
     build_upload_error_response,
     get_static_allowed_paths,
+    stage_dataset_file,
 )
 
 
@@ -81,3 +82,31 @@ def test_report_gallery_items_skip_missing_files_and_fallback_image(tmp_path):
             "image": "/gradio_api/file=reports/fallback.png",
         }
     ]
+
+
+def test_stage_dataset_file_uses_unique_workspace_for_same_second(tmp_path):
+    source_file = tmp_path / "uploaded.csv"
+    source_file.write_text("x,y\n1,2\n", encoding="utf-8")
+    upload_folder = tmp_path / "uploads"
+
+    first = stage_dataset_file(
+        source_file=source_file,
+        upload_folder=upload_folder,
+        required_info={"data_uploaded": False},
+        timestamp="20260519_120000",
+        upload_id="first",
+    )
+    second = stage_dataset_file(
+        source_file=source_file,
+        upload_folder=upload_folder,
+        required_info={"data_uploaded": False},
+        timestamp="20260519_120000",
+        upload_id="second",
+    )
+
+    assert first["target_path"] != second["target_path"]
+    assert first["output_dir"] != second["output_dir"]
+    assert "20260519_120000_first" in first["output_dir"]
+    assert "20260519_120000_second" in second["output_dir"]
+    assert Path(first["target_path"]).read_text(encoding="utf-8") == "x,y\n1,2\n"
+    assert Path(second["target_path"]).read_text(encoding="utf-8") == "x,y\n1,2\n"

@@ -1,3 +1,6 @@
+import shutil
+import uuid
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from urllib.parse import quote
@@ -60,6 +63,29 @@ def build_report_gallery_items(
         )
 
     return gallery_items
+
+
+def stage_dataset_file(
+    source_file: Union[str, Path],
+    upload_folder: Union[str, Path],
+    required_info: Dict[str, Any],
+    timestamp: Optional[str] = None,
+    upload_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    source_path = Path(source_file)
+    timestamp = timestamp or datetime.now().strftime("%Y%m%d_%H%M%S_%f")
+    upload_id = upload_id or uuid.uuid4().hex[:8]
+    dataset_name = source_path.stem or "dataset"
+    output_dir = Path(upload_folder) / f"{timestamp}_{upload_id}" / dataset_name
+    target_path = output_dir / source_path.name
+
+    output_dir.mkdir(parents=True, exist_ok=False)
+    shutil.copy(source_path, target_path)
+
+    updated_info = required_info.copy()
+    updated_info["target_path"] = str(target_path)
+    updated_info["output_dir"] = str(output_dir)
+    return updated_info
 
 
 def build_upload_error_response(
