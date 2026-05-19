@@ -22,3 +22,24 @@ def test_drl_hte_program_has_module_logger_import():
 
     assert "from utils.logger import logger" in source
     assert "logger.info" in source
+
+
+def test_cpu_dockerfile_uses_cpu_only_runtime():
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "Dockerfile.cpu").read_text(encoding="utf-8")
+    first_instruction = next(line for line in source.splitlines() if line.strip())
+
+    assert "python:3.10-slim" in first_instruction
+    assert "cuda" not in first_instruction.lower()
+    assert "https://download.pytorch.org/whl/cpu" in source
+    assert "torch==2.2.2" in source
+
+
+def test_dockerfiles_launch_web_demo_by_default():
+    root = Path(__file__).resolve().parents[1]
+
+    for dockerfile_name in ("Dockerfile.cpu", "Dockerfile.gpu"):
+        source = (root / dockerfile_name).read_text(encoding="utf-8")
+
+        assert "EXPOSE 7860" in source
+        assert 'CMD ["python", "web_demo/demo.py"]' in source

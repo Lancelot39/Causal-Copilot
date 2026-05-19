@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 pytorch/pytorch:2.2.2-cuda11.8-cudnn8-runtime AS cpu-base
+FROM --platform=linux/amd64 python:3.10-slim AS cpu-base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -29,10 +29,11 @@ RUN apt-get update && apt-get install -y \
     texlive-latex-extra \
     && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y python3-pip
-
 # Copy requirements files
 COPY requirements_cpu.txt ./
+
+# Install CPU-only PyTorch first so the requirements install does not pull CUDA wheels.
+RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.2.2
 
 # Install CPU requirements
 RUN pip install --no-cache-dir -r requirements_cpu.txt --no-deps
@@ -43,9 +44,12 @@ COPY . .
 # Set Python path
 ENV PYTHONPATH=/app
 
+# Expose Gradio's default application port.
+EXPOSE 7860
+
 # Set up bash as default shell with useful aliases
 RUN echo 'alias ll="ls -la"' >> ~/.bashrc && \
     echo 'alias python="python3"' >> ~/.bashrc
 
-# Start interactive bash shell by default
-CMD ["/bin/bash"] 
+# Launch the web demo by default, matching the README Docker run command.
+CMD ["python", "web_demo/demo.py"]

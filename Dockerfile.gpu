@@ -43,6 +43,9 @@ COPY . .
 # Set Python path
 ENV PYTHONPATH=/app
 
+# Expose Gradio's default application port.
+EXPOSE 7860
+
 # Setup GPU acceleration
 RUN apt-get update && apt-get install -y libboost-python-dev libboost-numpy-dev && \
     pip install \
@@ -60,5 +63,5 @@ RUN cd externals/pc_adjacency_search && make
 RUN echo 'alias ll="ls -la"' >> ~/.bashrc && \
     echo 'alias python="python3"' >> ~/.bashrc
 
-# Start interactive bash shell by default
-CMD ["/bin/bash"] 
+# Launch the web demo by default, matching the README Docker run command.
+CMD ["python", "web_demo/demo.py"]
