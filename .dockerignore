@@ -1,0 +1,35 @@
+# Version control and local configuration
+.git
+.github
+.env
+
+# Python bytecode and local environments
+__pycache__
+*.py[cod]
+.pytest_cache
+.ruff_cache
+.mypy_cache
+.venv
+venv
+env
+
+# Build and package artifacts
+build
+dist
+*.egg-info
+
+# Editor and OS files
+.DS_Store
+.idea
+.vscode
+
+# Generated demo, test, and report outputs
+demo_data
+gradio_output
+output
+test_output
+test_result
+preprocess/result
+postprocess/test_result
+causal_inference/test_result
+report/test

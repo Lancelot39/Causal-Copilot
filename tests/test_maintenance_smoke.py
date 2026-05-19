@@ -43,3 +43,25 @@ def test_dockerfiles_launch_web_demo_by_default():
 
         assert "EXPOSE 7860" in source
         assert 'CMD ["python", "web_demo/demo.py"]' in source
+
+
+def test_dockerignore_excludes_local_and_generated_files():
+    root = Path(__file__).resolve().parents[1]
+    dockerignore = (root / ".dockerignore").read_text(encoding="utf-8").splitlines()
+    ignored_patterns = {line.strip() for line in dockerignore if line.strip() and not line.startswith("#")}
+
+    expected_patterns = {
+        ".git",
+        ".env",
+        ".venv",
+        "__pycache__",
+        "*.py[cod]",
+        ".pytest_cache",
+        ".ruff_cache",
+        "demo_data",
+        "gradio_output",
+        "output",
+        "test_output",
+    }
+
+    assert expected_patterns <= ignored_patterns
