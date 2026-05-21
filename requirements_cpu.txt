@@ -23,7 +23,7 @@ gradio-client==1.11.0
 h11==0.14.0
 httpcore==1.0.6
 httpx==0.27.2
-huggingface-hub
+huggingface-hub==0.33.5
 idna==3.10
 igraph==0.11.8
 importlib-resources==6.4.5

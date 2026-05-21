@@ -30,3 +30,19 @@ def test_gradio_runtime_requirement_pins_are_resolvable():
         assert tuple(map(int, pins["pygam"].split("."))) >= (0, 12, 0)
         assert tuple(map(int, pins["econml"].split("."))) >= (0, 16, 0)
         assert "causalnex" not in _read_requirements(requirements_path)
+
+
+def test_shared_web_runtime_pins_match_between_cpu_and_gpu():
+    cpu_pins = _read_pins("requirements_cpu.txt")
+    gpu_pins = _read_pins("requirements_gpu.txt")
+    shared_runtime_packages = {
+        "gradio",
+        "gradio-client",
+        "huggingface-hub",
+        "python-multipart",
+        "zipp",
+    }
+
+    assert {package: cpu_pins[package] for package in shared_runtime_packages} == {
+        package: gpu_pins[package] for package in shared_runtime_packages
+    }
