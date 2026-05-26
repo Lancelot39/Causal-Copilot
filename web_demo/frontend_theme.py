@@ -265,6 +265,10 @@ APP_CSS = """
     margin: 20px auto;
     max-width: 1400px; /* Increased width to accommodate all 6 cards */
 }
+.report-card-link {
+    text-decoration: none;
+    color: inherit;
+}
 .report-card {
     background: white;
     border-radius: 12px;
@@ -305,6 +309,13 @@ APP_CSS = """
     background-color: #f0f0f0;
     background-size: cover;
     background-position: center;
+    overflow: hidden;
+}
+.report-card-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
 }
 .report-card-content {
     padding: 15px; /* Reduced padding */
@@ -361,6 +372,16 @@ def build_welcome_message() -> str:
     )
 
 
+_PDF_ICON_HTML = """
+                    <div class="pdf-icon" aria-hidden="true">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" focusable="false">
+                            <path d="M181.9 256.1c-5-16-4.9-46.9-2-46.9 8.4 0 7.6 36.9 2 46.9zm-1.7 47.2c-7.7 20.2-17.3 43.3-28.4 62.7 18.3-7 39-17.2 62.9-21.9-12.7-9.6-24.9-23.4-34.5-40.8zM86.1 428.1c0 .8 13.2-5.4 34.9-40.2-6.7 6.3-16.8 15.8-24.1 26.3-10.7 15.5-11.6 14-10.8 13.9zm28.6-181.9c7.4-6.5 21.6-10.7 38.8-13.3 4.9-14.7 8.4-33.4 8.4-33.4s-13.6 8.1-29.8 10.2c-14.1 1.9-24.5 7.3-34.1 20.1-9.8 13.1-8.1 10.4-8.1 10.4s9.4-6.2 24.8-6z"/>
+                            <path d="M384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9zM248 160h136v328c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V24C0 10.7 10.7 0 24 0h200v136c0 13.2 10.8 24 24 24zm-84.5 98.6c19.3-5.7 45.5-10.4 67.7-13.2-7.9-35.6-10.3-53.3-10.3-53.3s-16 2.8-37.9 7.7c-36.3 7.9-38.9 9-55.8 31.1-6 7.9-9.5 14.4-12.7 19.5-18.7 26.6-41.7 51.7-52.6 66.1-5.5 7.3-13.3 18.3-19.6 22.2-9.1 5.7-21.1 1.7-23.7-7.8-2.6-9.5 4.3-19.5 9.5-22.7 3.5-2.1 8.7-9.1 15.8-20.3 10.8-15.7 19.1-33.3 19.1-33.3s-10.6 6.7-13.4 10.5c-14.9 19.7-40.8 49-51.9 73.3-10.8 24.4-4.9 37.3 8.1 42.8 9.2 3.8 21.3-4 29.5-12.6 11.7-12.1 17.9-20.2 28.3-38.8 18.1-32.3 30.6-62.8 30.6-62.8s-.3 14.2-.8 22.7c-.7 12.3-2.8 14.8-7.9 20.3-5.8 6.2-13.5 6.6-19.9 6.4-8.5-.4-10.4 5.8-7.4 9.1 9 10.2 29.2 6.3 41.4-9.2 13.1-16.6 11.6-37.8 11-46.9-1.4-21.6 2.4-49.5 2.4-49.5z"/>
+                        </svg>
+                    </div>
+"""
+
+
 def build_report_gallery_html(report_items: Sequence[Mapping[str, str]]) -> str:
     cards = []
     for item in report_items:
@@ -372,8 +393,11 @@ def build_report_gallery_html(report_items: Sequence[Mapping[str, str]]) -> str:
         cards.append(
             f"""
             <a class="report-card-link" href="{file_url}" target="_blank" rel="noopener noreferrer">
-                <article class="report-card">
-                    <div class="report-card-image-area" style="background-image: url('{image_url}');"></div>
+                <article class="report-card" data-file="{file_url}">
+{_PDF_ICON_HTML}
+                    <div class="report-card-image-area">
+                        <img class="report-card-image" src="{image_url}" alt="{title} report cover">
+                    </div>
                     <div class="report-card-content">
                         <h3 class="report-card-title">{title}</h3>
                         <p class="report-card-desc">{description}</p>
