@@ -191,86 +191,6 @@ APP_CSS = """
     background: #f5f5f5 !important;
     margin-left: auto !important;
 }
-/* Gallery Section Styles */
-.gallery-section {
-    margin-top: 40px;
-    margin-bottom: 20px;
-}
-.gallery-heading {
-    width: 100%;
-    text-align: center;
-    font-size: 28px;
-    margin-bottom: 20px;
-}
-.filter-buttons {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 30px;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-.filter-btn {
-    border-radius: 20px;
-    background-color: #f5f5f5;
-    padding: 8px 16px;
-    transition: all 0.3s ease;
-}
-.filter-btn.active {
-    background-color: #333;
-    color: white;
-}
-.gallery-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 20px;
-    margin: 0 auto;
-    padding: 0 20px;
-}
-.gallery-card {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    position: relative;
-}
-.gallery-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0,0,0,0.15);
-}
-.card-img-container {
-    width: 100%;
-    height: 200px;
-    overflow: hidden;
-}
-.gallery-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-}
-.card-content {
-    padding: 15px;
-}
-.card-title {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 0;
-    margin-bottom: 10px;
-}
-.card-footer {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-.card-author {
-    font-size: 14px;
-    color: #555;
-}
-.card-likes {
-    margin-left: auto;
-    font-size: 14px;
-    color: #ff4757;
-}
 /* Responsive Adjustments */
 @media (max-width: 920px) {
     .cc-app-shell {
@@ -278,15 +198,6 @@ APP_CSS = """
     }
     .cc-status-grid {
         grid-template-columns: 1fr;
-    }
-}
-@media (max-width: 768px) {
-    .gallery-container {
-        flex-direction: column;
-    }
-    .gallery-card {
-        width: 100%;
-        margin-bottom: 20px;
     }
 }
 .report-gallery {
