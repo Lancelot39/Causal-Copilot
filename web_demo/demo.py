@@ -75,7 +75,7 @@ from web_demo.frontend_utils import (
     get_static_allowed_paths,
     stage_dataset_file,
 )
-from web_demo.frontend_theme import APP_CSS, APP_JS, build_welcome_message
+from web_demo.frontend_theme import APP_CSS, APP_JS, build_report_gallery_html, build_welcome_message
 from web_demo.demo_config import get_demo_config
 from global_setting.Initialize_state import global_state_initialization
 from preprocess.stat_info_functions import *
@@ -1531,123 +1531,7 @@ with gr.Blocks(title="Causal Copilot", js=APP_JS, theme=gr.themes.Soft(), css=AP
     with gr.Row(elem_classes=["gallery-section"]):
         gr.Markdown("## Explore some case study Reports!", elem_classes=["gallery-heading"])
     
-    # Use HTML for report gallery
-    gallery_html = f"""
-    <style>
-    .report-gallery {{
-        display: grid;
-        grid-template-columns: repeat(6, 1fr); /* Changed to 6 columns for a single row */
-        gap: 15px; /* Reduced gap to fit better */
-        margin: 20px auto;
-        max-width: 1400px; /* Increased width to accommodate all 6 cards */
-    }}
-    .report-card {{
-        background: white;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
-        position: relative;
-        cursor: pointer;
-    }}
-    .report-card:hover {{
-        transform: translateY(-5px);
-        box-shadow: 0 12px 20px rgba(0,0,0,0.15);
-    }}
-    /* PDF Icon */
-    .pdf-icon {{
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 32px;
-        height: 32px;
-        background-color: rgba(255, 255, 255, 0.9);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        z-index: 3;
-    }}
-    .pdf-icon svg {{
-        width: 18px;
-        height: 18px;
-        fill: #e74c3c;
-    }}
-    /* Card Image Area (Always Visible) */
-    .report-card-image-area {{
-        width: 100%;
-        height: 140px; /* Reduced height for better fit in single row */
-        background-color: #f0f0f0;
-        background-size: cover;
-        background-position: center;
-    }}
-    .report-card-content {{
-        padding: 15px; /* Reduced padding */
-    }}
-    .report-card-title {{
-        font-size: 16px; /* Smaller font */
-        font-weight: bold;
-        margin: 0 0 8px 0;
-        color: #333;
-    }}
-    .report-card-desc {{
-        font-size: 12px; /* Smaller font */
-        color: #666;
-        margin-bottom: 10px;
-        line-height: 1.3;
-    }}
-    .report-card-author {{
-        font-size: 12px; /* Smaller font */
-        color: #555;
-        font-style: italic;
-    }}
-    /* Removed hover thumbnail styles */
-    .report-card::before {{
-       /* Optional: Keep the top accent bar */
-       content: '';
-       position: absolute;
-       top: 0;
-       left: 0;
-       width: 100%;
-       height: 5px;
-       background: linear-gradient(90deg, #3498db, #2980b9);
-       z-index: 2; 
-    }}
-    </style>
-    
-    <div class="report-gallery">
-    """
-    
-    # Add card for each report
-    for item in report_items:
-        # Link should just be /file=<filename> if dir is in allowed_paths
-        report_link = f"{item['file']}" 
-        # Image path assumes gradio serves /static automatically
-
-        image_path = item.get('image', '/static/assets/default_cover.png') 
-        gallery_html += f"""
-        <a href="{report_link}" target="_blank" style="text-decoration: none; color: inherit;"> 
-            <div class="report-card" data-file="{item['file']}">
-                <div class="pdf-icon">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
-                        <path d="M181.9 256.1c-5-16-4.9-46.9-2-46.9 8.4 0 7.6 36.9 2 46.9zm-1.7 47.2c-7.7 20.2-17.3 43.3-28.4 62.7 18.3-7 39-17.2 62.9-21.9-12.7-9.6-24.9-23.4-34.5-40.8zM86.1 428.1c0 .8 13.2-5.4 34.9-40.2-6.7 6.3-16.8 15.8-24.1 26.3-10.7 15.5-11.6 14-10.8 13.9zm28.6-181.9c7.4-6.5 21.6-10.7 38.8-13.3 4.9-14.7 8.4-33.4 8.4-33.4s-13.6 8.1-29.8 10.2c-14.1 1.9-24.5 7.3-34.1 20.1-9.8 13.1-8.1 10.4-8.1 10.4s9.4-6.2 24.8-6z"/>
-                        <path d="M384 121.9v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9zM248 160h136v328c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V24C0 10.7 10.7 0 24 0h200v136c0 13.2 10.8 24 24 24zm-84.5 98.6c19.3-5.7 45.5-10.4 67.7-13.2-7.9-35.6-10.3-53.3-10.3-53.3s-16 2.8-37.9 7.7c-36.3 7.9-38.9 9-55.8 31.1-6 7.9-9.5 14.4-12.7 19.5-18.7 26.6-41.7 51.7-52.6 66.1-5.5 7.3-13.3 18.3-19.6 22.2-9.1 5.7-21.1 1.7-23.7-7.8-2.6-9.5 4.3-19.5 9.5-22.7 3.5-2.1 8.7-9.1 15.8-20.3 10.8-15.7 19.1-33.3 19.1-33.3s-10.6 6.7-13.4 10.5c-14.9 19.7-40.8 49-51.9 73.3-10.8 24.4-4.9 37.3 8.1 42.8 9.2 3.8 21.3-4 29.5-12.6 11.7-12.1 17.9-20.2 28.3-38.8 18.1-32.3 30.6-62.8 30.6-62.8s-.3 14.2-.8 22.7c-.7 12.3-2.8 14.8-7.9 20.3-5.8 6.2-13.5 6.6-19.9 6.4-8.5-.4-10.4 5.8-7.4 9.1 9 10.2 29.2 6.3 41.4-9.2 13.1-16.6 11.6-37.8 11-46.9-1.4-21.6 2.4-49.5 2.4-49.5z"/>
-                    </svg>
-                </div>
-                <div class="report-card-image-area" style="background-image: url('{image_path}');"></div>
-                <div class="report-card-content">
-                    <h3 class="report-card-title">{item['title']}</h3>
-                    <p class="report-card-desc">{item['description']}</p>
-                    <p class="report-card-author">By {item['author']}</p>
-                </div>
-            </div>
-        </a>
-        """
-    
-    gallery_html += """
-    </div>
-    """
+    gallery_html = build_report_gallery_html(report_items)
     
     with gr.Row():
         gr.HTML(gallery_html)

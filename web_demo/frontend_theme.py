@@ -1,3 +1,7 @@
+from html import escape
+from typing import Mapping, Sequence
+
+
 APP_JS = """
 function createGradioAnimation() {
     var container = document.createElement('div');
@@ -355,3 +359,28 @@ def build_welcome_message() -> str:
         "Welcome to Causal Copilot. Upload a CSV dataset or choose a demo "
         "dataset to begin causal discovery."
     )
+
+
+def build_report_gallery_html(report_items: Sequence[Mapping[str, str]]) -> str:
+    cards = []
+    for item in report_items:
+        title = escape(item["title"])
+        description = escape(item["description"])
+        author = escape(item["author"])
+        file_url = escape(item["file"], quote=True)
+        image_url = escape(item["image"], quote=True)
+        cards.append(
+            f"""
+            <a class="report-card-link" href="{file_url}" target="_blank" rel="noopener noreferrer">
+                <article class="report-card">
+                    <div class="report-card-image-area" style="background-image: url('{image_url}');"></div>
+                    <div class="report-card-content">
+                        <h3 class="report-card-title">{title}</h3>
+                        <p class="report-card-desc">{description}</p>
+                        <p class="report-card-author">By {author}</p>
+                    </div>
+                </article>
+            </a>
+            """
+        )
+    return '<div class="report-gallery">' + "\n".join(cards) + "</div>"
