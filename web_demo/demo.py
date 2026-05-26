@@ -75,7 +75,14 @@ from web_demo.frontend_utils import (
     get_static_allowed_paths,
     stage_dataset_file,
 )
-from web_demo.frontend_theme import APP_CSS, APP_JS, build_report_gallery_html, build_welcome_message
+from web_demo.frontend_theme import (
+    APP_CSS,
+    APP_JS,
+    build_app_header_html,
+    build_report_gallery_html,
+    build_status_cards_html,
+    build_welcome_message,
+)
 from web_demo.demo_config import get_demo_config
 from global_setting.Initialize_state import global_state_initialization
 from preprocess.stat_info_functions import *
@@ -1327,17 +1334,6 @@ with gr.Blocks(title="Causal Copilot", js=APP_JS, theme=gr.themes.Soft(), css=AP
             "interactive_mode": True
         })
     args = gr.State(type('Args', (), {})())
-    chatbot = gr.Chatbot(
-        value=[(None, build_welcome_message())],
-        height=700,
-        show_label=False,
-        show_share_button=False,
-        avatar_images=["https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/1f600.png",
-                       "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/1f916.png"],
-        bubble_full_width=False,
-        elem_classes=["message-wrap"],
-        render_markdown=True
-    )
 
     def disable_all_inputs(dataset_name, chatbot, clicked_btn, download_btn, msg, all_demo_buttons):
         """Disable all interactive elements"""
@@ -1366,10 +1362,61 @@ with gr.Blocks(title="Causal Copilot", js=APP_JS, theme=gr.themes.Soft(), css=AP
         ])
         return updates
 
+    # Define report cards with files that are present in this checkout.
+    report_items = build_report_gallery_items([
+        {
+            "title": "Abalone Causal Analysis",
+            "description": "Discovering relationships between physical attributes and age of abalone",
+            "author": "Causal Copilot",
+            "file_path": "asset/report_Abalone.pdf",
+        },
+        {
+            "title": "CCS Data Causal Analysis",
+            "description": "Analyzing causal relationships in concrete compressive strength data",
+            "author": "Causal Copilot",
+            "file_path": "asset/report_CCS.pdf",
+        },
+        {
+            "title": "Sachs Protein Signaling",
+            "description": "Discovering causal structure between protein signaling molecules",
+            "author": "Causal Copilot",
+            "file_path": "asset/report_Sachs.pdf",
+        }
+    ])
+    gallery_html = build_report_gallery_html(report_items)
 
-    with gr.Row():
-        with gr.Column(scale=24):
-            with gr.Row():
+    gr.HTML(build_app_header_html())
+    with gr.Row(elem_classes=["cc-app-shell"]):
+        with gr.Column(scale=3, elem_classes=["cc-panel", "cc-dataset-rail"]):
+            file_upload = gr.UploadButton(
+                "📎 Upload Your Data (.csv)",
+                file_types=[".csv"],
+                size="sm",
+                elem_classes=["icon-button"],
+                scale=5,
+                file_count="single"
+            )
+
+            # Demo dataset buttons
+            demo_btns = {}
+            for dataset_name in DEMO_DATASETS:
+                demo_btn = gr.Button(f"{DEMO_DATASETS[dataset_name]['name']} Demo")
+                demo_btns[dataset_name] = demo_btn
+
+        with gr.Column(scale=6, elem_classes=["cc-main-workspace"]):
+            gr.HTML(build_status_cards_html())
+            chatbot = gr.Chatbot(
+                value=[(None, build_welcome_message())],
+                height=700,
+                show_label=False,
+                show_share_button=False,
+                avatar_images=["https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/1f600.png",
+                               "https://cdn.jsdelivr.net/gh/twitter/twemoji@latest/assets/72x72/1f916.png"],
+                bubble_full_width=False,
+                elem_classes=["message-wrap"],
+                render_markdown=True
+            )
+            with gr.Row(elem_classes=["cc-composer"]):
                 msg = gr.Textbox(
                     placeholder="Enter text here",
                     elem_classes="input-box",
@@ -1377,70 +1424,55 @@ with gr.Blocks(title="Causal Copilot", js=APP_JS, theme=gr.themes.Soft(), css=AP
                     container=False,
                     scale=12
                 )
-                file_upload = gr.UploadButton(
-                    "📎 Upload Your Data (.csv)",
-                    file_types=[".csv"],
-                    size="sm",
-                    elem_classes=["icon-button"],
-                    scale=5,
-                    file_count="single"
-                )
-                download_btn = gr.DownloadButton(
-                    "📥 Download result package (ZIP file)",
-                    size="sm",
-                    elem_classes=["icon-button"],
-                    scale=6,
-                    interactive=False
-                )
                 reset_btn = gr.Button("🔄 Reset", scale=1, elem_classes=["icon-button"], size="sm")
                 # No need for a hidden video button anymore
 
-    with gr.Row(elem_classes=["gallery-section"]):
-        gr.Markdown("## Play with some interesting datasets!", elem_classes=["gallery-heading"])
-
-    # Demo dataset buttons
-    demo_btns = {}
-    with gr.Row():
-        for dataset_name in DEMO_DATASETS:
-            demo_btn = gr.Button(f"{DEMO_DATASETS[dataset_name]['name']} Demo")
-            demo_btns[dataset_name] = demo_btn
-
-        for name, demo_btn in demo_btns.items():
-            # Set up the event chain for each demo button
-            print(name, demo_btn)
-            demo_btn.click(
-                fn=disable_all_inputs,  # First disable all inputs
-                inputs=[
-                    gr.Textbox(value=name, visible=False),
-                    chatbot,
-                    demo_btn,
-                    download_btn,
-                    msg,
-                    gr.Textbox(value=str(len(DEMO_DATASETS)), visible=False)  # Pass number of buttons instead
-                ],
-                outputs=[*list(demo_btns.values()), download_btn, msg, file_upload, reset_btn],
-                queue=True
-            ).then(
-                fn=load_demo_dataset,
-                inputs=[gr.Textbox(value=name, visible=False), REQUIRED_INFO, stage_state, chatbot, demo_btn, download_btn],
-                outputs=[REQUIRED_INFO, stage_state, chatbot, demo_btn, download_btn, msg],
-                queue=True,
-                concurrency_limit=MAX_CONCURRENT_REQUESTS
-            ).then(
-                fn=process_message,
-                inputs=[msg, args, state, REQUIRED_INFO, stage_state, chatbot, download_btn],
-                outputs=[args, state, REQUIRED_INFO, stage_state, chatbot, download_btn],
-                queue=True,
-                concurrency_limit=MAX_CONCURRENT_REQUESTS
-            ).then(
-                fn=enable_all_inputs,
-                inputs=[gr.Textbox(value=str(len(DEMO_DATASETS)), visible=False)],
-                outputs=[*list(demo_btns.values()), download_btn, msg, file_upload, reset_btn],
-                queue=True
-            ).then(
-                fn=lambda: "",
-                outputs=[msg]
+        with gr.Column(scale=3, elem_classes=["cc-panel", "cc-output-rail"]):
+            download_btn = gr.DownloadButton(
+                "📥 Download result package (ZIP file)",
+                size="sm",
+                elem_classes=["icon-button"],
+                scale=6,
+                interactive=False
             )
+            gr.HTML(gallery_html)
+
+    for name, demo_btn in demo_btns.items():
+        # Set up the event chain for each demo button
+        print(name, demo_btn)
+        demo_btn.click(
+            fn=disable_all_inputs,  # First disable all inputs
+            inputs=[
+                gr.Textbox(value=name, visible=False),
+                chatbot,
+                demo_btn,
+                download_btn,
+                msg,
+                gr.Textbox(value=str(len(DEMO_DATASETS)), visible=False)  # Pass number of buttons instead
+            ],
+            outputs=[*list(demo_btns.values()), download_btn, msg, file_upload, reset_btn],
+            queue=True
+        ).then(
+            fn=load_demo_dataset,
+            inputs=[gr.Textbox(value=name, visible=False), REQUIRED_INFO, stage_state, chatbot, demo_btn, download_btn],
+            outputs=[REQUIRED_INFO, stage_state, chatbot, demo_btn, download_btn, msg],
+            queue=True,
+            concurrency_limit=MAX_CONCURRENT_REQUESTS
+        ).then(
+            fn=process_message,
+            inputs=[msg, args, state, REQUIRED_INFO, stage_state, chatbot, download_btn],
+            outputs=[args, state, REQUIRED_INFO, stage_state, chatbot, download_btn],
+            queue=True,
+            concurrency_limit=MAX_CONCURRENT_REQUESTS
+        ).then(
+            fn=enable_all_inputs,
+            inputs=[gr.Textbox(value=str(len(DEMO_DATASETS)), visible=False)],
+            outputs=[*list(demo_btns.values()), download_btn, msg, file_upload, reset_btn],
+            queue=True
+        ).then(
+            fn=lambda: "",
+            outputs=[msg]
+        )
 
     # Event handlers with queue enabled
     msg.submit(
@@ -1504,37 +1536,6 @@ with gr.Blocks(title="Causal Copilot", js=APP_JS, theme=gr.themes.Soft(), css=AP
     )
     # Download report handler with updated visibility
     download_btn.click()
-
-    # Define report cards with files that are present in this checkout.
-    report_items = build_report_gallery_items([
-        {
-            "title": "Abalone Causal Analysis",
-            "description": "Discovering relationships between physical attributes and age of abalone",
-            "author": "Causal Copilot",
-            "file_path": "asset/report_Abalone.pdf",
-        },
-        {
-            "title": "CCS Data Causal Analysis",
-            "description": "Analyzing causal relationships in concrete compressive strength data",
-            "author": "Causal Copilot",
-            "file_path": "asset/report_CCS.pdf",
-        },
-        {
-            "title": "Sachs Protein Signaling",
-            "description": "Discovering causal structure between protein signaling molecules",
-            "author": "Causal Copilot",
-            "file_path": "asset/report_Sachs.pdf",
-        }
-    ])
-
-    # Gallery section for showcasing finished demos
-    with gr.Row(elem_classes=["gallery-section"]):
-        gr.Markdown("## Explore some case study Reports!", elem_classes=["gallery-heading"])
-    
-    gallery_html = build_report_gallery_html(report_items)
-    
-    with gr.Row():
-        gr.HTML(gallery_html)
 
 if __name__ == "__main__":
     demo.queue(default_concurrency_limit=MAX_CONCURRENT_REQUESTS,

@@ -91,6 +91,8 @@ function createGradioAnimation() {
 
 APP_CSS = """
 .cc-app-shell {
+    align-items: stretch;
+    gap: 16px;
     max-width: 1440px;
     margin: 0 auto;
 }
@@ -104,6 +106,27 @@ APP_CSS = """
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     background: #ffffff;
+}
+.cc-dataset-rail, .cc-output-rail {
+    padding: 16px;
+}
+.cc-main-workspace {
+    min-width: 0;
+}
+.cc-status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+.cc-status-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 12px;
+    background: #ffffff;
+}
+.cc-composer {
+    align-items: center;
 }
 .input-buttons {
     position: absolute !important;
@@ -249,6 +272,14 @@ APP_CSS = """
     color: #ff4757;
 }
 /* Responsive Adjustments */
+@media (max-width: 920px) {
+    .cc-app-shell {
+        flex-direction: column;
+    }
+    .cc-status-grid {
+        grid-template-columns: 1fr;
+    }
+}
 @media (max-width: 768px) {
     .gallery-container {
         flex-direction: column;
@@ -370,6 +401,37 @@ def build_welcome_message() -> str:
         "Welcome to Causal Copilot. Upload a CSV dataset or choose a demo "
         "dataset to begin causal discovery."
     )
+
+
+def build_app_header_html() -> str:
+    return """
+<header class="cc-topbar">
+    <div>
+        <h1>Causal Copilot</h1>
+        <p>Interactive causal discovery workspace</p>
+    </div>
+    <p>Gradio development app runtime</p>
+</header>
+"""
+
+
+def build_status_cards_html() -> str:
+    return """
+<section class="cc-status-grid" aria-label="Workflow status">
+    <article class="cc-status-card">
+        <h2>Dataset</h2>
+        <p>Upload CSV data or pick a demo dataset.</p>
+    </article>
+    <article class="cc-status-card">
+        <h2>Analysis</h2>
+        <p>Run causal discovery in the chat workspace.</p>
+    </article>
+    <article class="cc-status-card">
+        <h2>Report</h2>
+        <p>Download generated results when ready.</p>
+    </article>
+</section>
+"""
 
 
 _PDF_ICON_HTML = """

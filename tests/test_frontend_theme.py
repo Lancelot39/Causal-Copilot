@@ -3,7 +3,9 @@ from html import escape
 from web_demo.frontend_theme import (
     APP_CSS,
     APP_JS,
+    build_app_header_html,
     build_report_gallery_html,
+    build_status_cards_html,
     build_welcome_message,
 )
 
@@ -31,6 +33,21 @@ def test_welcome_message_is_plain_and_dataset_first():
     assert "upload" in message.lower()
     assert "csv" in message.lower()
     assert "causal" in message.lower()
+
+
+def test_app_header_html_names_product_and_status():
+    html = build_app_header_html()
+    assert "Causal Copilot" in html
+    assert "Gradio" in html
+    assert "cc-topbar" in html
+
+
+def test_status_cards_html_keeps_three_short_cards():
+    html = build_status_cards_html()
+    assert html.count('class="cc-status-card"') == 3
+    assert "Dataset" in html
+    assert "Analysis" in html
+    assert "Report" in html
 
 
 def test_report_gallery_html_renders_cards_without_inline_style_grid():
