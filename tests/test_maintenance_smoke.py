@@ -1,6 +1,6 @@
-from pathlib import Path
 import os
 import subprocess
+from pathlib import Path
 
 
 def test_readme_license_reference_resolves():
@@ -102,3 +102,35 @@ def test_verify_script_falls_back_to_python3_when_python_is_absent(tmp_path):
     assert invocations[0] == "-m ruff check ."
     assert invocations[1] == "-m pytest -q"
     assert invocations[2].startswith("-m compileall -q")
+
+
+def test_verify_script_disables_external_pytest_plugins_by_default(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    log_path = tmp_path / "python-env.log"
+    fake_python = tmp_path / "python"
+    fake_python.write_text(
+        "#!/bin/sh\n"
+        'printf "%s|%s\\n" "$PYTEST_DISABLE_PLUGIN_AUTOLOAD" "$*" >> "$VERIFY_PYTHON_STUB_LOG"\n'
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    fake_python.chmod(0o755)
+
+    env = os.environ.copy()
+    env["PYTHON"] = str(fake_python)
+    env["VERIFY_PYTHON_STUB_LOG"] = str(log_path)
+    env.pop("PYTEST_DISABLE_PLUGIN_AUTOLOAD", None)
+
+    result = subprocess.run(
+        ["/bin/bash", "scripts/verify.sh"],
+        cwd=root,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    invocations = log_path.read_text(encoding="utf-8").splitlines()
+    assert invocations
+    assert all(line.startswith("1|") for line in invocations)

@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+export PYTEST_DISABLE_PLUGIN_AUTOLOAD="${PYTEST_DISABLE_PLUGIN_AUTOLOAD:-1}"
+
 PYTHON_BIN="${PYTHON:-}"
 
 if [[ -z "${PYTHON_BIN}" ]]; then
