@@ -1,4 +1,6 @@
 from pathlib import Path
+import os
+import subprocess
 
 
 def test_readme_license_reference_resolves():
@@ -65,3 +67,38 @@ def test_dockerignore_excludes_local_and_generated_files():
     }
 
     assert expected_patterns <= ignored_patterns
+
+
+def test_verify_script_falls_back_to_python3_when_python_is_absent(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    log_path = tmp_path / "python-args.log"
+    fake_python3 = bin_dir / "python3"
+    fake_python3.write_text(
+        "#!/bin/sh\n"
+        'printf "%s\\n" "$*" >> "$VERIFY_PYTHON_STUB_LOG"\n'
+        "exit 0\n",
+        encoding="utf-8",
+    )
+    fake_python3.chmod(0o755)
+
+    env = os.environ.copy()
+    env["PATH"] = str(bin_dir)
+    env["VERIFY_PYTHON_STUB_LOG"] = str(log_path)
+    env.pop("PYTHON", None)
+
+    result = subprocess.run(
+        ["/bin/bash", "scripts/verify.sh"],
+        cwd=root,
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    invocations = log_path.read_text(encoding="utf-8").splitlines()
+    assert invocations[0] == "-m ruff check ."
+    assert invocations[1] == "-m pytest -q"
+    assert invocations[2].startswith("-m compileall -q")
