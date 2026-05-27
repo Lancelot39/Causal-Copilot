@@ -20,11 +20,17 @@ def test_theme_exports_gradio_safe_css_and_js():
     assert ".cc-status-grid" in APP_CSS
     assert ".cc-status-card" in APP_CSS
     assert ".cc-composer" in APP_CSS
+    assert ".cc-primary-action" in APP_CSS
+    assert ".cc-secondary-action" in APP_CSS
+    assert ".cc-demo-list" in APP_CSS
     assert ".report-gallery" in APP_CSS
     assert ".icon-button" in APP_CSS
     assert ".message-wrap" in APP_CSS
     assert ".report-card-link" in APP_CSS
     assert ".report-card-image" in APP_CSS
+    assert "repeat(auto-fit, minmax(180px, 1fr))" in APP_CSS
+    assert "repeat(6, 1fr)" not in APP_CSS
+    assert "#gradio-animation" in APP_CSS
     assert ".gallery-section" not in APP_CSS
     assert ".gallery-heading" not in APP_CSS
     assert "footer{display:none" in APP_CSS

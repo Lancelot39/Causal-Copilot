@@ -1388,20 +1388,22 @@ with gr.Blocks(title="Causal Copilot", js=APP_JS, theme=gr.themes.Soft(), css=AP
     gr.HTML(build_app_header_html())
     with gr.Row(elem_classes=["cc-app-shell"]):
         with gr.Column(scale=3, elem_classes=["cc-panel", "cc-dataset-rail"]):
+            gr.Markdown("### Dataset")
             file_upload = gr.UploadButton(
                 "📎 Upload Your Data (.csv)",
                 file_types=[".csv"],
                 size="sm",
-                elem_classes=["icon-button"],
-                scale=5,
+                elem_classes=["cc-primary-action"],
                 file_count="single"
             )
 
             # Demo dataset buttons
             demo_btns = {}
-            for dataset_name in DEMO_DATASETS:
-                demo_btn = gr.Button(f"{DEMO_DATASETS[dataset_name]['name']} Demo")
-                demo_btns[dataset_name] = demo_btn
+            gr.Markdown("### Demo datasets")
+            with gr.Column(elem_classes=["cc-demo-list"]):
+                for dataset_name in DEMO_DATASETS:
+                    demo_btn = gr.Button(f"{DEMO_DATASETS[dataset_name]['name']} Demo")
+                    demo_btns[dataset_name] = demo_btn
 
         with gr.Column(scale=6, elem_classes=["cc-main-workspace"]):
             gr.HTML(build_status_cards_html())
@@ -1424,17 +1426,17 @@ with gr.Blocks(title="Causal Copilot", js=APP_JS, theme=gr.themes.Soft(), css=AP
                     container=False,
                     scale=12
                 )
-                reset_btn = gr.Button("🔄 Reset", scale=1, elem_classes=["icon-button"], size="sm")
+                reset_btn = gr.Button("🔄 Reset", scale=1, elem_classes=["cc-secondary-action"], size="sm")
                 # No need for a hidden video button anymore
 
         with gr.Column(scale=3, elem_classes=["cc-panel", "cc-output-rail"]):
             download_btn = gr.DownloadButton(
                 "📥 Download result package (ZIP file)",
                 size="sm",
-                elem_classes=["icon-button"],
-                scale=6,
+                elem_classes=["cc-secondary-action"],
                 interactive=False
             )
+            gr.Markdown("### Case study reports")
             gr.HTML(gallery_html)
 
     for name, demo_btn in demo_btns.items():

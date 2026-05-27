@@ -90,6 +90,13 @@ function createGradioAnimation() {
 """
 
 APP_CSS = """
+.gradio-container {
+    background: #f8fafc !important;
+    color: #111827 !important;
+}
+#gradio-animation {
+    display: none !important;
+}
 .cc-app-shell {
     align-items: stretch;
     gap: 16px;
@@ -101,14 +108,55 @@ APP_CSS = """
     align-items: center;
     justify-content: space-between;
     gap: 16px;
+    max-width: 1440px;
+    margin: 0 auto 24px auto;
+    color: #111827;
+}
+.cc-topbar h1,
+.cc-topbar p {
+    color: #111827;
+    margin: 0;
+}
+.cc-topbar h1 {
+    font-size: 30px;
+    line-height: 1.1;
+}
+.cc-topbar p {
+    margin-top: 8px;
+    color: #4b5563;
 }
 .cc-panel {
     border: 1px solid #e5e7eb;
     border-radius: 8px;
     background: #ffffff;
+    color: #111827;
 }
 .cc-dataset-rail, .cc-output-rail {
     padding: 16px;
+}
+.cc-dataset-rail h3,
+.cc-output-rail h3 {
+    margin: 0 0 12px 0;
+    color: #111827;
+}
+.cc-dataset-rail button,
+.cc-primary-action,
+.cc-primary-action button {
+    width: 100% !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    flex: 0 0 auto !important;
+    border-radius: 8px !important;
+}
+.cc-demo-list {
+    gap: 8px;
+}
+.cc-secondary-action,
+.cc-secondary-action button {
+    height: 38px !important;
+    min-height: 38px !important;
+    flex: 0 0 auto !important;
+    border-radius: 8px !important;
 }
 .cc-main-workspace {
     min-width: 0;
@@ -124,6 +172,17 @@ APP_CSS = """
     border-radius: 8px;
     padding: 12px;
     background: #ffffff;
+    color: #111827;
+}
+.cc-status-card h2 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+    line-height: 1.2;
+    color: #111827;
+}
+.cc-status-card p {
+    margin: 0;
+    color: #4b5563;
 }
 .cc-composer {
     align-items: center;
@@ -202,10 +261,10 @@ APP_CSS = """
 }
 .report-gallery {
     display: grid;
-    grid-template-columns: repeat(6, 1fr); /* Changed to 6 columns for a single row */
-    gap: 15px; /* Reduced gap to fit better */
-    margin: 20px auto;
-    max-width: 1400px; /* Increased width to accommodate all 6 cards */
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 12px 0 0 0;
+    max-width: none;
 }
 .report-card-link {
     text-decoration: none;
@@ -247,7 +306,7 @@ APP_CSS = """
 /* Card Image Area (Always Visible) */
 .report-card-image-area {
     width: 100%;
-    height: 140px; /* Reduced height for better fit in single row */
+    height: 96px;
     background-color: #f0f0f0;
     background-size: cover;
     background-position: center;
@@ -260,22 +319,22 @@ APP_CSS = """
     display: block;
 }
 .report-card-content {
-    padding: 15px; /* Reduced padding */
+    padding: 12px;
 }
 .report-card-title {
-    font-size: 16px; /* Smaller font */
+    font-size: 14px;
     font-weight: bold;
     margin: 0 0 8px 0;
     color: #333;
 }
 .report-card-desc {
-    font-size: 12px; /* Smaller font */
+    font-size: 12px;
     color: #666;
     margin-bottom: 10px;
     line-height: 1.3;
 }
 .report-card-author {
-    font-size: 12px; /* Smaller font */
+    font-size: 12px;
     color: #555;
     font-style: italic;
 }
