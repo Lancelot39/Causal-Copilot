@@ -69,6 +69,18 @@ def test_dockerignore_excludes_local_and_generated_files():
     assert expected_patterns <= ignored_patterns
 
 
+def test_demo_keeps_core_gradio_component_bindings():
+    source = Path("web_demo/demo.py").read_text(encoding="utf-8")
+
+    for name in ("msg", "file_upload", "download_btn", "reset_btn", "chatbot", "demo_btns"):
+        assert f"{name} =" in source
+
+    assert "msg.submit(" in source
+    assert "file_upload.upload(" in source
+    assert "reset_btn.click(" in source
+    assert "demo_btn.click(" in source
+
+
 def test_verify_script_falls_back_to_python3_when_python_is_absent(tmp_path):
     root = Path(__file__).resolve().parents[1]
     bin_dir = tmp_path / "bin"
