@@ -67,7 +67,12 @@ import pickle
 import torch
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from web_demo.frontend_utils import build_upload_error_response, stage_dataset_file
+from utils.logger import logger
+from web_demo.frontend_utils import (
+    build_upload_error_response,
+    stage_dataset_file,
+    try_report_generation,
+)
 from web_demo.demo_config import get_demo_config
 from global_setting.Initialize_state import global_state_initialization
 from preprocess.stat_info_functions import *
@@ -1172,13 +1177,19 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             chat_history.append(("📝 Generate comprehensive report and it may take a few minutes, stay tuned...", None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             max_report_attempts = 3
-            try_num = 1
-            report_path = call_report_generation(global_state, args, REQUIRED_INFO['output_dir'])
-            while (not report_path or not os.path.isfile(report_path)) and try_num < max_report_attempts:
-                chat_history.append((None, "❌ An error occurred during the Report Generation, we are trying again and please wait for a few minutes."))
-                yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-                try_num += 1
-                report_path = call_report_generation(global_state, args, REQUIRED_INFO['output_dir'])
+            report_path = None
+            report_error = None
+            for attempt_num in range(1, max_report_attempts + 1):
+                report_path, report_error = try_report_generation(
+                    lambda: call_report_generation(global_state, args, REQUIRED_INFO['output_dir'])
+                )
+                if report_path:
+                    break
+                if report_error:
+                    logger.error(f"Report generation attempt {attempt_num} failed: {report_error}")
+                if attempt_num < max_report_attempts:
+                    chat_history.append((None, "❌ An error occurred during the Report Generation, we are trying again and please wait for a few minutes."))
+                    yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             if not report_path or not os.path.isfile(report_path):
                 chat_history.append((None, "❌ Report generation failed after 3 attempts. Please check the logs and try again before downloading results."))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn

@@ -106,6 +106,22 @@ def test_demo_message_handler_uses_structured_logging():
     assert raw_tracebacks == []
 
 
+def test_gradio_demos_use_report_generation_wrapper():
+    for demo_path in (Path("web_demo/demo.py"), Path("web_demo/demo_inf.py")):
+        source = demo_path.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        process_message = next(
+            node for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "process_message"
+        )
+        process_source = ast.get_source_segment(source, process_message)
+
+        assert "try_report_generation" in source
+        assert process_source is not None
+        assert "try_report_generation(" in process_source
+        assert "while (not report_path or not os.path.isfile(report_path))" not in process_source
+
+
 def test_verify_script_falls_back_to_python3_when_python_is_absent(tmp_path):
     root = Path(__file__).resolve().parents[1]
     bin_dir = tmp_path / "bin"
