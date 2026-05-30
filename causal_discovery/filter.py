@@ -38,7 +38,10 @@ class Filter(object):
         )
         logger.detail(f"Causal-Copilot has filtered algorithms to {TOP_K} candidates: [{', '.join([algo['name'] for algo in output['algorithms']])}]")
         logger.detail(f"Here are the details of its reasoning: {output['reasoning']}")
-        algorithm_candidates = self.parse_response(output)
+        algorithm_candidates = self.ensure_algorithm_candidates(
+            self.parse_response(output),
+            global_state,
+        )
 
         global_state.algorithm.algorithm_candidates = algorithm_candidates
         global_state.logging.select_conversation.append({
@@ -47,6 +50,34 @@ class Filter(object):
         })
 
         return global_state
+
+    def ensure_algorithm_candidates(self, algorithm_candidates, global_state):
+        if algorithm_candidates:
+            return algorithm_candidates
+
+        fallback_candidates = self.default_algorithm_candidates(global_state)
+        logger.warning(
+            "LLM filter returned no algorithm candidates; falling back to: "
+            + ", ".join(fallback_candidates)
+        )
+        return fallback_candidates
+
+    def default_algorithm_candidates(self, global_state):
+        if getattr(global_state.statistics, "time_series", False):
+            fallback_algorithms = ["PCMCI", "DYNOTEARS"]
+        else:
+            fallback_algorithms = ["PC", "GES"]
+
+        return {
+            algorithm: {
+                "description": f"Fallback candidate for {algorithm}.",
+                "justification": (
+                    "Selected because the LLM filter returned no algorithm candidates; "
+                    "this keeps the causal discovery workflow running with a conservative default."
+                ),
+            }
+            for algorithm in fallback_algorithms
+        }
 
     def load_prompt_context(self, global_state):
         # Load algorithm context
@@ -85,7 +116,7 @@ class Filter(object):
         }
 
         for placeholder, value in replacements.items():
-            prompt_template = prompt_template.replace(placeholder, value)
+            prompt_template = prompt_template.replace(placeholder, "" if value is None else str(value))
 
         return prompt_template
 

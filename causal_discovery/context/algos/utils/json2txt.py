@@ -449,7 +449,7 @@ def create_filtered_benchmarking_results(benchmarking_json, algorithm_list=None,
     """
     if algorithm_list is None or len(algorithm_list) == 0:
         print("No algorithms specified for filtering. Using all algorithms.")
-        return None
+        return "No algorithms specified for filtering."
     
     # Mapping table for algorithms that don't have benchmarking results
     # Maps missing algorithms to similar ones with available benchmarking data
@@ -875,7 +875,7 @@ def create_ranking_benchmarking_results(benchmarking_json, algorithm_list=None, 
     """
     if algorithm_list is None or len(algorithm_list) == 0:
         print("No algorithms specified for filtering. Using all algorithms.")
-        return None
+        return "No algorithms specified for filtering."
     
     # Filter the benchmarking_json to only include the specified algorithms
     filtered_json = {}
@@ -1235,7 +1235,7 @@ def create_filtered_benchmarking_results_ts(benchmarking_json, algorithm_list=No
     """
     if algorithm_list is None or len(algorithm_list) == 0:
         print("No algorithms specified for filtering. Using all algorithms.")
-        return None
+        return "No algorithms specified for filtering."
     
     algorithm_mapping = {}
     

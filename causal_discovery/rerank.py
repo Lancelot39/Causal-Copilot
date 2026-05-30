@@ -71,7 +71,7 @@ class Reranker:
         }
 
         for placeholder, value in replacements.items():
-            prompt_template = prompt_template.replace(placeholder, value)
+            prompt_template = prompt_template.replace(placeholder, "" if value is None else str(value))
 
         return prompt_template
     
