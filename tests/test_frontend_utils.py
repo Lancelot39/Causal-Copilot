@@ -5,6 +5,7 @@ from web_demo.frontend_utils import (
     build_upload_error_response,
     get_static_allowed_paths,
     stage_dataset_file,
+    try_report_generation,
 )
 
 
@@ -110,3 +111,34 @@ def test_stage_dataset_file_uses_unique_workspace_for_same_second(tmp_path):
     assert "20260519_120000_second" in second["output_dir"]
     assert Path(first["target_path"]).read_text(encoding="utf-8") == "x,y\n1,2\n"
     assert Path(second["target_path"]).read_text(encoding="utf-8") == "x,y\n1,2\n"
+
+
+def test_try_report_generation_returns_error_without_raising():
+    error = RuntimeError("latex failed")
+
+    def generate_report():
+        raise error
+
+    report_path, report_error = try_report_generation(generate_report)
+
+    assert report_path is None
+    assert report_error is error
+
+
+def test_try_report_generation_requires_existing_report_file(tmp_path):
+    missing_report = tmp_path / "missing.pdf"
+
+    report_path, report_error = try_report_generation(lambda: missing_report)
+
+    assert report_path is None
+    assert report_error is None
+
+
+def test_try_report_generation_returns_existing_report_file(tmp_path):
+    report = tmp_path / "report.pdf"
+    report.write_bytes(b"%PDF-1.4\n")
+
+    report_path, report_error = try_report_generation(lambda: report)
+
+    assert report_path == str(report)
+    assert report_error is None

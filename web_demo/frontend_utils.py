@@ -2,7 +2,7 @@ import shutil
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 from urllib.parse import quote
 
 
@@ -99,3 +99,21 @@ def build_upload_error_response(
     updated_chatbot = list(chatbot or [])
     updated_chatbot.append((None, f"\u274c Error loading file: {error}"))
     return required_info, current_stage, updated_chatbot, file_upload_btn, download_btn
+
+
+def try_report_generation(
+    generate_report: Callable[[], Union[str, Path, None]],
+) -> Tuple[Optional[str], Optional[Exception]]:
+    try:
+        report_path = generate_report()
+    except Exception as error:
+        return None, error
+
+    if not report_path:
+        return None, None
+
+    report_file = Path(report_path)
+    if not report_file.is_file():
+        return None, None
+
+    return str(report_file), None
