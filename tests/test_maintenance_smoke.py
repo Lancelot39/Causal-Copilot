@@ -1,4 +1,5 @@
 import os
+import ast
 import subprocess
 from pathlib import Path
 
@@ -79,6 +80,30 @@ def test_demo_keeps_core_gradio_component_bindings():
     assert "file_upload.upload(" in source
     assert "reset_btn.click(" in source
     assert "demo_btn.click(" in source
+
+
+def test_demo_message_handler_uses_structured_logging():
+    tree = ast.parse(Path("web_demo/demo.py").read_text(encoding="utf-8"))
+    process_message = next(
+        node for node in tree.body
+        if isinstance(node, ast.FunctionDef) and node.name == "process_message"
+    )
+
+    raw_prints = [
+        node.lineno for node in ast.walk(process_message)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Name)
+        and node.func.id == "print"
+    ]
+    raw_tracebacks = [
+        node.lineno for node in ast.walk(process_message)
+        if isinstance(node, ast.Call)
+        and isinstance(node.func, ast.Attribute)
+        and node.func.attr == "print_exc"
+    ]
+
+    assert raw_prints == []
+    assert raw_tracebacks == []
 
 
 def test_verify_script_falls_back_to_python3_when_python_is_absent(tmp_path):
