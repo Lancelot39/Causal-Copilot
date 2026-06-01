@@ -169,7 +169,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
     # stat analysis and algorithm -> user edit edges -> report generation
     try:
         if CURRENT_STAGE == 'initial_process':    
-            print('check data upload')
+            logger.debug("Checking dataset upload state")
             if not REQUIRED_INFO['data_uploaded']:
                 chat_history.append((message, "Please upload your dataset first before proceeding."))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
@@ -179,7 +179,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 config.data_file = REQUIRED_INFO['target_path']
                 for key, value in config.__dict__.items():
                     setattr(args, key, value)
-                print('check initial query')
+                logger.debug("Processing initial query")
                 config.initial_query = message
                 chat_history, download_btn, REQUIRED_INFO, CURRENT_STAGE, args = process_initial_query(message, chat_history, download_btn, args, REQUIRED_INFO, CURRENT_STAGE)
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
@@ -188,7 +188,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
     
             # Initialize global state
             if REQUIRED_INFO['data_uploaded'] and REQUIRED_INFO['initial_query']:
-                print('strart analysis')
+                logger.process("Starting analysis workflow")
                 global_state = global_state_initialization(args)
                 global_state.user_data.initial_query = message
                 # Load data
@@ -206,7 +206,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
         if CURRENT_STAGE == 'important_feature_selection':
             ##### Collect Important Features #####
             args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn = parse_important_feature_query(message, chat_history, download_btn, CURRENT_STAGE, args, global_state, REQUIRED_INFO)
-            print('important feature selection', global_state.user_data.important_features)
+            logger.debug(f"Important feature selection: {global_state.user_data.important_features}")
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             if CURRENT_STAGE != 'preliminary_check':
                 return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
@@ -262,7 +262,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                     texts += "- The following variables are highly correlated with others, but due to the variable number limitation, we will not drop them: \n"\
                                             f"{', '.join(list(set(global_state.user_data.high_corr_drop_features)))}"
             chat_history.append((None, texts))
-            print('preliminary check', global_state.user_data.processed_data.columns)
+            logger.debug(f"Preliminary check processed columns: {global_state.user_data.processed_data.columns}")
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             if not enough_sample:
                 texts += "- " + info 
@@ -292,7 +292,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
         if CURRENT_STAGE == 'preliminary_feedback':
             chat_history.append((message, None))
             global_state, text = parse_preliminary_feedback(global_state, message)
-            print('preliminary_feedback', global_state.user_data.processed_data.columns)
+            logger.debug(f"Preliminary feedback processed columns: {global_state.user_data.processed_data.columns}")
             if text != "":
                 chat_history.append((None, text))
             else:
@@ -351,8 +351,8 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                     if not global_state.statistics.heterogeneous:
                         global_state.user_data.visual_selected_features.extend(global_state.user_data.important_features)
                     CURRENT_STAGE = 'knowledge_generation'
-                    print('visual_dimension_check', global_state.user_data.processed_data.columns)
-                    print('visual_dimension_check', global_state.user_data.visual_selected_features)
+                    logger.debug(f"Visual dimension check processed columns: {global_state.user_data.processed_data.columns}")
+                    logger.debug(f"Visual dimension check selected features: {global_state.user_data.visual_selected_features}")
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             else: 
                 global_state.user_data.visual_selected_features = global_state.user_data.selected_features
@@ -363,7 +363,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
         if CURRENT_STAGE == 'variable_selection':
-            print('select variable')
+            logger.debug("Parsing variable selection")
             if REQUIRED_INFO["interactive_mode"]:
                 chat_history.append((message, None))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
@@ -492,12 +492,12 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                         if hasattr(global_state.statistics, key):
                             setattr(global_state.statistics, key, value)
                         else:
-                            print(f"Warning: Statistics has no attribute '{key}'")
+                            logger.warning(f"Statistics has no attribute '{key}'")
                     global_state.statistics.description = convert_stat_info_to_text(global_state.statistics)
-                    print(global_state.statistics)
-                    print(global_state.statistics.description)
+                    logger.debug(f"Updated statistics: {global_state.statistics}")
+                    logger.debug(f"Updated statistics description: {global_state.statistics.description}")
                 except RuntimeError as e:
-                    print(e)
+                    logger.error(f"Failed to parse statistical feedback: {e}")
                     chat_history.append(None, "That information may not be correct, please try again or type Quit to skip.")
                     return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
@@ -509,8 +509,8 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             # EDA Generation
             chat_history.append(("🔍 Run exploratory data analysis...", None))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
-            print('eda_generation', global_state.user_data.processed_data.columns)
-            print('eda_generation', global_state.user_data.visual_selected_features)
+            logger.debug(f"EDA processed columns: {global_state.user_data.processed_data.columns}")
+            logger.debug(f"EDA selected features: {global_state.user_data.visual_selected_features}")
             my_eda = EDA(global_state)
             my_eda.generate_eda()
             chat_history.append((None, (f'{global_state.user_data.output_graph_dir}/eda_corr.jpg',)))
@@ -673,7 +673,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 global_state.results.raw_edges = convert_to_edges(global_state.algorithm.selected_algorithm, global_state.user_data.processed_data.columns, global_state.results.converted_graph)
                 global_state.logging.graph_conversion['initial_graph_analysis'] = my_report.graph_effect_prompts()
                 analysis_clean = global_state.logging.graph_conversion['initial_graph_analysis'].replace('"',"").replace("\\n\\n", "\n\n").replace("\\n", "\n").replace("'", "")
-                print(analysis_clean)
+                logger.debug(f"Initial graph analysis: {analysis_clean}")
                 chat_history.append((None, analysis_clean))
                 yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
@@ -709,7 +709,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 judge = Judge(global_state, args)
                 global_state = judge.forward(global_state, 'cot_all_relation', 3)
             except Exception as e:
-                print('error during judging:', e)
+                logger.warning(f"Error during judging, retrying once: {e}")
                 judge = Judge(global_state, args)
                 global_state = judge.forward(global_state, 'cot_all_relation', 3) 
             my_visual_revise = Visualization(global_state)
@@ -783,7 +783,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             chat_history.append((message, "📝 Start to process your Graph Revision Query..."))
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             user_revise_dict, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE = parse_user_postprocess(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE)
-            print('user_revise_dict', user_revise_dict)
+            logger.debug(f"User revise dict: {user_revise_dict}")
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             if CURRENT_STAGE == 'postprocess_parse_done':
                 judge = Judge(global_state, args)
@@ -834,8 +834,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             message, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE = parse_algo_query(message, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE)
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             if CURRENT_STAGE == 'algo_selection':
-                print(CURRENT_STAGE)
-                print(global_state.algorithm.selected_algorithm)
+                logger.debug(f"Retry stage selected algorithm: {global_state.algorithm.selected_algorithm}")
                 global_state.algorithm.algorithm_arguments = None
                 return process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn)
         
@@ -859,7 +858,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn 
             return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn 
         if CURRENT_STAGE == 'parse_task': 
-            print('parse_task')
+            logger.debug("Parsing downstream inference task")
             reason, tasks_list, descs_list, key_node_list, chat_history, download_btn, global_state, REQUIRED_INFO, CURRENT_STAGE = parse_inference_query(message, chat_history, download_btn, args, global_state, REQUIRED_INFO, CURRENT_STAGE)
             yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
             if CURRENT_STAGE != 'report_generation_check':
@@ -882,7 +881,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                     yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
 
                     global_state.inference.task_index += 1
-                    print('task_index to conduct', global_state.inference.task_index)
+                    logger.debug(f"Inference task index to conduct: {global_state.inference.task_index}")
                     global_state.inference.task_info[global_state.inference.task_index] = {'task':tasks_list,
                                                                                         'desc': descs_list,
                                                                                         'key_node': key_node_list,
@@ -898,7 +897,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
             task_info = global_state.inference.task_info[global_state.inference.task_index]
             treatment = parse_treatment(task_info['desc'][0], global_state, args)
             global_state.inference.task_info[global_state.inference.task_index]['treatment'] = treatment
-            print('treatment: ', treatment)
+            logger.debug(f"Counterfactual treatment: {treatment}")
             chat_history.append((None, f"""💡 In this simulation, we are applying a 'shift intervention' to study how changes in the {treatment} impact the {task_info['key_node'][0]}. 
                                  A shift intervention involves modifying the value of a variable by a fixed amount (the 'shift value') while keeping other variables unchanged.
                                  For example, if we are studying the effect of increasing income on health outcomes, we might **apply a shift intervention where the income variable is increased by a fixed amount, such as $500**, for all individuals. Then your shift value is 500.
@@ -1102,8 +1101,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
                 try:
                     info, figs, chat_history = analysis.forward(task, desc, key_node, chat_history)
                 except Exception as e:
-                    print('error during analysis:', e)
-                    traceback.print_exc()
+                    logger.error(f"Error during {task} analysis: {e}\n{traceback.format_exc()}")
                     info = f"❌ An error occurred during the {task} analysis, please input your causal analysis query again, or input 'no' to end this part."\
                         f"Error Information: {e}"
                     chat_history.append((None, info))
@@ -1276,8 +1274,7 @@ def process_message(message, args, global_state, REQUIRED_INFO, CURRENT_STAGE, c
         CURRENT_STAGE = 'initial_process'
         chat_history.append((None, f"❌ An error occurred during analysis: {str(e)}\n"
                              "Please click reset button and try again."))
-        print('error:', e)
-        traceback.print_exc()
+        logger.error(f"Error during Gradio inference workflow: {e}\n{traceback.format_exc()}")
         yield args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
         return args, global_state, REQUIRED_INFO, CURRENT_STAGE, chat_history, download_btn
     

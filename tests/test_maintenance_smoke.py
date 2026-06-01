@@ -82,28 +82,29 @@ def test_demo_keeps_core_gradio_component_bindings():
     assert "demo_btn.click(" in source
 
 
-def test_demo_message_handler_uses_structured_logging():
-    tree = ast.parse(Path("web_demo/demo.py").read_text(encoding="utf-8"))
-    process_message = next(
-        node for node in tree.body
-        if isinstance(node, ast.FunctionDef) and node.name == "process_message"
-    )
+def test_demo_message_handlers_use_structured_logging():
+    for demo_path in (Path("web_demo/demo.py"), Path("web_demo/demo_inf.py")):
+        tree = ast.parse(demo_path.read_text(encoding="utf-8"))
+        process_message = next(
+            node for node in tree.body
+            if isinstance(node, ast.FunctionDef) and node.name == "process_message"
+        )
 
-    raw_prints = [
-        node.lineno for node in ast.walk(process_message)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Name)
-        and node.func.id == "print"
-    ]
-    raw_tracebacks = [
-        node.lineno for node in ast.walk(process_message)
-        if isinstance(node, ast.Call)
-        and isinstance(node.func, ast.Attribute)
-        and node.func.attr == "print_exc"
-    ]
+        raw_prints = [
+            node.lineno for node in ast.walk(process_message)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "print"
+        ]
+        raw_tracebacks = [
+            node.lineno for node in ast.walk(process_message)
+            if isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Attribute)
+            and node.func.attr == "print_exc"
+        ]
 
-    assert raw_prints == []
-    assert raw_tracebacks == []
+        assert raw_prints == []
+        assert raw_tracebacks == []
 
 
 def test_gradio_demos_use_report_generation_wrapper():
